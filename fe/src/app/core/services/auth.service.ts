@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '@env/environment';
-import { LoginRequest, RegisterRequest, AuthResponse } from '@models/auth.model';
+import { LoginRequest, AuthResponse } from '@models/auth.model';
 import { User, UserRole } from '@models/user.model';
 
 @Injectable({ providedIn: 'root' })
@@ -23,10 +23,6 @@ export class AuthService {
         this.currentUser$.next(res.data.user);
       }),
     );
-  }
-
-  register(data: RegisterRequest): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/auth/register`, data);
   }
 
   logout(): void {
@@ -59,6 +55,10 @@ export class AuthService {
 
   isApprover(): boolean {
     return this.hasRole('admin', 'approver');
+  }
+
+  getCurrentUserId(): string | null {
+    return this.currentUser$.value?.id ?? null;
   }
 
   getCurrentUser(): Observable<User | null> {

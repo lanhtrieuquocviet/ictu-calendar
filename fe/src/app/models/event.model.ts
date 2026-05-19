@@ -18,6 +18,9 @@ export interface CalendarEvent {
   status: EventStatus;
   color?: string;
   notes?: string;
+  rejectionReason?: string;
+  approvedByName?: string;
+  approvedAt?: string;
   userId: string;
   createdAt: string;
   updatedAt: string;

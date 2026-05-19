@@ -1,6 +1,8 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { skip } from 'rxjs/operators';
 import { CalendarService } from '../../services/calendar.service';
 import { AuthService } from '@core/services/auth.service';
 import { CalendarEvent } from '@models/event.model';
@@ -24,7 +26,7 @@ const DAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ 
   styleUrl: './calendar-view.component.scss',
   providers: [DatePipe],
 })
-export class CalendarViewComponent implements OnInit {
+export class CalendarViewComponent implements OnInit, OnDestroy {
   private readonly calendarService = inject(CalendarService);
   private readonly datePipe = inject(DatePipe);
   readonly authService = inject(AuthService);
@@ -35,6 +37,29 @@ export class CalendarViewComponent implements OnInit {
   loading = false;
   showForm = signal(false);
   editingEvent = signal<CalendarEvent | null>(null);
+  detailEvent = signal<CalendarEvent | null>(null);
+  createDraft = signal<Record<string, any> | null>(null);
+  statusFilter = signal<string>('all');
+
+  private authSub?: Subscription;
+
+  get canSeeStatus(): boolean {
+    return this.authService.isEditor() || this.authService.isApprover();
+  }
+
+  canEditEvent(event: CalendarEvent): boolean {
+    return this.authService.isAdmin() || event.userId === this.authService.getCurrentUserId();
+  }
+
+  get filteredEvents(): CalendarEvent[] {
+    const f = this.statusFilter();
+    return f === 'all' ? this.allEvents : this.allEvents.filter(e => e.status === f);
+  }
+
+  statusLabel(status: string): string {
+    const map: Record<string, string> = { pending: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối' };
+    return map[status] ?? 'Chờ duyệt';
+  }
 
   readonly monthDayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
@@ -81,21 +106,38 @@ export class CalendarViewComponent implements OnInit {
 
   get dayGroups(): DayGroup[] {
     const map = new Map<string, CalendarEvent[]>();
-    for (const e of this.allEvents) {
+    for (const e of this.filteredEvents) {
       const key = e.eventDate.slice(0, 10);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(e);
     }
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, evts]) => {
-        const d = new Date(date + 'T00:00:00');
-        return {
-          dateLabel: `${DAY_NAMES[d.getDay()]}\nNgày ${this.datePipe.transform(d, 'dd/MM') ?? date}`,
-          date: d,
-          events: evts,
-        };
+
+    if (this.viewMode() === 'list') {
+      return Array.from(map.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, evts]) => {
+          const d = new Date(date + 'T00:00:00');
+          return {
+            dateLabel: `${DAY_NAMES[d.getDay()]}\nNgày ${this.datePipe.transform(d, 'dd/MM') ?? date}`,
+            date: d,
+            events: evts,
+          };
+        });
+    }
+
+    // Week view: always show all 7 days (Mon→Sun) kể cả ngày không có sự kiện
+    const days: DayGroup[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(this.rangeStart);
+      d.setDate(d.getDate() + i);
+      const key = this.toISODate(d);
+      days.push({
+        dateLabel: `${DAY_NAMES[d.getDay()]}\nNgày ${this.datePipe.transform(d, 'dd/MM') ?? key}`,
+        date: d,
+        events: map.get(key) ?? [],
       });
+    }
+    return days;
   }
 
   // ── Month view data ─────────────────────────────────
@@ -112,7 +154,7 @@ export class CalendarViewComponent implements OnInit {
 
   private get eventsMap(): Map<string, CalendarEvent[]> {
     const map = new Map<string, CalendarEvent[]>();
-    for (const e of this.allEvents) {
+    for (const e of this.filteredEvents) {
       const key = e.eventDate.slice(0, 10);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(e);
@@ -156,11 +198,29 @@ export class CalendarViewComponent implements OnInit {
 
   // ── Load ────────────────────────────────────────────
 
-  ngOnInit(): void { this.loadEvents(); }
+  ngOnInit(): void {
+    this.loadEvents();
+    // Reload khi login/logout để lọc đúng endpoint (public vs managed)
+    this.authSub = this.authService.getCurrentUser()
+      .pipe(skip(1))
+      .subscribe(() => {
+        this.statusFilter.set('all');
+        this.loadEvents();
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.authSub?.unsubscribe();
+  }
 
   loadEvents(): void {
     this.loading = true;
-    this.calendarService.getEvents(this.toISODate(this.rangeStart), this.toISODate(this.rangeEnd)).subscribe({
+    const from = this.toISODate(this.rangeStart);
+    const to = this.toISODate(this.rangeEnd);
+    const req$ = this.authService.isEditor() || this.authService.isApprover()
+      ? this.calendarService.getManagedEvents(from, to)
+      : this.calendarService.getEvents(from, to);
+    req$.subscribe({
       next: (res) => { this.allEvents = res.data; this.loading = false; },
       error: () => (this.loading = false),
     });
@@ -170,8 +230,17 @@ export class CalendarViewComponent implements OnInit {
 
   openAdd(): void { this.editingEvent.set(null); this.showForm.set(true); }
   openEdit(event: CalendarEvent): void { this.editingEvent.set(event); this.showForm.set(true); }
-  onFormSaved(): void { this.showForm.set(false); this.loadEvents(); }
-  onFormClosed(): void { this.showForm.set(false); }
+  openDetail(event: CalendarEvent): void { this.detailEvent.set(event); }
+  closeDetail(): void { this.detailEvent.set(null); }
+  openEditFromDetail(): void { const e = this.detailEvent(); this.detailEvent.set(null); if (e) this.openEdit(e); }
+
+  formatDetailDate(event: CalendarEvent): string {
+    if (!event.eventDate) return '—';
+    return new Date(event.eventDate + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  onFormSaved(): void { this.createDraft.set(null); this.showForm.set(false); this.loadEvents(); }
+  onFormClosed(draft: Record<string, any>): void { if (!this.editingEvent()) this.createDraft.set(draft); this.showForm.set(false); }
+  onFormDiscarded(): void { this.createDraft.set(null); this.showForm.set(false); }
 
   deleteEvent(id: string): void {
     if (!confirm('Bạn có chắc muốn xóa sự kiện này?')) return;
@@ -184,17 +253,22 @@ export class CalendarViewComponent implements OnInit {
     if (event.allDay) return 'Cả ngày';
     const fmt = (t?: string | null): string | null => {
       if (!t) return null;
-      const [hStr, mStr] = t.split(':');
-      const h = parseInt(hStr, 10);
-      const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
-      return `${hour}:${mStr} ${h < 12 ? 'SA' : 'CH'}`;
+      const [h, m] = t.split(':');
+      return `${h.padStart(2, '0')}:${m}`;
     };
     const s = fmt(event.startTime), e = fmt(event.endTime);
     if (s && e) return `${s} - ${e}`;
     return s ?? '';
   }
 
-  totalEvents(): number { return this.allEvents.length; }
+  totalEvents(): number { return this.filteredEvents.length; }
+
+  formatApprovedAt(dateStr: string): string {
+    const d = new Date(dateStr);
+    const date = this.datePipe.transform(d, 'dd/MM/yyyy') ?? '';
+    const time = this.datePipe.transform(d, 'HH:mm') ?? '';
+    return `${date} ${time}`;
+  }
 
   // ── Helpers ─────────────────────────────────────────
 

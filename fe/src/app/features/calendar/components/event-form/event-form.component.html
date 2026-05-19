@@ -1,8 +1,8 @@
-<div class="modal-backdrop" (click)="closed.emit()">
+<div class="modal-backdrop" (click)="onBackdropClose()">
   <div class="modal" (click)="$event.stopPropagation()">
 
     <div class="modal-header">
-      <h2>{{ isEdit ? 'Chỉnh sửa sự kiện' : 'Thêm sự kiện mới' }}</h2>
+      <h2>{{ modalTitle }}</h2>
     </div>
 
     <div class="modal-body">
@@ -23,6 +23,7 @@
               <!-- Date picker -->
               <div class="picker-wrap" data-picker="date">
                 <button type="button" class="picker-chip date-chip" [class.open]="showDatePicker"
+                  [disabled]="approverOnly"
                   (click)="toggleDatePicker($event)">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
@@ -55,6 +56,8 @@
                           <button type="button" class="cal-day"
                             [class.today]="isToday(day)"
                             [class.selected]="isSelectedDate(day)"
+                            [class.past]="isPastDate(day)"
+                            [disabled]="isPastDate(day)"
                             (click)="selectDate(day, $event)">
                             {{ day.getDate() }}
                           </button>
@@ -67,47 +70,58 @@
                 }
               </div>
 
-              <!-- Start time picker -->
-              <div class="picker-wrap" data-picker="start">
-                <button type="button" class="picker-chip time-chip" [class.open]="showStartTimePicker"
-                  (click)="toggleStartTimePicker($event)">
-                  {{ displayStartTime }}
-                </button>
-                @if (showStartTimePicker) {
-                  <div class="time-dropdown">
-                    @for (slot of timeSlots; track slot) {
-                      <button type="button" class="time-opt"
-                        [class.active]="slot === form.get('startTime')?.value"
-                        (click)="selectStartTime(slot, $event)">
-                        {{ formatTime(slot) }}
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
+              <!-- Time range -->
+              <div class="time-range">
+                <div class="picker-wrap" data-picker="start">
+                  <input type="text" class="time-input" [class.open]="showStartTimePicker"
+                    [value]="startTimeInput"
+                    placeholder="--:--"
+                    [disabled]="approverOnly"
+                    (focus)="onStartTimeFocus($event)"
+                    (blur)="onStartTimeBlur()"
+                    (input)="startTimeInput = $any($event.target).value"
+                    (click)="$event.stopPropagation()"
+                  />
+                  @if (showStartTimePicker) {
+                    <div class="time-dropdown">
+                      @for (slot of timeSlots; track slot) {
+                        <button type="button" class="time-opt"
+                          [class.active]="slot === form.get('startTime')?.value"
+                          (click)="selectStartTime(slot, $event)">
+                          {{ formatTime(slot) }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
 
-              <span class="time-sep">—</span>
+                <span class="time-sep">—</span>
 
-              <!-- End time picker -->
-              <div class="picker-wrap" data-picker="end">
-                <button type="button" class="picker-chip time-chip" [class.open]="showEndTimePicker"
-                  (click)="toggleEndTimePicker($event)">
-                  {{ displayEndTime }}
-                </button>
-                @if (showEndTimePicker) {
-                  <div class="time-dropdown end-dropdown">
-                    @for (slot of timeSlots; track slot) {
-                      <button type="button" class="time-opt"
-                        [class.active]="slot === form.get('endTime')?.value"
-                        (click)="selectEndTime(slot, $event)">
-                        <span>{{ formatTime(slot) }}</span>
-                        @if (getSlotDuration(slot)) {
-                          <span class="slot-dur">{{ getSlotDuration(slot) }}</span>
-                        }
-                      </button>
-                    }
-                  </div>
-                }
+                <div class="picker-wrap" data-picker="end">
+                  <input type="text" class="time-input" [class.open]="showEndTimePicker"
+                    [value]="endTimeInput"
+                    placeholder="--:--"
+                    [disabled]="approverOnly"
+                    (focus)="onEndTimeFocus($event)"
+                    (blur)="onEndTimeBlur()"
+                    (input)="endTimeInput = $any($event.target).value"
+                    (click)="$event.stopPropagation()"
+                  />
+                  @if (showEndTimePicker) {
+                    <div class="time-dropdown end-dropdown">
+                      @for (slot of timeSlots; track slot) {
+                        <button type="button" class="time-opt"
+                          [class.active]="slot === form.get('endTime')?.value"
+                          (click)="selectEndTime(slot, $event)">
+                          <span>{{ formatTime(slot) }}</span>
+                          @if (getSlotDuration(slot)) {
+                            <span class="slot-dur">{{ getSlotDuration(slot) }}</span>
+                          }
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
               </div>
 
             </div>
@@ -164,14 +178,7 @@
               </app-autocomplete-input>
             </div>
 
-            <div class="field">
-              <label>Truyền thông</label>
-              <app-autocomplete-input
-                formControlName="mediaUnit"
-                placeholder="Trung tâm TTTS"
-                [suggestions]="suggestions.mediaUnit">
-              </app-autocomplete-input>
-            </div>
+            
 
             <div class="field">
               <label>ĐU/BGH Chỉ đạo</label>
@@ -182,16 +189,25 @@
               </app-autocomplete-input>
             </div>
 
-            <div class="field">
-              <label>Màu hiển thị</label>
-              <input type="color" formControlName="color" />
-            </div>
-
             <div class="field full">
               <label>Ghi chú</label>
               <textarea formControlName="notes" placeholder="Ghi chú thêm..."></textarea>
             </div>
 
+          </div>
+        }
+
+        <!-- Hiển thị lý do từ chối cho editor khi sự kiện bị từ chối -->
+        @if (canEditContent && event?.status === 'rejected' && event?.rejectionReason) {
+          <div class="rejection-notice">
+            <div class="rejection-notice-header">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Sự kiện đã bị từ chối
+            </div>
+            <p class="rejection-reason">{{ event?.rejectionReason }}</p>
+            <p class="rejection-hint">Chỉnh sửa và lưu lại để gửi yêu cầu duyệt mới.</p>
           </div>
         }
 
@@ -210,14 +226,25 @@
               </span>
             </div>
 
-            <div class="field" style="margin-top:12px">
-              <label>ĐU/BGH Phê duyệt (người ký)</label>
-              <app-autocomplete-input
-                formControlName="approvedBy"
-                placeholder="VD: PGS.TS. Phùng Trung Nghĩa"
-                [suggestions]="suggestions.supervisor">
-              </app-autocomplete-input>
-            </div>
+            @if (event?.rejectionReason && form.get('status')?.value === 'rejected') {
+              <div class="prev-rejection-reason">
+                <span class="prev-label">Lý do từ chối trước:</span>
+                <span>{{ event?.rejectionReason }}</span>
+              </div>
+            }
+
+            @if (showRejectInput) {
+              <div class="reject-reason-input">
+                <label>Lý do từ chối *</label>
+                <textarea
+                  [value]="rejectReason"
+                  (input)="rejectReason = $any($event.target).value"
+                  placeholder="Nhập lý do từ chối sự kiện này..."
+                  rows="3">
+                </textarea>
+              </div>
+            }
+
           </div>
         }
 
@@ -228,21 +255,31 @@
     </div>
 
     <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="closed.emit()">Hủy</button>
+      <button type="button" class="btn-cancel" (click)="onBackdropClose()">Hủy</button>
 
       @if (canApprove) {
-        <button type="button" class="btn-reject" [disabled]="approving" (click)="doApprove('rejected')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-          Từ chối
-        </button>
-        <button type="button" class="btn-approve" [disabled]="approving" (click)="doApprove('approved')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          {{ approving ? 'Đang lưu...' : 'Duyệt' }}
-        </button>
+        @if (showRejectInput) {
+          <button type="button" class="btn-cancel" (click)="cancelReject()">Hủy từ chối</button>
+          <button type="button" class="btn-reject" [disabled]="approving || !rejectReason.trim()" (click)="confirmReject()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            {{ approving ? 'Đang lưu...' : 'Xác nhận từ chối' }}
+          </button>
+        } @else {
+          <button type="button" class="btn-reject" [disabled]="approving" (click)="doApprove('rejected')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Từ chối
+          </button>
+          <button type="button" class="btn-approve" [disabled]="approving" (click)="doApprove('approved')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            {{ approving ? 'Đang lưu...' : 'Duyệt' }}
+          </button>
+        }
       }
 
       @if (canEditContent) {

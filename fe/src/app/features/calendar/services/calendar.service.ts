@@ -11,6 +11,10 @@ export class CalendarService {
     return this.api.get<ApiListResponse<CalendarEvent>>('calendar/events', { from, to });
   }
 
+  getManagedEvents(from: string, to: string): Observable<ApiListResponse<CalendarEvent>> {
+    return this.api.get<ApiListResponse<CalendarEvent>>('calendar/events/manage', { from, to });
+  }
+
   createEvent(event: CreateEventRequest): Observable<{ data: CalendarEvent }> {
     return this.api.post<{ data: CalendarEvent }>('calendar/events', event);
   }
@@ -23,7 +27,7 @@ export class CalendarService {
     return this.api.delete<void>(`calendar/events/${id}`);
   }
 
-  approveEvent(id: string, payload: { status: string; approvedBy?: string }): Observable<{ data: CalendarEvent }> {
+  approveEvent(id: string, payload: { status: string; rejectionReason?: string }): Observable<{ data: CalendarEvent }> {
     return this.api.patch<{ data: CalendarEvent }>(`calendar/events/${id}/approve`, payload);
   }
 }

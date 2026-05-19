@@ -3,34 +3,40 @@ import {
   Delete, UseGuards, Req, Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { IsEnum } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 import { CalendarService } from './calendar.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { ApproveEventDto } from './dto/approve-event.dto';
 import { EventStatus } from './entities/event.entity';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-
-class ApproveEventDto {
-  @ApiProperty({ enum: EventStatus })
-  @IsEnum(EventStatus)
-  status: EventStatus;
-}
 
 @ApiTags('Calendar')
 @Controller('calendar')
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 
-  // ── Public: ai cũng xem được ──────────────────────
+  // ── Public: chỉ sự kiện đã được duyệt ──────────────
 
   @Get('events')
-  @ApiOperation({ summary: 'Xem tất cả sự kiện (công khai)' })
+  @ApiOperation({ summary: 'Xem sự kiện đã duyệt (công khai)' })
   @ApiQuery({ name: 'from', required: false, example: '2026-05-01' })
   @ApiQuery({ name: 'to', required: false, example: '2026-05-31' })
   findAll(@Query('from') from?: string, @Query('to') to?: string) {
+    return this.calendarService.findAll(from, to, EventStatus.APPROVED);
+  }
+
+  // ── Quản lý: editor / approver / admin thấy tất cả ─
+
+  @Get('events/manage')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'editor', 'approver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xem tất cả sự kiện để quản lý (admin / editor / approver)' })
+  @ApiQuery({ name: 'from', required: false })
+  @ApiQuery({ name: 'to', required: false })
+  findManaged(@Query('from') from?: string, @Query('to') to?: string) {
     return this.calendarService.findAll(from, to);
   }
 
@@ -55,9 +61,9 @@ export class CalendarController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'editor')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cập nhật sự kiện (admin / editor)' })
-  update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
-    return this.calendarService.update(id, updateEventDto);
+  @ApiOperation({ summary: 'Cập nhật sự kiện (admin / editor) — tự reset pending nếu đang bị từ chối' })
+  update(@Param('id') id: string, @Req() req: any, @Body() updateEventDto: UpdateEventDto) {
+    return this.calendarService.updateByEditor(id, req.user.sub, req.user.role === 'admin', updateEventDto);
   }
 
   @Delete('events/:id')
@@ -65,8 +71,8 @@ export class CalendarController {
   @Roles('admin', 'editor')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Xóa sự kiện (admin / editor)' })
-  remove(@Param('id') id: string) {
-    return this.calendarService.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.calendarService.remove(id, req.user.sub, req.user.role === 'admin');
   }
 
   // ── Phê duyệt: admin hoặc approver ───────────────
@@ -76,7 +82,7 @@ export class CalendarController {
   @Roles('admin', 'approver')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Phê duyệt / từ chối sự kiện (admin / approver)' })
-  approve(@Param('id') id: string, @Body() dto: ApproveEventDto) {
-    return this.calendarService.update(id, { status: dto.status });
+  approve(@Param('id') id: string, @Req() req: any, @Body() dto: ApproveEventDto) {
+    return this.calendarService.approve(id, req.user.sub, dto);
   }
 }

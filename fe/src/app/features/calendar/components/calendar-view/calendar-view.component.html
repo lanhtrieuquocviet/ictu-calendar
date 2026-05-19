@@ -39,7 +39,7 @@
       @if (authService.isLoggedIn()) {
         <button class="btn-auth" (click)="authService.logout()">Đăng xuất</button>
       } @else {
-        <a class="btn-auth" href="/auth/login">Đăng nhập Admin</a>
+        <a class="btn-auth" href="/auth/login">Đăng nhập</a>
       }
     </div>
   </header>
@@ -54,6 +54,14 @@
         <button [class.active]="viewMode() === 'month'" (click)="setView('month')">Tháng</button>
         <button [class.active]="viewMode() === 'list'"  (click)="setView('list')">Danh sách</button>
       </div>
+      @if (canSeeStatus) {
+        <div class="status-filter">
+          <button [class.active]="statusFilter() === 'all'"      (click)="statusFilter.set('all')">Tất cả</button>
+          <button [class.active]="statusFilter() === 'pending'"  (click)="statusFilter.set('pending')"  class="filter-pending">Chờ duyệt</button>
+          <button [class.active]="statusFilter() === 'approved'" (click)="statusFilter.set('approved')" class="filter-approved">Đã duyệt</button>
+          <button [class.active]="statusFilter() === 'rejected'" (click)="statusFilter.set('rejected')" class="filter-rejected">Từ chối</button>
+        </div>
+      }
     </div>
 
     <div class="period-nav">
@@ -112,9 +120,9 @@
                     <div class="cell-chip"
                       [style.background]="evt.color || '#4f46e5'"
                       [title]="evt.title"
-                      (click)="authService.isAdmin() ? openEdit(evt) : null">
+                      (click)="(authService.isEditor() || authService.isApprover()) ? openEdit(evt) : null">
                       @if (evt.startTime) {
-                        <span class="chip-time">{{ formatEventTime(evt).split(' ')[0] }}</span>
+                        <span class="chip-time">{{ formatEventTime(evt).split(' - ')[0] }}</span>
                       }
                       {{ evt.title }}
                     </div>
@@ -144,7 +152,7 @@
           </svg>
         </div>
         <div class="state-text">Chưa có sự kiện nào trong {{ viewMode() === 'week' ? 'tuần' : 'tháng' }} này</div>
-        @if (authService.isAdmin()) {
+        @if (authService.isEditor()) {
           <button class="btn-add-empty" (click)="openAdd()">+ Thêm sự kiện mới</button>
         }
       </div>
@@ -165,16 +173,25 @@
               <th>Điều xe / Truyền thông</th>
               <th>ĐU/BGH Chỉ đạo</th>
               <th>ĐU/BGH Phê duyệt</th>
+              @if (canSeeStatus) {
+                <th class="th-status">Trạng thái</th>
+              }
               <th>Mã CH</th>
-              @if (authService.isAdmin()) {
+              @if (authService.isEditor() || authService.isApprover()) {
                 <th class="th-actions">Thao tác</th>
               }
             </tr>
           </thead>
           <tbody>
             @for (group of dayGroups; track group.dateLabel) {
+              @if (group.events.length === 0) {
+                <tr class="group-start empty-day-row">
+                  <td class="td-day"><div class="day-cell">{{ group.dateLabel }}</div></td>
+                  <td colspan="99" class="td-empty-day">Không có sự kiện</td>
+                </tr>
+              } @else {
               @for (event of group.events; track event.id; let i = $index) {
-                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')">
+                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.group-start]="i === 0">
                   @if (i === 0) {
                     <td class="td-day" [attr.rowspan]="group.events.length">
                       <div class="day-cell">{{ group.dateLabel }}</div>
@@ -186,44 +203,86 @@
                   <td class="td-title">
                     <div class="title-row">
                       <span class="evt-dot"></span>
-                      <span>{{ event.title }}</span>
+                      <span class="title-text">{{ event.title }}</span>
+                      <button class="btn-detail" (click)="openDetail(event)" title="Xem chi tiết">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      </button>
                     </div>
                   </td>
-                  <td class="td-participants">{{ event.participants }}</td>
-                  <td>{{ event.organizingUnit }}</td>
-                  <td>{{ event.location }}</td>
-                  <td>
-                    {{ event.vehicleArrangement }}
-                    @if (event.mediaUnit) {
-                      <br><span class="sub-text">{{ event.mediaUnit }}</span>
-                    }
+                  <td class="td-participants" [title]="event.participants || ''">
+                    <span class="clamp-text">{{ event.participants || '—' }}</span>
                   </td>
-                  <td>{{ event.supervisor }}</td>
-                  <td class="td-center">
-                    @if (event.approvedBy) {
-                      <span class="approved-badge">{{ event.approvedBy }}</span>
-                    }
+                  <td [title]="event.organizingUnit || ''"><span class="cell-truncate">{{ event.organizingUnit || '—' }}</span></td>
+                  <td [title]="event.location || ''"><span class="cell-truncate">{{ event.location || '—' }}</span></td>
+                  <td [title]="(event.vehicleArrangement || '') + (event.mediaUnit ? (event.vehicleArrangement ? '\nTruyền thông' : 'Truyền thông') : '')">
+                    @if (event.vehicleArrangement || event.mediaUnit) {
+                      {{ event.vehicleArrangement }}
+                      @if (event.mediaUnit) {
+                        <br><span class="sub-text">Truyền thông</span>
+                      }
+                    } @else { — }
                   </td>
-                  <td class="td-code">{{ event.meetingCode }}</td>
-                  @if (authService.isAdmin()) {
+                  <td [title]="event.supervisor || ''"><span class="cell-truncate">{{ event.supervisor || '—' }}</span></td>
+                  <td class="td-approved">
+                    @if (event.status === 'approved') {
+                      <div class="approved-info">
+                        <span class="approved-check">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        </span>
+                        <span class="approved-text">
+                          <span class="approved-label">Đã duyệt</span>
+                          @if (event.approvedByName) {
+                            <span class="approved-name">{{ event.approvedByName }}</span>
+                          }
+                          @if (event.approvedAt) {
+                            <span class="approved-time">{{ formatApprovedAt(event.approvedAt) }}</span>
+                          }
+                        </span>
+                      </div>
+                    } @else { — }
+                  </td>
+                  @if (canSeeStatus) {
+                    <td class="td-status td-center">
+                      <span class="status-badge" [attr.data-status]="event.status">{{ statusLabel(event.status) }}</span>
+                    </td>
+                  }
+                  <td class="td-code">{{ event.meetingCode || '—' }}</td>
+                  @if (authService.isEditor() || authService.isApprover()) {
                     <td class="td-actions">
-                      <button class="btn-edit" (click)="openEdit(event)" title="Chỉnh sửa">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                        Sửa
-                      </button>
-                      <button class="btn-delete" (click)="deleteEvent(event.id)" title="Xóa">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="3 6 5 6 21 6"/>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                        </svg>
-                        Xóa
-                      </button>
+                      @if (authService.isApprover() && !authService.isEditor()) {
+                        <button class="btn-edit" (click)="openEdit(event)" title="Phê duyệt">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                          Duyệt
+                        </button>
+                      }
+                      @if (authService.isEditor() && canEditEvent(event)) {
+                        <button class="btn-edit" (click)="openEdit(event)" title="Chỉnh sửa">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                          Sửa
+                        </button>
+                        <button class="btn-delete" (click)="deleteEvent(event.id)" title="Xóa">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                          </svg>
+                          Xóa
+                        </button>
+                      }
                     </td>
                   }
                 </tr>
+              }
               }
             }
           </tbody>
@@ -236,7 +295,120 @@
 @if (showForm()) {
   <app-event-form
     [event]="editingEvent()"
+    [draft]="editingEvent() ? null : createDraft()"
     (saved)="onFormSaved()"
-    (closed)="onFormClosed()"
+    (closed)="onFormClosed($event)"
+    (discarded)="onFormDiscarded()"
   />
+}
+
+@if (detailEvent()) {
+  <div class="detail-backdrop" (click)="closeDetail()">
+    <div class="detail-modal" (click)="$event.stopPropagation()">
+
+      <div class="detail-header">
+        <h2>Chi tiết sự kiện</h2>
+        <button class="detail-close" (click)="closeDetail()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="detail-body">
+        <div class="detail-grid">
+
+          <div class="detail-field full">
+            <label>Nội dung</label>
+            <span>{{ detailEvent()!.title }}</span>
+          </div>
+
+          <div class="detail-field">
+            <label>Ngày</label>
+            <span>{{ formatDetailDate(detailEvent()!) }}</span>
+          </div>
+
+          <div class="detail-field">
+            <label>Giờ</label>
+            <span>{{ formatEventTime(detailEvent()!) || '—' }}</span>
+          </div>
+
+          @if (detailEvent()!.location) {
+            <div class="detail-field full">
+              <label>Địa điểm</label>
+              <span>{{ detailEvent()!.location }}</span>
+            </div>
+          }
+
+          @if (detailEvent()!.participants) {
+            <div class="detail-field full">
+              <label>Thành phần tham dự</label>
+              <span>{{ detailEvent()!.participants }}</span>
+            </div>
+          }
+
+          @if (detailEvent()!.organizingUnit) {
+            <div class="detail-field">
+              <label>Đơn vị chủ trì</label>
+              <span>{{ detailEvent()!.organizingUnit }}</span>
+            </div>
+          }
+
+          @if (detailEvent()!.supervisor) {
+            <div class="detail-field">
+              <label>ĐU/BGH Chỉ đạo</label>
+              <span>{{ detailEvent()!.supervisor }}</span>
+            </div>
+          }
+
+          @if (detailEvent()!.vehicleArrangement) {
+            <div class="detail-field">
+              <label>Điều xe</label>
+              <span>{{ detailEvent()!.vehicleArrangement }}</span>
+            </div>
+          }
+
+          <div class="detail-field">
+            <label>Truyền thông</label>
+            <span [class.detail-yes]="detailEvent()!.mediaUnit">{{ detailEvent()!.mediaUnit ? '✓ Có' : '—' }}</span>
+          </div>
+
+          @if (detailEvent()!.meetingCode) {
+            <div class="detail-field">
+              <label>Mã cuộc họp</label>
+              <span>{{ detailEvent()!.meetingCode }}</span>
+            </div>
+          }
+
+          @if (canSeeStatus) {
+            <div class="detail-field">
+              <label>Trạng thái</label>
+              <span class="status-badge" [attr.data-status]="detailEvent()!.status">{{ statusLabel(detailEvent()!.status) }}</span>
+            </div>
+          }
+
+          @if (detailEvent()!.notes) {
+            <div class="detail-field full">
+              <label>Ghi chú</label>
+              <span>{{ detailEvent()!.notes }}</span>
+            </div>
+          }
+
+        </div>
+      </div>
+
+      @if (authService.isEditor() && canEditEvent(detailEvent()!)) {
+        <div class="detail-footer">
+          <button class="btn-edit-detail" (click)="openEditFromDetail()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Chỉnh sửa
+          </button>
+        </div>
+      }
+
+    </div>
+  </div>
 }

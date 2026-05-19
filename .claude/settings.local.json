@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($env:PGPASSWORD = \"postgres\"; psql -h localhost -U postgres -d ictu_calendar -c \"\\\\d events\" 2>&1)",
+      "PowerShell($env:PGPASSWORD = \"postgres\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -h localhost -U postgres -d ictu_calendar -c \"\\\\d events\" 2>&1)",
+      "PowerShell($env:PGPASSWORD = \"postgres\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -h localhost -U postgres -d ictu_calendar -c \"SELECT id, title, status, \\\\\"approvedByName\\\\\", \\\\\"approvedAt\\\\\" FROM events ORDER BY \\\\\"createdAt\\\\\" DESC LIMIT 10;\" 2>&1)"
+    ]
+  }
+}

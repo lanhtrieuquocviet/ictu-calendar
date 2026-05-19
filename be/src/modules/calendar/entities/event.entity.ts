@@ -82,6 +82,15 @@ export class Event {
   @Column({ nullable: true, type: 'text' })
   notes: string;               // Ghi chú thêm
 
+  @Column({ nullable: true, type: 'text' })
+  rejectionReason: string;     // Lý do từ chối (do approver điền)
+
+  @Column({ nullable: true })
+  approvedByName: string;      // Họ tên người phê duyệt (tự động ghi)
+
+  @Column({ type: 'timestamp', nullable: true })
+  approvedAt: Date;            // Thời điểm phê duyệt (tự động ghi)
+
   // ── Quan hệ ───────────────────────────────────────
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
