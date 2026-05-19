@@ -504,7 +504,7 @@
                     <div class="cell-chip"
                       [style.background]="evt.color || '#4f46e5'"
                       [title]="evt.title"
-                      (click)="(authService.isEditor() || authService.isApprover()) ? openEdit(evt) : openDetail(evt)">
+                      (click)="openDetail(evt)">
                       @if (evt.startTime) {
                         <span class="chip-time">{{ formatEventTime(evt).split(' - ')[0] }}</span>
                       }
