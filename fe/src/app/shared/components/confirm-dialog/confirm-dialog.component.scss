@@ -1,0 +1,124 @@
+.cd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: cd-fade-in 0.15s ease;
+}
+
+@keyframes cd-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cd-dialog {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  animation: cd-slide-up 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cd-slide-up {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cd-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+
+  .cd-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.cd-dialog[data-type='danger'] .cd-icon-wrap {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.cd-dialog[data-type='warning'] .cd-icon-wrap {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.cd-dialog[data-type='info'] .cd-icon-wrap {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.cd-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 10px;
+}
+
+.cd-message {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 0 28px;
+}
+
+.cd-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.cd-btn {
+  flex: 1;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  max-width: 140px;
+
+  &:active { transform: scale(0.97); }
+}
+
+.cd-btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+
+  &:hover { background: #e5e7eb; }
+}
+
+.cd-btn-confirm[data-type='danger'] {
+  background: #dc2626;
+  color: #fff;
+
+  &:hover { background: #b91c1c; }
+}
+
+.cd-btn-confirm[data-type='warning'] {
+  background: #d97706;
+  color: #fff;
+
+  &:hover { background: #b45309; }
+}
+
+.cd-btn-confirm[data-type='info'] {
+  background: #2563eb;
+  color: #fff;
+
+  &:hover { background: #1d4ed8; }
+}

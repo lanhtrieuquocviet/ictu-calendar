@@ -1,10 +1,11 @@
-import { IsString, IsDateString, IsBoolean, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsDateString, IsBoolean, IsOptional, IsEnum, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { EventStatus } from '../entities/event.entity';
 
 export class CreateEventDto {
   @ApiProperty({ example: 'Hội nghị Ban chấp hành Đảng bộ ĐHTN' })
   @IsString()
+  @IsNotEmpty({ message: 'Nội dung sự kiện không được để trống' })
   title: string;
 
   @ApiProperty({ example: '2026-05-18' })

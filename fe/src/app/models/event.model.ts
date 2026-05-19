@@ -19,9 +19,11 @@ export interface CalendarEvent {
   color?: string;
   notes?: string;
   rejectionReason?: string;
+  createdByName?: string;
   approvedByName?: string;
   approvedAt?: string;
   userId: string;
+  user?: { id: string; fullName: string; email: string };
   createdAt: string;
   updatedAt: string;
 }

@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { AdminService, CreateUserPayload } from '../../services/admin.service';
 import { AuthService } from '@core/services/auth.service';
 import { User, UserRole, ROLE_LABELS } from '@models/user.model';
+import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
+import { CalendarService, AdminStats } from '@features/calendar/services/calendar.service';
 
 @Component({
   selector: 'app-user-management',
@@ -15,9 +17,13 @@ import { User, UserRole, ROLE_LABELS } from '@models/user.model';
 })
 export class UserManagementComponent implements OnInit {
   private readonly adminService = inject(AdminService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
+  private readonly calendarService = inject(CalendarService);
   readonly authService = inject(AuthService);
 
   users = signal<User[]>([]);
+  stats = signal<AdminStats>({ total: 0, pending: 0, approved: 0, rejected: 0, thisMonth: 0 });
+  statsLoading = signal(true);
   loading = signal(true);
   saving = signal<string | null>(null);
   toast = signal<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -64,6 +70,15 @@ export class UserManagementComponent implements OnInit {
       this.currentUserId = u?.id ?? '';
     });
     this.loadUsers();
+    this.loadStats();
+  }
+
+  loadStats(): void {
+    this.statsLoading.set(true);
+    this.calendarService.getAdminStats().subscribe({
+      next: (res) => { this.stats.set(res.data); this.statsLoading.set(false); },
+      error: () => this.statsLoading.set(false),
+    });
   }
 
   loadUsers(): void {
@@ -191,8 +206,14 @@ export class UserManagementComponent implements OnInit {
   }
 
   // --- Delete ---
-  deleteUser(user: User): void {
-    if (!confirm(`Xóa tài khoản "${user.fullName}"? Hành động này không thể hoàn tác.`)) return;
+  async deleteUser(user: User): Promise<void> {
+    const ok = await this.confirmDialog.confirm({
+      title: 'Xóa tài khoản',
+      message: `Bạn có chắc muốn xóa tài khoản "${user.fullName}"? Hành động này không thể hoàn tác.`,
+      confirmText: 'Xóa',
+      type: 'danger',
+    });
+    if (!ok) return;
     this.saving.set(user.id);
     this.adminService.deleteUser(user.id).subscribe({
       next: () => {

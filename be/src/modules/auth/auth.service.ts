@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -13,6 +13,8 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
+    const existing = await this.usersService.findByEmail(registerDto.email);
+    if (existing) throw new ConflictException('Email đã tồn tại');
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
     const user = await this.usersService.create({
       ...registerDto,
@@ -25,7 +27,10 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.usersService.findByEmail(loginDto.email);
     if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
+    }
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên');
     }
     const payload = { sub: user.id, email: user.email, role: user.role, fullName: user.fullName };
     return {

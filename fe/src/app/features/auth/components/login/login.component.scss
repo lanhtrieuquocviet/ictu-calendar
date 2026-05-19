@@ -139,13 +139,23 @@
 }
 
 .error-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
   font-size: 13px;
-  border-radius: 7px;
+  font-weight: 500;
+  border-radius: 8px;
   padding: 10px 14px;
   margin-bottom: 16px;
+  line-height: 1.45;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
 }
 
 .btn-submit {

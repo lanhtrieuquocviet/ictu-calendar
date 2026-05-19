@@ -1,0 +1,38 @@
+<div class="cd-backdrop" (click)="cancelled.emit()">
+  <div class="cd-dialog" [attr.data-type]="type" (click)="$event.stopPropagation()">
+
+    <div class="cd-icon-wrap">
+      @if (type === 'danger') {
+        <svg class="cd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      }
+      @if (type === 'warning') {
+        <svg class="cd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      }
+      @if (type === 'info') {
+        <svg class="cd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      }
+    </div>
+
+    <h3 class="cd-title">{{ title }}</h3>
+    <p class="cd-message">{{ message }}</p>
+
+    <div class="cd-actions">
+      <button class="cd-btn cd-btn-cancel" (click)="cancelled.emit()">{{ cancelText }}</button>
+      <button class="cd-btn cd-btn-confirm" [attr.data-type]="type" (click)="confirmed.emit()">{{ confirmText }}</button>
+    </div>
+
+  </div>
+</div>

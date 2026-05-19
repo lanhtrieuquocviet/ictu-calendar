@@ -179,6 +179,21 @@
 .date-chip { min-width: 220px; }
 .time-chip { min-width: 96px; justify-content: center; }
 
+.all-day-chip {
+  gap: 6px;
+
+  svg { opacity: 0.55; }
+
+  &.active {
+    background: #dbeafe;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+    svg { opacity: 1; }
+  }
+
+  &:hover:not(.active) { background: #e8edf5; border-color: #cbd5e1; }
+}
+
 .time-input {
   min-width: 96px;
   text-align: center;
@@ -361,6 +376,22 @@
   white-space: nowrap;
 }
 
+.slot-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.time-error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #dc2626;
+  animation: fadeIn 0.15s ease;
+}
+
 // ── Details ─────────────────────────────────────────────────────
 
 .details-toggle {
@@ -490,6 +521,21 @@
 }
 
 // ── Approval section ────────────────────────────────────────────
+
+.creator-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  font-size: 13px;
+  color: #374151;
+  svg { color: #3b82f6; flex-shrink: 0; }
+  strong { color: #1d4ed8; font-weight: 600; }
+}
 
 .approval-section {
   margin-top: 16px;

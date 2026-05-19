@@ -35,6 +35,31 @@ export class EventFormComponent implements OnInit, OnDestroy {
   get canEditContent(): boolean  { return this.authService.isEditor(); }
   get canApprove(): boolean      { return this.authService.isApprover() && this.isEdit; }
   get approverOnly(): boolean    { return this.canApprove && !this.canEditContent; }
+  get isAllDay(): boolean        { return !!this.form.get('allDay')?.value; }
+
+  endTimeError = false;
+
+  private timeToMinutes(t: string): number {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  isValidEndSlot(slot: string): boolean {
+    const start = this.form.get('startTime')?.value;
+    if (!start) return true;
+    return this.timeToMinutes(slot) > this.timeToMinutes(start);
+  }
+
+  toggleAllDay(): void {
+    const next = !this.isAllDay;
+    this.form.patchValue({ allDay: next, startTime: '', endTime: '' });
+    if (next) {
+      this.startTimeInput = '';
+      this.endTimeInput = '';
+      this.showStartTimePicker = false;
+      this.showEndTimePicker = false;
+    }
+  }
 
   get modalTitle(): string {
     if (!this.isEdit) return 'Thêm sự kiện mới';
@@ -166,11 +191,12 @@ export class EventFormComponent implements OnInit, OnDestroy {
     organizingUnit: [''],
     location: [''],
     vehicleArrangement: [''],
-    mediaUnit: [false],
+    mediaUnit: [''],
     supervisor: [''],
     approvedBy: [''],
     meetingCode: [''],
     status: ['pending'],
+    color: ['#4f46e5'],
     notes: [''],
   });
 
@@ -185,7 +211,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
       this.form.patchValue({
         ...this.event,
         eventDate: this.event.eventDate?.slice(0, 10) ?? '',
-        mediaUnit: !!this.event.mediaUnit,
+        mediaUnit: this.event.mediaUnit || '',
       });
       const detailFields = ['meetingCode', 'participants', 'organizingUnit', 'vehicleArrangement', 'mediaUnit', 'supervisor', 'approvedBy', 'notes'] as const;
       this.showDetails = detailFields.some(f => !!(this.event as any)[f]);
@@ -307,24 +333,46 @@ export class EventFormComponent implements OnInit, OnDestroy {
   onEndTimeBlur(): void {
     setTimeout(() => {
       const normalized = this.parseTimeInput(this.endTimeInput);
-      if (normalized) { this.form.patchValue({ endTime: normalized }); this.endTimeInput = normalized; }
-      else if (!this.endTimeInput.trim()) { this.form.patchValue({ endTime: '' }); }
-      else { this.endTimeInput = this.form.get('endTime')?.value || ''; }
+      if (normalized) {
+        if (!this.isValidEndSlot(normalized)) {
+          this.form.patchValue({ endTime: '' });
+          this.endTimeInput = '';
+          this.endTimeError = true;
+        } else {
+          this.form.patchValue({ endTime: normalized });
+          this.endTimeInput = normalized;
+          this.endTimeError = false;
+        }
+      } else if (!this.endTimeInput.trim()) {
+        this.form.patchValue({ endTime: '' });
+        this.endTimeError = false;
+      } else {
+        this.endTimeInput = this.form.get('endTime')?.value || '';
+      }
       this.showEndTimePicker = false;
     }, 200);
   }
 
   selectStartTime(slot: string, e: MouseEvent): void {
     e.stopPropagation();
-    this.form.patchValue({ startTime: slot });
+    const currentEnd = this.form.get('endTime')?.value;
+    if (currentEnd && this.timeToMinutes(currentEnd) <= this.timeToMinutes(slot)) {
+      this.form.patchValue({ startTime: slot, endTime: '' });
+      this.endTimeInput = '';
+    } else {
+      this.form.patchValue({ startTime: slot });
+    }
     this.startTimeInput = slot;
     this.showStartTimePicker = false;
+    this.endTimeError = false;
   }
 
   selectEndTime(slot: string, e: MouseEvent): void {
     e.stopPropagation();
+    if (!this.isValidEndSlot(slot)) return;
     this.form.patchValue({ endTime: slot });
     this.endTimeInput = slot;
+    this.endTimeError = false;
     this.showEndTimePicker = false;
   }
 
@@ -357,7 +405,12 @@ export class EventFormComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
     const raw = this.form.value;
-    const data = { ...raw, mediaUnit: raw.mediaUnit ? 'Truyền thông' : '' } as CreateEventRequest;
+    const data = {
+      ...raw,
+      mediaUnit: raw.mediaUnit || '',
+      startTime: raw.startTime || null,
+      endTime:   raw.endTime   || null,
+    } as CreateEventRequest;
     const req$ = this.isEdit
       ? this.calendarService.updateEvent(this.event!.id, data)
       : this.calendarService.createEvent(data);

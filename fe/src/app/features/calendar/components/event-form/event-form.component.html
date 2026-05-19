@@ -70,7 +70,23 @@
                 }
               </div>
 
+              <!-- All-day toggle -->
+              <button type="button" class="picker-chip all-day-chip"
+                [class.active]="isAllDay"
+                [disabled]="approverOnly"
+                (click)="toggleAllDay()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="4"/>
+                  <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                  <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+                Cả ngày
+              </button>
+
               <!-- Time range -->
+              @if (!isAllDay) {
               <div class="time-range">
                 <div class="picker-wrap" data-picker="start">
                   <input type="text" class="time-input" [class.open]="showStartTimePicker"
@@ -112,6 +128,8 @@
                       @for (slot of timeSlots; track slot) {
                         <button type="button" class="time-opt"
                           [class.active]="slot === form.get('endTime')?.value"
+                          [class.slot-disabled]="!isValidEndSlot(slot)"
+                          [disabled]="!isValidEndSlot(slot)"
                           (click)="selectEndTime(slot, $event)">
                           <span>{{ formatTime(slot) }}</span>
                           @if (getSlotDuration(slot)) {
@@ -123,8 +141,17 @@
                   }
                 </div>
               </div>
+              }
 
             </div>
+            @if (endTimeError) {
+              <div class="time-error">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                Giờ kết thúc phải sau giờ bắt đầu
+              </div>
+            }
           </div>
 
           <!-- Location -->
@@ -178,7 +205,14 @@
               </app-autocomplete-input>
             </div>
 
-            
+            <div class="field">
+              <label>Truyền thông</label>
+              <app-autocomplete-input
+                formControlName="mediaUnit"
+                placeholder="Trung tâm TTTS"
+                [suggestions]="suggestions.mediaUnit">
+              </app-autocomplete-input>
+            </div>
 
             <div class="field">
               <label>ĐU/BGH Chỉ đạo</label>
@@ -214,6 +248,14 @@
         <!-- Approval section: chỉ hiện cho approver / admin khi đang edit -->
         @if (canApprove) {
           <div class="approval-section">
+            @if (event?.createdByName || event?.user?.fullName) {
+              <div class="creator-info">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>Người tạo: <strong>{{ event?.createdByName || event?.user?.fullName }}</strong></span>
+              </div>
+            }
             <div class="approval-header">
               <span class="approval-title">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">

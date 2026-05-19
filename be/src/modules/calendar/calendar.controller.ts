@@ -36,8 +36,31 @@ export class CalendarController {
   @ApiOperation({ summary: 'Xem tất cả sự kiện để quản lý (admin / editor / approver)' })
   @ApiQuery({ name: 'from', required: false })
   @ApiQuery({ name: 'to', required: false })
-  findManaged(@Query('from') from?: string, @Query('to') to?: string) {
-    return this.calendarService.findAll(from, to);
+  @ApiQuery({ name: 'status', required: false, enum: EventStatus })
+  findManaged(@Query('from') from?: string, @Query('to') to?: string, @Query('status') status?: EventStatus) {
+    return this.calendarService.findAll(from, to, status);
+  }
+
+  // ── Lịch của tôi: editor xem sự kiện do mình tạo ──
+
+  @Get('events/mine')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'editor')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xem sự kiện do mình tạo (admin / editor)' })
+  findMine(@Req() req: any) {
+    return this.calendarService.findMine(req.user.sub);
+  }
+
+  // ── Thống kê: admin ──────────────────────────────
+
+  @Get('stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Thống kê sự kiện (admin)' })
+  getStats() {
+    return this.calendarService.getStats();
   }
 
   @Get('events/:id')

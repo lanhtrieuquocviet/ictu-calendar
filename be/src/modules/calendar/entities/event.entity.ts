@@ -86,6 +86,9 @@ export class Event {
   rejectionReason: string;     // Lý do từ chối (do approver điền)
 
   @Column({ nullable: true })
+  createdByName: string;       // Họ tên người tạo lịch (tự động ghi)
+
+  @Column({ nullable: true })
   approvedByName: string;      // Họ tên người phê duyệt (tự động ghi)
 
   @Column({ type: 'timestamp', nullable: true })
