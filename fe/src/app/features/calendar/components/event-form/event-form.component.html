@@ -9,98 +9,247 @@
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
         <div class="form-grid">
 
+          <!-- Title -->
           <div class="field full">
             <label>Nội dung *</label>
             <input type="text" formControlName="title" placeholder="Tên cuộc họp / sự kiện" />
           </div>
 
-          <div class="field">
-            <label>Ngày *</label>
-            <input type="date" formControlName="eventDate" />
-          </div>
-
-          <div class="field">
-            <label>Mã cuộc họp</label>
-            <input type="text" formControlName="meetingCode" placeholder="VD: 26.21.01" />
-          </div>
-
-          <div class="field">
-            <label>Giờ bắt đầu</label>
-            <input type="time" formControlName="startTime" />
-          </div>
-
-          <div class="field">
-            <label>Giờ kết thúc</label>
-            <input type="time" formControlName="endTime" />
-          </div>
-
+          <!-- Datetime row -->
           <div class="field full">
-            <label>Thành phần tham dự</label>
-            <textarea formControlName="participants" placeholder="Đ/c Nguyễn Văn A, Trưởng phòng..."></textarea>
+            <label>Thời gian *</label>
+            <div class="datetime-row">
+
+              <!-- Date picker -->
+              <div class="picker-wrap" data-picker="date">
+                <button type="button" class="picker-chip date-chip" [class.open]="showDatePicker"
+                  (click)="toggleDatePicker($event)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  {{ displayDate }}
+                </button>
+
+                @if (showDatePicker) {
+                  <div class="calendar-popup">
+                    <div class="cal-nav">
+                      <button type="button" class="cal-nav-btn" (click)="prevMonth($event)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="15 18 9 12 15 6"/>
+                        </svg>
+                      </button>
+                      <span class="cal-month">{{ calendarMonthLabel }}</span>
+                      <button type="button" class="cal-nav-btn" (click)="nextMonth($event)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="cal-grid">
+                      @for (dn of dayNames; track dn) {
+                        <div class="cal-dn">{{ dn }}</div>
+                      }
+                      @for (day of calendarDays; track $index) {
+                        @if (day) {
+                          <button type="button" class="cal-day"
+                            [class.today]="isToday(day)"
+                            [class.selected]="isSelectedDate(day)"
+                            (click)="selectDate(day, $event)">
+                            {{ day.getDate() }}
+                          </button>
+                        } @else {
+                          <span></span>
+                        }
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Start time picker -->
+              <div class="picker-wrap" data-picker="start">
+                <button type="button" class="picker-chip time-chip" [class.open]="showStartTimePicker"
+                  (click)="toggleStartTimePicker($event)">
+                  {{ displayStartTime }}
+                </button>
+                @if (showStartTimePicker) {
+                  <div class="time-dropdown">
+                    @for (slot of timeSlots; track slot) {
+                      <button type="button" class="time-opt"
+                        [class.active]="slot === form.get('startTime')?.value"
+                        (click)="selectStartTime(slot, $event)">
+                        {{ formatTime(slot) }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+
+              <span class="time-sep">—</span>
+
+              <!-- End time picker -->
+              <div class="picker-wrap" data-picker="end">
+                <button type="button" class="picker-chip time-chip" [class.open]="showEndTimePicker"
+                  (click)="toggleEndTimePicker($event)">
+                  {{ displayEndTime }}
+                </button>
+                @if (showEndTimePicker) {
+                  <div class="time-dropdown end-dropdown">
+                    @for (slot of timeSlots; track slot) {
+                      <button type="button" class="time-opt"
+                        [class.active]="slot === form.get('endTime')?.value"
+                        (click)="selectEndTime(slot, $event)">
+                        <span>{{ formatTime(slot) }}</span>
+                        @if (getSlotDuration(slot)) {
+                          <span class="slot-dur">{{ getSlotDuration(slot) }}</span>
+                        }
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+
+            </div>
           </div>
 
-          <div class="field">
-            <label>Đơn vị chủ trì</label>
-            <input type="text" formControlName="organizingUnit" placeholder="Phòng KHCN&HTQT" />
-          </div>
-
-          <div class="field">
+          <!-- Location -->
+          <div class="field full">
             <label>Địa điểm</label>
-            <input type="text" formControlName="location" placeholder="Phòng họp số 1" />
-          </div>
-
-          <div class="field">
-            <label>Điều xe</label>
-            <input type="text" formControlName="vehicleArrangement" placeholder="Xe 00715" />
-          </div>
-
-          <div class="field">
-            <label>Truyền thông</label>
-            <input type="text" formControlName="mediaUnit" placeholder="Trung tâm TTTS" />
-          </div>
-
-          <div class="field">
-            <label>ĐU/BGH Chỉ đạo</label>
-            <input type="text" formControlName="supervisor" placeholder="PGS.TS. Phùng Trung Nghĩa" />
-          </div>
-
-          <div class="field">
-            <label>ĐU/BGH Phê duyệt</label>
-            <input type="text" formControlName="approvedBy" placeholder="Đồng ý" />
-          </div>
-
-          <div class="field">
-            <label>Trạng thái</label>
-            <select formControlName="status">
-              <option value="pending">Chờ duyệt</option>
-              <option value="approved">Đồng ý</option>
-              <option value="rejected">Từ chối</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Màu hiển thị</label>
-            <input type="color" formControlName="color" />
-          </div>
-
-          <div class="field full">
-            <label>Ghi chú</label>
-            <textarea formControlName="notes" placeholder="Ghi chú thêm..."></textarea>
+            <app-autocomplete-input
+              formControlName="location"
+              placeholder="Phòng họp số 1"
+              [suggestions]="suggestions.location">
+            </app-autocomplete-input>
           </div>
 
         </div>
 
-        @if (error) {
-          <div class="error-msg">{{ error }}</div>
+        <button type="button" class="details-toggle" (click)="toggleDetails()">
+          <svg class="toggle-icon" [class.open]="showDetails"
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+          {{ showDetails ? 'Ẩn chi tiết' : 'Thêm chi tiết' }}
+        </button>
+
+        @if (showDetails) {
+          <div class="form-grid details-section">
+
+            <div class="field">
+              <label>Mã cuộc họp</label>
+              <input type="text" formControlName="meetingCode" placeholder="VD: 26.21.01" />
+            </div>
+
+            <div class="field">
+              <label>Đơn vị chủ trì</label>
+              <app-autocomplete-input
+                formControlName="organizingUnit"
+                placeholder="Phòng KHCN&HTQT"
+                [suggestions]="suggestions.organizingUnit">
+              </app-autocomplete-input>
+            </div>
+
+            <div class="field full">
+              <label>Thành phần tham dự</label>
+              <textarea formControlName="participants" placeholder="Đ/c Nguyễn Văn A, Trưởng phòng..."></textarea>
+            </div>
+
+            <div class="field">
+              <label>Điều xe</label>
+              <app-autocomplete-input
+                formControlName="vehicleArrangement"
+                placeholder="Xe 00715"
+                [suggestions]="suggestions.vehicleArrangement">
+              </app-autocomplete-input>
+            </div>
+
+            <div class="field">
+              <label>Truyền thông</label>
+              <app-autocomplete-input
+                formControlName="mediaUnit"
+                placeholder="Trung tâm TTTS"
+                [suggestions]="suggestions.mediaUnit">
+              </app-autocomplete-input>
+            </div>
+
+            <div class="field">
+              <label>ĐU/BGH Chỉ đạo</label>
+              <app-autocomplete-input
+                formControlName="supervisor"
+                placeholder="PGS.TS. Phùng Trung Nghĩa"
+                [suggestions]="suggestions.supervisor">
+              </app-autocomplete-input>
+            </div>
+
+            <div class="field">
+              <label>Màu hiển thị</label>
+              <input type="color" formControlName="color" />
+            </div>
+
+            <div class="field full">
+              <label>Ghi chú</label>
+              <textarea formControlName="notes" placeholder="Ghi chú thêm..."></textarea>
+            </div>
+
+          </div>
+        }
+
+        <!-- Approval section: chỉ hiện cho approver / admin khi đang edit -->
+        @if (canApprove) {
+          <div class="approval-section">
+            <div class="approval-header">
+              <span class="approval-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>
+                </svg>
+                Phê duyệt
+              </span>
+              <span class="status-badge" [attr.data-status]="form.get('status')?.value">
+                {{ statusLabel }}
+              </span>
+            </div>
+
+            <div class="field" style="margin-top:12px">
+              <label>ĐU/BGH Phê duyệt (người ký)</label>
+              <app-autocomplete-input
+                formControlName="approvedBy"
+                placeholder="VD: PGS.TS. Phùng Trung Nghĩa"
+                [suggestions]="suggestions.supervisor">
+              </app-autocomplete-input>
+            </div>
+          </div>
+        }
+
+        @if (error || approveError) {
+          <div class="error-msg">{{ error || approveError }}</div>
         }
       </form>
     </div>
 
     <div class="modal-footer">
       <button type="button" class="btn-cancel" (click)="closed.emit()">Hủy</button>
-      <button type="button" class="btn-save" [disabled]="loading || form.invalid" (click)="onSubmit()">
-        {{ loading ? 'Đang lưu...' : (isEdit ? 'Cập nhật' : 'Thêm mới') }}
-      </button>
+
+      @if (canApprove) {
+        <button type="button" class="btn-reject" [disabled]="approving" (click)="doApprove('rejected')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Từ chối
+        </button>
+        <button type="button" class="btn-approve" [disabled]="approving" (click)="doApprove('approved')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          {{ approving ? 'Đang lưu...' : 'Duyệt' }}
+        </button>
+      }
+
+      @if (canEditContent) {
+        <button type="button" class="btn-save" [disabled]="loading || form.invalid" (click)="onSubmit()">
+          {{ loading ? 'Đang lưu...' : (isEdit ? 'Cập nhật' : 'Thêm mới') }}
+        </button>
+      }
     </div>
 
   </div>

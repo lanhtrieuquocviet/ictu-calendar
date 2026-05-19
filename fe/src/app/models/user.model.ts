@@ -1,8 +1,17 @@
+export type UserRole = 'admin' | 'editor' | 'approver' | 'user';
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  admin: 'Quản trị viên',
+  editor: 'Người tạo lịch',
+  approver: 'Người phê duyệt',
+  user: 'Người dùng',
+};
+
 export interface User {
   id: string;
   fullName: string;
   email: string;
-  role: 'admin' | 'user';
+  role: UserRole;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

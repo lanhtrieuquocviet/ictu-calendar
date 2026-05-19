@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '@env/environment';
 import { LoginRequest, RegisterRequest, AuthResponse } from '@models/auth.model';
-import { User } from '@models/user.model';
+import { User, UserRole } from '@models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -44,8 +44,21 @@ export class AuthService {
     return !!this.getToken();
   }
 
+  hasRole(...roles: UserRole[]): boolean {
+    const role = this.currentUser$.value?.role;
+    return !!role && roles.includes(role);
+  }
+
   isAdmin(): boolean {
-    return this.currentUser$.value?.role === 'admin';
+    return this.hasRole('admin');
+  }
+
+  isEditor(): boolean {
+    return this.hasRole('admin', 'editor');
+  }
+
+  isApprover(): boolean {
+    return this.hasRole('admin', 'approver');
   }
 
   getCurrentUser(): Observable<User | null> {

@@ -1,0 +1,340 @@
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="brand-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>ICTU CALENDAR</h1>
+        <p>Trường Đại học Công nghệ thông tin và Truyền thông</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a class="btn-back" routerLink="/calendar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Về lịch
+      </a>
+      <button class="btn-auth" (click)="authService.logout()">Đăng xuất</button>
+    </div>
+  </header>
+
+  <!-- Page Title Bar -->
+  <div class="page-title-bar">
+    <div class="page-title-inner">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span>Quản lý người dùng</span>
+      <span class="user-count">{{ users().length }} tài khoản</span>
+    </div>
+    <button class="btn-create" (click)="openCreateModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Thêm người dùng
+    </button>
+  </div>
+
+  <!-- Toolbar: Search & Filter -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Tìm theo tên hoặc email..."
+        autocomplete="off"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)" />
+      @if (search()) {
+        <button class="search-clear" (click)="search.set('')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      }
+    </div>
+
+    <select class="filter-select" [value]="filterRole()" (change)="filterRole.set($any($event.target).value)">
+      <option value="" [selected]="filterRole() === ''">Tất cả quyền</option>
+      @for (role of ROLES; track role) {
+        <option [value]="role" [selected]="filterRole() === role">{{ ROLE_LABELS[role] }}</option>
+      }
+    </select>
+
+    <select class="filter-select" [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
+      <option value="all" [selected]="filterStatus() === 'all'">Tất cả trạng thái</option>
+      <option value="active" [selected]="filterStatus() === 'active'">Hoạt động</option>
+      <option value="inactive" [selected]="filterStatus() === 'inactive'">Đã khóa</option>
+    </select>
+
+    @if (search() || filterRole() || filterStatus() !== 'all') {
+      <button class="btn-clear-filter" (click)="clearFilters()">Xóa bộ lọc</button>
+    }
+
+    @if (filteredUsers().length !== users().length) {
+      <span class="filter-result">{{ filteredUsers().length }} / {{ users().length }} kết quả</span>
+    }
+  </div>
+
+  <!-- Content -->
+  <main class="content">
+
+    @if (loading()) {
+      <div class="skeleton-wrap">
+        @for (_ of [1,2,3,4,5]; track $index) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    } @else if (users().length === 0) {
+      <div class="empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <line x1="22" y1="11" x2="16" y2="11"/>
+        </svg>
+        <p>Chưa có người dùng nào.</p>
+        <button class="btn-create" (click)="openCreateModal()">Thêm người dùng đầu tiên</button>
+      </div>
+    } @else if (filteredUsers().length === 0) {
+      <div class="empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          <line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+        <p>Không tìm thấy kết quả phù hợp.</p>
+        <button class="btn-link" (click)="clearFilters()">Xóa bộ lọc</button>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>Họ tên</th>
+              <th>Email</th>
+              <th>Quyền</th>
+              <th>Trạng thái</th>
+              <th>Ngày tạo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of filteredUsers(); track user.id) {
+              <tr [class.inactive]="!user.isActive" [class.saving]="saving() === user.id">
+                <td class="td-name">
+                  <div class="avatar" [class.inactive-avatar]="!user.isActive">
+                    {{ user.fullName.charAt(0).toUpperCase() }}
+                  </div>
+                  <span>{{ user.fullName }}</span>
+                  @if (user.id === currentUserId) {
+                    <span class="badge-you">Bạn</span>
+                  }
+                </td>
+                <td class="td-email">{{ user.email }}</td>
+                <td class="td-role">
+                  <select
+                    [value]="user.role"
+                    [disabled]="user.id === currentUserId || saving() === user.id"
+                    (change)="onRoleChange(user, $any($event.target).value)"
+                    class="role-select"
+                    [attr.data-role]="user.role">
+                    @for (role of ROLES; track role) {
+                      <option [value]="role" [selected]="user.role === role">{{ ROLE_LABELS[role] }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="td-status">
+                  <button
+                    class="toggle-btn"
+                    [class.active]="user.isActive"
+                    [disabled]="user.id === currentUserId || saving() === user.id"
+                    (click)="toggleActive(user)"
+                    [title]="user.isActive ? 'Nhấn để khóa' : 'Nhấn để mở khóa'">
+                    <span class="toggle-dot"></span>
+                    {{ user.isActive ? 'Hoạt động' : 'Đã khóa' }}
+                  </button>
+                </td>
+                <td class="td-date">{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+                <td class="td-actions">
+                  @if (user.id !== currentUserId) {
+                    <button
+                      class="btn-icon"
+                      title="Đặt lại mật khẩu"
+                      [disabled]="saving() === user.id"
+                      (click)="openResetPassword(user)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                    </button>
+                    <button
+                      class="btn-icon btn-delete"
+                      title="Xóa tài khoản"
+                      [disabled]="saving() === user.id"
+                      (click)="deleteUser(user)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        <path d="M10 11v6M14 11v6"/>
+                        <path d="M9 6V4h6v2"/>
+                      </svg>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </main>
+
+  <!-- Toast -->
+  @if (toast()) {
+    <div class="toast" [class.error]="toast()!.type === 'error'">{{ toast()!.msg }}</div>
+  }
+
+</div>
+
+<!-- ===== Modal: Tạo user mới ===== -->
+@if (showCreateModal()) {
+  <div class="modal-backdrop" (click)="closeCreateModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Thêm người dùng mới</h2>
+        <button class="modal-close" (click)="closeCreateModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group" [class.has-error]="createErrors().fullName">
+          <label>Họ tên <span class="required">*</span></label>
+          <input
+            type="text"
+            placeholder="Nguyễn Văn A"
+            autocomplete="off"
+            [value]="createForm().fullName"
+            (input)="updateCreateForm('fullName', $any($event.target).value)" />
+          @if (createErrors().fullName) {
+            <span class="error-msg">{{ createErrors().fullName }}</span>
+          }
+        </div>
+
+        <div class="form-group" [class.has-error]="createErrors().email">
+          <label>Email <span class="required">*</span></label>
+          <input
+            type="email"
+            placeholder="user@ictu.edu.vn"
+            autocomplete="off"
+            [value]="createForm().email"
+            (input)="updateCreateForm('email', $any($event.target).value)" />
+          @if (createErrors().email) {
+            <span class="error-msg">{{ createErrors().email }}</span>
+          }
+        </div>
+
+        <div class="form-group" [class.has-error]="createErrors().password">
+          <label>Mật khẩu <span class="required">*</span></label>
+          <input
+            type="password"
+            placeholder="Tối thiểu 6 ký tự"
+            autocomplete="new-password"
+            [value]="createForm().password"
+            (input)="updateCreateForm('password', $any($event.target).value)" />
+          @if (createErrors().password) {
+            <span class="error-msg">{{ createErrors().password }}</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label>Quyền hạn</label>
+          <select
+            [value]="createForm().role"
+            (change)="updateCreateForm('role', $any($event.target).value)">
+            @for (role of ROLES; track role) {
+              <option [value]="role" [selected]="createForm().role === role">{{ ROLE_LABELS[role] }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeCreateModal()" [disabled]="creating()">Hủy</button>
+        <button class="btn-submit" (click)="submitCreate()" [disabled]="creating()">
+          @if (creating()) { Đang tạo... } @else { Tạo tài khoản }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== Modal: Đặt lại mật khẩu ===== -->
+@if (resetUserId()) {
+  <div class="modal-backdrop" (click)="closeResetPassword()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Đặt lại mật khẩu</h2>
+        <button class="modal-close" (click)="closeResetPassword()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        @if (resetUser()) {
+          <p class="reset-target">
+            Đặt mật khẩu mới cho <strong>{{ resetUser()!.fullName }}</strong>
+          </p>
+        }
+
+        <div class="form-group">
+          <label>Mật khẩu mới <span class="required">*</span></label>
+          <input
+            type="password"
+            placeholder="Tối thiểu 6 ký tự"
+            [value]="newPassword()"
+            (input)="newPassword.set($any($event.target).value); resetError.set('')" />
+        </div>
+
+        <div class="form-group">
+          <label>Xác nhận mật khẩu <span class="required">*</span></label>
+          <input
+            type="password"
+            placeholder="Nhập lại mật khẩu"
+            [value]="confirmPassword()"
+            (input)="confirmPassword.set($any($event.target).value); resetError.set('')" />
+        </div>
+
+        @if (resetError()) {
+          <p class="error-msg">{{ resetError() }}</p>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeResetPassword()" [disabled]="resetting()">Hủy</button>
+        <button class="btn-submit" (click)="submitResetPassword()" [disabled]="resetting()">
+          @if (resetting()) { Đang lưu... } @else { Đặt lại mật khẩu }
+        </button>
+      </div>
+    </div>
+  </div>
+}

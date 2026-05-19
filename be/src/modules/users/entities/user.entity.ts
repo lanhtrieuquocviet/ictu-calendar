@@ -8,7 +8,9 @@ import {
 
 export enum UserRole {
   ADMIN = 'admin',
-  USER = 'user',
+  EDITOR = 'editor',      // Tạo / sửa / xóa lịch
+  APPROVER = 'approver',  // Chỉ phê duyệt lịch
+  USER = 'user',          // Chỉ xem (mặc định)
 }
 
 @Entity('users')

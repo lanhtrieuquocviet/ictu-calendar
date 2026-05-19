@@ -22,4 +22,8 @@ export class CalendarService {
   deleteEvent(id: string): Observable<void> {
     return this.api.delete<void>(`calendar/events/${id}`);
   }
+
+  approveEvent(id: string, payload: { status: string; approvedBy?: string }): Observable<{ data: CalendarEvent }> {
+    return this.api.patch<{ data: CalendarEvent }>(`calendar/events/${id}/approve`, payload);
+  }
 }

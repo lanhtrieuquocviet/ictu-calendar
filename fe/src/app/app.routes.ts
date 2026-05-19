@@ -16,6 +16,10 @@ export const routes: Routes = [
       import('./features/calendar/calendar.routes').then((m) => m.calendarRoutes),
   },
   {
+    path: 'admin',
+    loadChildren: () => import('./features/admin/admin.routes').then((m) => m.adminRoutes),
+  },
+  {
     path: '**',
     redirectTo: 'calendar',
   },

@@ -1,0 +1,22 @@
+<div class="ac-wrap">
+  <input
+    class="ac-input"
+    type="text"
+    [placeholder]="placeholder"
+    [value]="value()"
+    [disabled]="isDisabled"
+    (input)="onInput($event)"
+    (focus)="onFocus()"
+    (blur)="onBlur()"
+  />
+
+  @if (isOpen() && filtered().length > 0) {
+    <div class="ac-dropdown">
+      @for (opt of filtered(); track opt) {
+        <button type="button" class="ac-opt" (mousedown)="select(opt, $event)">
+          {{ opt }}
+        </button>
+      }
+    </div>
+  }
+</div>

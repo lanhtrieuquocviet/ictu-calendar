@@ -3,12 +3,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
   app.setGlobalPrefix(configService.get('API_PREFIX', 'api/v1'));
+
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -18,8 +21,11 @@ async function bootstrap() {
     }),
   );
 
+  const isDev = configService.get('NODE_ENV') === 'development';
   app.enableCors({
-    origin: configService.get('FRONTEND_URL', 'http://localhost:4200'),
+    origin: isDev
+      ? (origin, callback) => callback(null, true)
+      : configService.get('FRONTEND_URL', 'http://localhost:4200'),
     credentials: true,
   });
 

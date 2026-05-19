@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -23,15 +23,40 @@ export class LoginComponent {
 
   loading = false;
   error = '';
+  showPassword = signal(false);
+
+  get emailCtrl() { return this.form.controls.email; }
+  get passwordCtrl() { return this.form.controls.password; }
+
+  get emailError(): string {
+    const c = this.emailCtrl;
+    if (!c.touched) return '';
+    if (c.hasError('required')) return 'Email không được để trống.';
+    if (c.hasError('email')) return 'Email không đúng định dạng.';
+    return '';
+  }
+
+  get passwordError(): string {
+    const c = this.passwordCtrl;
+    if (!c.touched) return '';
+    if (c.hasError('required')) return 'Mật khẩu không được để trống.';
+    if (c.hasError('minlength')) return 'Mật khẩu tối thiểu 6 ký tự.';
+    return '';
+  }
+
+  togglePassword(): void {
+    this.showPassword.update(v => !v);
+  }
 
   onSubmit(): void {
+    this.form.markAllAsTouched();
     if (this.form.invalid) return;
     this.loading = true;
     this.error = '';
     this.authService.login(this.form.value as any).subscribe({
       next: () => this.router.navigate(['/calendar']),
       error: (err) => {
-        this.error = err.error?.message || 'Login failed';
+        this.error = err.error?.message || 'Email hoặc mật khẩu không chính xác.';
         this.loading = false;
       },
     });
