@@ -33,15 +33,23 @@ export class CalendarService {
     return this.eventRepository.save(event);
   }
 
-  async findAll(from?: string, to?: string, status?: EventStatus): Promise<Event[]> {
-    const where: any = {};
-    if (from && to) where.eventDate = Between(new Date(from), new Date(to));
-    if (status) where.status = status;
-    return this.eventRepository.find({
-      where,
-      order: { eventDate: 'ASC', startTime: 'ASC' },
-      relations: ['user'],
-    });
+  async findAll(from?: string, to?: string, status?: EventStatus, q?: string): Promise<Event[]> {
+    const qb = this.eventRepository.createQueryBuilder('event')
+      .leftJoinAndSelect('event.user', 'user')
+      .orderBy('event.eventDate', 'ASC')
+      .addOrderBy('event.startTime', 'ASC');
+
+    if (from && to) qb.andWhere('event.eventDate BETWEEN :from AND :to', { from, to });
+    if (status) qb.andWhere('event.status = :status', { status });
+    if (q) {
+      qb.andWhere(
+        `(event.title ILIKE :q OR event.location ILIKE :q OR event.organizingUnit ILIKE :q
+          OR event.participants ILIKE :q OR event.createdByName ILIKE :q OR event.meetingCode ILIKE :q)`,
+        { q: `%${q}%` },
+      );
+    }
+
+    return qb.getMany();
   }
 
   async findOne(id: string): Promise<Event> {

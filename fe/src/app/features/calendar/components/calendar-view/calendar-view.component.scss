@@ -413,6 +413,68 @@
   }
 }
 
+/* ── Toolbar right group ─────────────────────────────────── */
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Search ──────────────────────────────────────────────── */
+.search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: #94a3b8;
+  pointer-events: none;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.search-input {
+  height: 36px;
+  padding: 0 32px 0 32px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 13px;
+  font-family: inherit;
+  width: 190px;
+  transition: border-color 0.15s, box-shadow 0.15s, width 0.2s;
+  outline: none;
+
+  &::placeholder { color: #94a3b8; }
+
+  &:focus {
+    border-color: #1a3a6b;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(26, 58, 107, 0.08);
+    width: 250px;
+  }
+}
+
+.search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  &:hover { color: #475569; background: #f1f5f9; }
+}
+
 /* ── Period navigation ─────────────────────────────────── */
 .period-nav {
   display: flex;

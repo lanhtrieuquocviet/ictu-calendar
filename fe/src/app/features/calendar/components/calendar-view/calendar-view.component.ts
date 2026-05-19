@@ -61,6 +61,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   createDraft = signal<Record<string, any> | null>(null);
   statusFilter = signal<string>('all');
   myStatusFilter = signal<string>('all');
+  searchKeyword = signal<string>('');
 
   private authSub?: Subscription;
 
@@ -74,12 +75,35 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   get filteredEvents(): CalendarEvent[] {
     const f = this.statusFilter();
-    return f === 'all' ? this.allEvents : this.allEvents.filter(e => e.status === f);
+    const q = this.searchKeyword().toLowerCase().trim();
+    let events = f === 'all' ? this.allEvents : this.allEvents.filter(e => e.status === f);
+    if (q) events = events.filter(e => this.matchKeyword(e, q));
+    return events;
   }
 
   get filteredMyEvents(): CalendarEvent[] {
     const f = this.myStatusFilter();
-    return f === 'all' ? this.myEvents() : this.myEvents().filter(e => e.status === f);
+    const q = this.searchKeyword().toLowerCase().trim();
+    let events = f === 'all' ? this.myEvents() : this.myEvents().filter(e => e.status === f);
+    if (q) events = events.filter(e => this.matchKeyword(e, q));
+    return events;
+  }
+
+  get filteredPendingEvents(): CalendarEvent[] {
+    const q = this.searchKeyword().toLowerCase().trim();
+    if (!q) return this.pendingEvents();
+    return this.pendingEvents().filter(e => this.matchKeyword(e, q));
+  }
+
+  private matchKeyword(e: CalendarEvent, q: string): boolean {
+    return !!(
+      e.title?.toLowerCase().includes(q) ||
+      e.location?.toLowerCase().includes(q) ||
+      e.organizingUnit?.toLowerCase().includes(q) ||
+      e.participants?.toLowerCase().includes(q) ||
+      e.createdByName?.toLowerCase().includes(q) ||
+      e.meetingCode?.toLowerCase().includes(q)
+    );
   }
 
   statusLabel(status: string): string {

@@ -15,13 +15,16 @@ export interface AdminStats {
 export class CalendarService {
   private readonly api = inject(ApiService);
 
-  getEvents(from: string, to: string): Observable<ApiListResponse<CalendarEvent>> {
-    return this.api.get<ApiListResponse<CalendarEvent>>('calendar/events', { from, to });
+  getEvents(from: string, to: string, q?: string): Observable<ApiListResponse<CalendarEvent>> {
+    const params: Record<string, string> = { from, to };
+    if (q) params['q'] = q;
+    return this.api.get<ApiListResponse<CalendarEvent>>('calendar/events', params);
   }
 
-  getManagedEvents(from: string, to: string, status?: string): Observable<ApiListResponse<CalendarEvent>> {
+  getManagedEvents(from: string, to: string, status?: string, q?: string): Observable<ApiListResponse<CalendarEvent>> {
     const params: Record<string, string> = { from, to };
     if (status) params['status'] = status;
+    if (q) params['q'] = q;
     return this.api.get<ApiListResponse<CalendarEvent>>('calendar/events/manage', params);
   }
 

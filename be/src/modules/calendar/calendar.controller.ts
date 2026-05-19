@@ -23,8 +23,9 @@ export class CalendarController {
   @ApiOperation({ summary: 'Xem sự kiện đã duyệt (công khai)' })
   @ApiQuery({ name: 'from', required: false, example: '2026-05-01' })
   @ApiQuery({ name: 'to', required: false, example: '2026-05-31' })
-  findAll(@Query('from') from?: string, @Query('to') to?: string) {
-    return this.calendarService.findAll(from, to, EventStatus.APPROVED);
+  @ApiQuery({ name: 'q', required: false, description: 'Từ khóa tìm kiếm' })
+  findAll(@Query('from') from?: string, @Query('to') to?: string, @Query('q') q?: string) {
+    return this.calendarService.findAll(from, to, EventStatus.APPROVED, q);
   }
 
   // ── Quản lý: editor / approver / admin thấy tất cả ─
@@ -37,8 +38,9 @@ export class CalendarController {
   @ApiQuery({ name: 'from', required: false })
   @ApiQuery({ name: 'to', required: false })
   @ApiQuery({ name: 'status', required: false, enum: EventStatus })
-  findManaged(@Query('from') from?: string, @Query('to') to?: string, @Query('status') status?: EventStatus) {
-    return this.calendarService.findAll(from, to, status);
+  @ApiQuery({ name: 'q', required: false, description: 'Từ khóa tìm kiếm' })
+  findManaged(@Query('from') from?: string, @Query('to') to?: string, @Query('status') status?: EventStatus, @Query('q') q?: string) {
+    return this.calendarService.findAll(from, to, status, q);
   }
 
   // ── Lịch của tôi: editor xem sự kiện do mình tạo ──

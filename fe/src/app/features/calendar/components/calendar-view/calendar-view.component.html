@@ -159,18 +159,38 @@
       </div>
     }
 
-    @if (viewMode() !== 'stats') {
-      <div class="total-badge">
-        @if (viewMode() === 'pending') {
-          <span class="badge-num">{{ pendingEvents().length }}</span>
-        } @else if (viewMode() === 'mine') {
-          <span class="badge-num">{{ filteredMyEvents.length }}</span>
-        } @else {
-          <span class="badge-num">{{ totalEvents() }}</span>
-        }
-        <span class="badge-label">sự kiện</span>
-      </div>
-    }
+    <div class="toolbar-right">
+      @if (viewMode() !== 'stats') {
+        <div class="search-wrap">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Tìm kiếm sự kiện..."
+            [value]="searchKeyword()"
+            (input)="searchKeyword.set($any($event.target).value)">
+          @if (searchKeyword()) {
+            <button class="search-clear" (click)="searchKeyword.set('')" title="Xóa tìm kiếm">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          }
+        </div>
+        <div class="total-badge">
+          @if (viewMode() === 'pending') {
+            <span class="badge-num">{{ filteredPendingEvents.length }}</span>
+          } @else if (viewMode() === 'mine') {
+            <span class="badge-num">{{ filteredMyEvents.length }}</span>
+          } @else {
+            <span class="badge-num">{{ totalEvents() }}</span>
+          }
+          <span class="badge-label">sự kiện</span>
+        </div>
+      }
+    </div>
 
   </div>
 
@@ -186,14 +206,20 @@
     <!-- ── PENDING VIEW (Chờ duyệt) ─────────────────── -->
     } @else if (viewMode() === 'pending') {
 
-      @if (pendingEvents().length === 0) {
+      @if (filteredPendingEvents.length === 0) {
         <div class="state-box">
           <div class="empty-icon">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="1.2">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
           </div>
-          <div class="state-text">Không có sự kiện nào đang chờ duyệt</div>
+          <div class="state-text">
+            @if (searchKeyword()) {
+              Không tìm thấy sự kiện chờ duyệt với từ khóa "{{ searchKeyword() }}"
+            } @else {
+              Không có sự kiện nào đang chờ duyệt
+            }
+          </div>
         </div>
       } @else {
         <div class="table-wrapper">
@@ -210,7 +236,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (event of pendingEvents(); track event.id) {
+              @for (event of filteredPendingEvents; track event.id) {
                 <tr [style]="'--evt-clr:' + (event.color || '#f59e0b')">
                   <td class="td-day-simple">
                     {{ formatEventDate(event.eventDate) }}
@@ -509,8 +535,14 @@
             <line x1="16" y1="14" x2="16" y2="14" stroke-linecap="round" stroke-width="2"/>
           </svg>
         </div>
-        <div class="state-text">Chưa có sự kiện nào trong {{ viewMode() === 'week' ? 'tuần' : 'tháng' }} này</div>
-        @if (authService.isEditor()) {
+        <div class="state-text">
+          @if (searchKeyword()) {
+            Không tìm thấy sự kiện với từ khóa "{{ searchKeyword() }}"
+          } @else {
+            Chưa có sự kiện nào trong {{ viewMode() === 'week' ? 'tuần' : 'tháng' }} này
+          }
+        </div>
+        @if (authService.isEditor() && !searchKeyword()) {
           <button class="btn-add-empty" (click)="openAdd()">+ Thêm sự kiện mới</button>
         }
       </div>
