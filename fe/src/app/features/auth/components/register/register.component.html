@@ -1,0 +1,38 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="card-header">
+      <div class="logo"><span>ICTU</span></div>
+      <h2>Tạo tài khoản</h2>
+      <p class="sub">Đăng ký quyền quản trị lịch công tác</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="form-field">
+        <label for="fullName">Họ và tên</label>
+        <input id="fullName" type="text" formControlName="fullName" placeholder="Nguyễn Văn A" />
+      </div>
+
+      <div class="form-field">
+        <label for="email">Email</label>
+        <input id="email" type="email" formControlName="email" placeholder="admin@ictu.edu.vn" />
+      </div>
+
+      <div class="form-field">
+        <label for="password">Mật khẩu</label>
+        <input id="password" type="password" formControlName="password" placeholder="Tối thiểu 6 ký tự" />
+      </div>
+
+      @if (error) {
+        <div class="error-msg">{{ error }}</div>
+      }
+
+      <button class="btn-submit" type="submit" [disabled]="loading || form.invalid">
+        {{ loading ? 'Đang xử lý...' : 'Đăng ký' }}
+      </button>
+    </form>
+
+    <div class="card-footer">
+      Đã có tài khoản? <a routerLink="/auth/login">Đăng nhập</a>
+    </div>
+  </div>
+</div>

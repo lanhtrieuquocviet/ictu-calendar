@@ -1,0 +1,122 @@
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="brand-logo"><span>ICTU</span></div>
+      <div class="brand-text">
+        <h1>ICTU CALENDAR</h1>
+        <div class="subtitle">Trường Đại học Công nghệ thông tin và Truyền thông</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      @if (authService.isAdmin()) {
+        <button class="btn-add" (click)="openAdd()">
+          <span>+</span> Thêm sự kiện
+        </button>
+      }
+      @if (authService.isLoggedIn()) {
+        <button class="btn-auth" (click)="authService.logout()">Đăng xuất</button>
+      } @else {
+        <a class="btn-auth" href="/auth/login">Đăng nhập Admin</a>
+      }
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-title">
+      <h2>Lịch công tác tuần</h2>
+      <div class="total-badge">
+        Hiển thị <strong>{{ totalEvents() }}</strong> sự kiện
+      </div>
+    </div>
+    <div class="week-nav">
+      <button class="btn-nav" (click)="prevWeek()" title="Tuần trước">&#8592;</button>
+      @if (!isCurrentWeek) {
+        <button class="btn-today" (click)="goToCurrentWeek()">Tuần này</button>
+      }
+      <div class="week-range">{{ weekRangeLabel }}</div>
+      <button class="btn-nav" (click)="nextWeek()" title="Tuần sau">&#8594;</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    @if (loading) {
+      <div class="state-box">
+        <div class="state-icon">⏳</div>
+        <div class="state-text">Đang tải dữ liệu...</div>
+      </div>
+    } @else if (dayGroups.length === 0) {
+      <div class="state-box">
+        <div class="state-icon">📅</div>
+        <div class="state-text">Chưa có sự kiện nào trong tuần này.</div>
+        @if (authService.isAdmin()) {
+          <div class="state-hint">Nhấn "+ Thêm sự kiện" để tạo mới.</div>
+        }
+      </div>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Thứ/Ngày</th>
+            <th>Giờ</th>
+            <th>Nội dung</th>
+            <th>Thành phần</th>
+            <th>Đơn vị chủ trì<br>& chuẩn bị</th>
+            <th>Địa điểm</th>
+            <th>Điều xe /<br>Truyền thông</th>
+            <th>ĐU/BGH<br>Chỉ đạo</th>
+            <th>ĐU/BGH<br>Phê duyệt</th>
+            <th>Mã CH</th>
+            @if (authService.isAdmin()) {
+              <th>Thao tác</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (group of dayGroups; track group.dateLabel) {
+            @for (event of group.events; track event.id; let i = $index) {
+              <tr>
+                @if (i === 0) {
+                  <td class="td-day" [attr.rowspan]="group.events.length">
+                    {{ group.dateLabel }}
+                  </td>
+                }
+                <td class="td-time">{{ event.startTime }}</td>
+                <td class="td-title">{{ event.title }}</td>
+                <td class="td-participants">{{ event.participants }}</td>
+                <td>{{ event.organizingUnit }}</td>
+                <td>{{ event.location }}</td>
+                <td>
+                  {{ event.vehicleArrangement }}
+                  @if (event.mediaUnit) {
+                    <br><span style="color:#94a3b8;font-size:11.5px">{{ event.mediaUnit }}</span>
+                  }
+                </td>
+                <td>{{ event.supervisor }}</td>
+                <td style="text-align:center">{{ event.approvedBy }}</td>
+                <td class="td-code">{{ event.meetingCode }}</td>
+                @if (authService.isAdmin()) {
+                  <td class="td-actions">
+                    <button class="btn-edit" (click)="openEdit(event)">Sửa</button>
+                    <button class="btn-delete" (click)="deleteEvent(event.id)">Xóa</button>
+                  </td>
+                }
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+@if (showForm()) {
+  <app-event-form
+    [event]="editingEvent()"
+    (saved)="onFormSaved()"
+    (closed)="onFormClosed()"
+  />
+}

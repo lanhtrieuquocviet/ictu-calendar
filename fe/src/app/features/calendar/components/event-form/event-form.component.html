@@ -1,0 +1,107 @@
+<div class="modal-backdrop" (click)="closed.emit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <h2>{{ isEdit ? 'Chỉnh sửa sự kiện' : 'Thêm sự kiện mới' }}</h2>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-grid">
+
+          <div class="field full">
+            <label>Nội dung *</label>
+            <input type="text" formControlName="title" placeholder="Tên cuộc họp / sự kiện" />
+          </div>
+
+          <div class="field">
+            <label>Ngày *</label>
+            <input type="date" formControlName="eventDate" />
+          </div>
+
+          <div class="field">
+            <label>Mã cuộc họp</label>
+            <input type="text" formControlName="meetingCode" placeholder="VD: 26.21.01" />
+          </div>
+
+          <div class="field">
+            <label>Giờ bắt đầu</label>
+            <input type="time" formControlName="startTime" />
+          </div>
+
+          <div class="field">
+            <label>Giờ kết thúc</label>
+            <input type="time" formControlName="endTime" />
+          </div>
+
+          <div class="field full">
+            <label>Thành phần tham dự</label>
+            <textarea formControlName="participants" placeholder="Đ/c Nguyễn Văn A, Trưởng phòng..."></textarea>
+          </div>
+
+          <div class="field">
+            <label>Đơn vị chủ trì</label>
+            <input type="text" formControlName="organizingUnit" placeholder="Phòng KHCN&HTQT" />
+          </div>
+
+          <div class="field">
+            <label>Địa điểm</label>
+            <input type="text" formControlName="location" placeholder="Phòng họp số 1" />
+          </div>
+
+          <div class="field">
+            <label>Điều xe</label>
+            <input type="text" formControlName="vehicleArrangement" placeholder="Xe 00715" />
+          </div>
+
+          <div class="field">
+            <label>Truyền thông</label>
+            <input type="text" formControlName="mediaUnit" placeholder="Trung tâm TTTS" />
+          </div>
+
+          <div class="field">
+            <label>ĐU/BGH Chỉ đạo</label>
+            <input type="text" formControlName="supervisor" placeholder="PGS.TS. Phùng Trung Nghĩa" />
+          </div>
+
+          <div class="field">
+            <label>ĐU/BGH Phê duyệt</label>
+            <input type="text" formControlName="approvedBy" placeholder="Đồng ý" />
+          </div>
+
+          <div class="field">
+            <label>Trạng thái</label>
+            <select formControlName="status">
+              <option value="pending">Chờ duyệt</option>
+              <option value="approved">Đồng ý</option>
+              <option value="rejected">Từ chối</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Màu hiển thị</label>
+            <input type="color" formControlName="color" />
+          </div>
+
+          <div class="field full">
+            <label>Ghi chú</label>
+            <textarea formControlName="notes" placeholder="Ghi chú thêm..."></textarea>
+          </div>
+
+        </div>
+
+        @if (error) {
+          <div class="error-msg">{{ error }}</div>
+        }
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closed.emit()">Hủy</button>
+      <button type="button" class="btn-save" [disabled]="loading || form.invalid" (click)="onSubmit()">
+        {{ loading ? 'Đang lưu...' : (isEdit ? 'Cập nhật' : 'Thêm mới') }}
+      </button>
+    </div>
+
+  </div>
+</div>
