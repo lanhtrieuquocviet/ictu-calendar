@@ -36,7 +36,7 @@
 
 @for (toast of toastService.toasts(); track toast.id) {
   @if (toast.type === 'reminder' && toast.reminderMetas?.length) {
-    <div class="reminder-overlay" (click)="toastService.dismiss(toast.id)">
+    <div class="reminder-overlay" (click)="dismiss(toast.id)">
       <div class="reminder-card" (click)="$event.stopPropagation()">
 
         <!-- Header -->
@@ -50,75 +50,94 @@
           <div class="reminder-header-text">
             <span class="reminder-header-title">Nhắc nhở sự kiện</span>
             @if (toast.reminderMetas!.length > 1) {
-              <span class="reminder-header-count">{{ toast.reminderMetas!.length }} sự kiện sắp bắt đầu</span>
+              <span class="reminder-header-count">{{ getIndex(toast.id) + 1 }} / {{ toast.reminderMetas!.length }} sự kiện</span>
             }
           </div>
-          <button class="reminder-close" (click)="toastService.dismiss(toast.id)">
+          <button class="reminder-close" (click)="dismiss(toast.id)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
 
-        <!-- Body: danh sách sự kiện -->
-        <div class="reminder-body" [class.multi]="toast.reminderMetas!.length > 1">
-          @for (meta of toast.reminderMetas!; track meta.eventTitle; let i = $index) {
-            <div class="reminder-event-card" [class.has-separator]="i > 0">
+        <!-- Body: chỉ hiển thị 1 sự kiện tại một thời điểm -->
+        <div class="reminder-body">
 
-              <!-- Tên sự kiện -->
-              <div class="reminder-event-title">
-                <span class="ri-icon">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                </span>
-                <span class="ri-value event-name">{{ meta.eventTitle }}</span>
-              </div>
+          <div class="reminder-event-title">
+            <span class="ri-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </span>
+            <span class="ri-value event-name">{{ getMeta(toast.id, toast.reminderMetas!).eventTitle }}</span>
+          </div>
 
-              <!-- Thời gian + địa điểm -->
-              <div class="reminder-meta-row">
-                <div class="ri-time-group">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                  <span class="ri-time-val">{{ meta.startTime }}</span>
-                  <span class="ri-badge">còn {{ meta.diffMins }} phút</span>
-                </div>
-                @if (meta.location) {
-                  <div class="ri-location">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    <span>{{ meta.location }}</span>
-                  </div>
-                }
-              </div>
+          <div class="reminder-row">
+            <span class="ri-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </span>
+            <div class="ri-time-group">
+              <span class="ri-label">Bắt đầu lúc</span>
+              <span class="ri-time-val">{{ getMeta(toast.id, toast.reminderMetas!).startTime }}</span>
+              <span class="ri-badge">còn {{ getMeta(toast.id, toast.reminderMetas!).diffMins }} phút</span>
+            </div>
+          </div>
 
-              <!-- Nút xem chi tiết riêng từng sự kiện -->
-              @if (meta.onViewDetail) {
-                <button class="reminder-detail-btn-sm" (click)="meta.onViewDetail!(); toastService.dismiss(toast.id)">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  Xem chi tiết
-                </button>
-              }
+          @if (getMeta(toast.id, toast.reminderMetas!).location) {
+            <div class="reminder-row">
+              <span class="ri-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </span>
+              <span class="ri-value">{{ getMeta(toast.id, toast.reminderMetas!).location }}</span>
             </div>
           }
         </div>
+
+        <!-- Carousel nav (chỉ hiện khi > 1 sự kiện) -->
+        @if (toast.reminderMetas!.length > 1) {
+          <div class="reminder-nav">
+            <button class="nav-btn" (click)="prev(toast.id, toast.reminderMetas!.length)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+            <div class="nav-dots">
+              @for (dot of toast.reminderMetas!; track $index) {
+                <span class="nav-dot" [class.active]="$index === getIndex(toast.id)"></span>
+              }
+            </div>
+            <button class="nav-btn" (click)="next(toast.id, toast.reminderMetas!.length)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        }
 
         <!-- Progress bar -->
         <div class="reminder-progress-bar">
           <div class="reminder-progress-fill" [style.animation-duration]="toast.duration + 'ms'"></div>
         </div>
 
-        <!-- Nút đóng chung -->
+        <!-- Nút hành động -->
         <div class="reminder-actions">
-          <button class="reminder-dismiss-btn" (click)="toastService.dismiss(toast.id)">Đã biết</button>
+          @if (getMeta(toast.id, toast.reminderMetas!).onViewDetail) {
+            <button class="reminder-detail-btn" (click)="getMeta(toast.id, toast.reminderMetas!).onViewDetail!(); dismiss(toast.id)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              Xem chi tiết
+            </button>
+          }
+          <button class="reminder-dismiss-btn" (click)="dismiss(toast.id)">Đã biết</button>
         </div>
 
       </div>

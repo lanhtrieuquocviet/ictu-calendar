@@ -178,7 +178,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
         .map(([date, evts]) => {
           const d = new Date(date + 'T00:00:00');
           return {
-            dateLabel: `${DAY_NAMES[d.getDay()]}\nNgày ${this.datePipe.transform(d, 'dd/MM') ?? date}`,
+            dateLabel: `${DAY_NAMES[d.getDay()]}\n${this.datePipe.transform(d, 'dd/MM') ??date}`,
             date: d,
             events: evts,
           };
@@ -191,7 +191,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       d.setDate(d.getDate() + i);
       const key = this.toISODate(d);
       days.push({
-        dateLabel: `${DAY_NAMES[d.getDay()]}\nNgày ${this.datePipe.transform(d, 'dd/MM') ?? key}`,
+        dateLabel: `${DAY_NAMES[d.getDay()]}\n${this.datePipe.transform(d, 'dd/MM') ??key}`,
         date: d,
         events: map.get(key) ?? [],
       });
@@ -437,9 +437,8 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       reminded = new Set();
     }
 
-    const req$ = this.authService.isEditor() || this.authService.isApprover()
-      ? this.calendarService.getManagedEvents(todayISO, todayISO)
-      : this.calendarService.getEvents(todayISO, todayISO);
+    // Nhắc nhở chỉ dành cho sự kiện đã được duyệt — bất kể vai trò người dùng
+    const req$ = this.calendarService.getEvents(todayISO, todayISO);
 
     req$.subscribe({
       next: (res) => {
