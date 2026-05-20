@@ -34,7 +34,10 @@
       "Bash(Get-ChildItem -Path \"d:\\\\ictu-calendar\" -Recurse -ErrorAction SilentlyContinue)",
       "Bash(Get-ChildItem -Path \"d:\\\\ictu-calendar\\\\fe\" -Recurse -Directory)",
       "Bash(find . -name \"*.entity.ts\" -path \"*calendar*\")",
-      "Bash(powershell -Command \"Get-ChildItem -Path 'd:\\\\ictu-calendar' -Name 'package.json' -Recurse | Select-Object -First 5\")"
+      "Bash(powershell -Command \"Get-ChildItem -Path 'd:\\\\ictu-calendar' -Name 'package.json' -Recurse | Select-Object -First 5\")",
+      "Bash(Get-Content \"d:\\\\ictu-calendar\\\\fe\\\\src\\\\app\\\\features\\\\calendar\\\\components\\\\calendar-view\\\\calendar-view.component.scss\")",
+      "Bash(Select-String -Pattern \"detail|dc-\")",
+      "Bash(Select-Object -First 5)"
     ]
   }
 }

@@ -799,159 +799,183 @@
 }
 
 @if (detailEvent()) {
-  <div class="detail-backdrop" (click)="closeDetail()">
-    <div class="detail-card" [style.--evt-accent]="detailEvent()!.color || '#4f46e5'" (click)="$event.stopPropagation()">
+  <div class="sp-backdrop" (click)="closeDetail()">
+    <aside class="sp-panel" [style.--evt-accent]="detailEvent()!.color || '#4f46e5'" (click)="$event.stopPropagation()">
+
+      <!-- Top accent bar -->
+      <div class="sp-accent-bar"></div>
 
       <!-- Header -->
-      <div class="dc-header" [class.dc-header--important]="detailEvent()!.isImportant">
-        <div class="dc-accent-bar"></div>
-        <div class="dc-header-content">
-          <p class="dc-date">{{ formatDetailDate(detailEvent()!) }}</p>
-          <div class="dc-title-row">
+      <div class="sp-header" [class.sp-header--important]="detailEvent()!.isImportant">
+        <div class="sp-header-main">
+          <div class="sp-meta-row">
+            <span class="sp-date">{{ formatDetailDate(detailEvent()!) }}</span>
+            @if (canSeeStatus) {
+              <span class="sp-status-pill" [attr.data-status]="detailEvent()!.status">
+                @if (detailEvent()!.status === 'approved') {
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                } @else if (detailEvent()!.status === 'rejected') {
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                } @else {
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                }
+                {{ statusLabel(detailEvent()!.status) }}
+              </span>
+            }
+          </div>
+          <div class="sp-title-row">
             @if (detailEvent()!.isImportant) {
-              <svg class="dc-icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <svg class="sp-icon-star" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
             }
-            <h3 class="dc-title" [class.dc-title--important]="detailEvent()!.isImportant">{{ detailEvent()!.title }}</h3>
+            <h2 class="sp-title" [class.sp-title--important]="detailEvent()!.isImportant">{{ detailEvent()!.title }}</h2>
           </div>
           @if (detailEvent()!.isImportant) {
-            <span class="badge-important" style="margin-top:6px; display:inline-flex;">Quan trọng</span>
+            <span class="badge-important" style="margin-top:8px;">Quan trọng</span>
           }
         </div>
-        <button class="dc-close" (click)="closeDetail()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <button class="sp-close" (click)="closeDetail()" aria-label="Đóng">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
       </div>
 
-      <!-- Info rows -->
-      <div class="dc-body">
+      <!-- Body -->
+      <div class="sp-body">
 
-        <div class="dc-row">
-          <span class="dc-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-          </span>
-          <span class="dc-value">{{ formatEventTime(detailEvent()!) || 'Cả ngày' }}</span>
+        <!-- Thời gian -->
+        <div class="sp-section">
+          <p class="sp-section-title">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Thời gian
+          </p>
+          <div class="sp-info-row">
+            <span class="sp-info-value sp-time-value">{{ formatEventTime(detailEvent()!) || 'Cả ngày' }}</span>
+          </div>
         </div>
 
-        @if (detailEvent()!.location) {
-          <div class="dc-row">
-            <span class="dc-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-              </svg>
-            </span>
-            <span class="dc-value">{{ detailEvent()!.location }}</span>
+        <!-- Địa điểm & Phương tiện -->
+        @if (detailEvent()!.location || detailEvent()!.vehicleArrangement) {
+          <div class="sp-section">
+            <p class="sp-section-title">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Địa điểm & Phương tiện
+            </p>
+            @if (detailEvent()!.location) {
+              <div class="sp-info-row">
+                <span class="sp-info-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </span>
+                <span class="sp-info-value">{{ detailEvent()!.location }}</span>
+              </div>
+            }
+            @if (detailEvent()!.vehicleArrangement) {
+              <div class="sp-info-row">
+                <span class="sp-info-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                </span>
+                <div class="sp-info-col">
+                  <span class="sp-info-label">Điều xe</span>
+                  <span class="sp-info-value">{{ detailEvent()!.vehicleArrangement }}</span>
+                </div>
+              </div>
+            }
           </div>
         }
 
-        @if (detailEvent()!.participants) {
-          <div class="dc-row dc-row--top">
-            <span class="dc-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-            </span>
-            <div class="dc-col">
-              <span class="dc-label">Thành phần tham dự</span>
-              <span class="dc-value">{{ detailEvent()!.participants }}</span>
-            </div>
+        <!-- Nhân sự & Tổ chức -->
+        @if (detailEvent()!.participants || detailEvent()!.organizingUnit || detailEvent()!.mediaUnit || detailEvent()!.supervisor) {
+          <div class="sp-section">
+            <p class="sp-section-title">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Nhân sự & Tổ chức
+            </p>
+            @if (detailEvent()!.participants) {
+              <div class="sp-info-row sp-info-row--top">
+                <span class="sp-info-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                <div class="sp-info-col">
+                  <span class="sp-info-label">Thành phần tham dự</span>
+                  <span class="sp-info-value">{{ detailEvent()!.participants }}</span>
+                </div>
+              </div>
+            }
+            @if (detailEvent()!.organizingUnit) {
+              <div class="sp-info-row">
+                <span class="sp-info-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                </span>
+                <div class="sp-info-col">
+                  <span class="sp-info-label">Đơn vị chủ trì</span>
+                  <span class="sp-info-value">{{ detailEvent()!.organizingUnit }}</span>
+                </div>
+              </div>
+            }
+            @if (detailEvent()!.mediaUnit) {
+              <div class="sp-info-row">
+                <span class="sp-info-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                </span>
+                <div class="sp-info-col">
+                  <span class="sp-info-label">Đơn vị truyền thông</span>
+                  <span class="sp-info-value">{{ detailEvent()!.mediaUnit }}</span>
+                </div>
+              </div>
+            }
+            @if (detailEvent()!.supervisor) {
+              <div class="sp-info-row">
+                <span class="sp-info-icon">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+                <div class="sp-info-col">
+                  <span class="sp-info-label">ĐU/BGH Chỉ đạo</span>
+                  <span class="sp-info-value">{{ detailEvent()!.supervisor }}</span>
+                </div>
+              </div>
+            }
           </div>
         }
 
-        @if (detailEvent()!.organizingUnit) {
-          <div class="dc-row">
-            <span class="dc-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="7" width="20" height="14" rx="2"/>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-              </svg>
-            </span>
-            <div class="dc-col">
-              <span class="dc-label">Đơn vị chủ trì</span>
-              <span class="dc-value">{{ detailEvent()!.organizingUnit }}</span>
-            </div>
-          </div>
-        }
-
-        @if (detailEvent()!.supervisor) {
-          <div class="dc-row">
-            <span class="dc-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </span>
-            <div class="dc-col">
-              <span class="dc-label">ĐU/BGH Chỉ đạo</span>
-              <span class="dc-value">{{ detailEvent()!.supervisor }}</span>
-            </div>
-          </div>
-        }
-
-        @if (detailEvent()!.rejectionReason) {
-          <div class="dc-row dc-row--top">
-            <span class="dc-icon" style="color:#ef4444">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-              </svg>
-            </span>
-            <div class="dc-col">
-              <span class="dc-label" style="color:#ef4444">Lý do từ chối</span>
-              <span class="dc-value">{{ detailEvent()!.rejectionReason }}</span>
-            </div>
-          </div>
-        }
-
+        <!-- Ghi chú -->
         @if (detailEvent()!.notes) {
-          <div class="dc-row dc-row--top">
-            <span class="dc-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-              </svg>
-            </span>
-            <div class="dc-col">
-              <span class="dc-label">Ghi chú</span>
-              <span class="dc-value">{{ detailEvent()!.notes }}</span>
-            </div>
+          <div class="sp-section">
+            <p class="sp-section-title">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Ghi chú
+            </p>
+            <div class="sp-notes-box">{{ detailEvent()!.notes }}</div>
           </div>
         }
 
-        @if (canSeeStatus) {
-          <div class="dc-row">
-            <span class="dc-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-            </span>
-            <span class="status-badge" [attr.data-status]="detailEvent()!.status">{{ statusLabel(detailEvent()!.status) }}</span>
+        <!-- Lý do từ chối -->
+        @if (detailEvent()!.rejectionReason) {
+          <div class="sp-section sp-section--danger">
+            <p class="sp-section-title">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              Lý do từ chối
+            </p>
+            <div class="sp-rejection-box">{{ detailEvent()!.rejectionReason }}</div>
           </div>
         }
 
       </div>
 
+      <!-- Footer -->
       @if (authService.isEditor() && canEditEvent(detailEvent()!)) {
-        <div class="dc-footer">
-          <button class="dc-btn-edit" (click)="openEditFromDetail()">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <div class="sp-footer">
+          <button class="sp-btn-edit" (click)="openEditFromDetail()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
-            Chỉnh sửa
+            Chỉnh sửa sự kiện
           </button>
         </div>
       }
 
-    </div>
+    </aside>
   </div>
 }
