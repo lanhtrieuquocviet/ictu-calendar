@@ -1,6 +1,7 @@
 <div class="ac-wrap">
   <input
     class="ac-input"
+    [class.has-value]="value()"
     type="text"
     [placeholder]="placeholder"
     [value]="value()"
@@ -9,6 +10,14 @@
     (focus)="onFocus()"
     (blur)="onBlur()"
   />
+
+  @if (value() && !isDisabled) {
+    <button type="button" class="ac-clear" (mousedown)="clear($event)" tabindex="-1">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  }
 
   @if (isOpen() && filtered().length > 0) {
     <div class="ac-dropdown">

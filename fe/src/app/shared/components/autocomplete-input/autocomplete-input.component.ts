@@ -51,9 +51,17 @@ export class AutocompleteInputComponent implements ControlValueAccessor {
   }
 
   select(opt: string, event: MouseEvent): void {
-    event.preventDefault(); // prevent input blur before selection
+    event.preventDefault();
     this.value.set(opt);
     this.onChange(opt);
+    this.isOpen.set(false);
+  }
+
+  clear(event: MouseEvent): void {
+    event.preventDefault();
+    this.value.set('');
+    this.onChange('');
+    this.onTouched();
     this.isOpen.set(false);
   }
 }
