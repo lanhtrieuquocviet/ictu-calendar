@@ -40,6 +40,18 @@
 
 .header-actions { display: flex; align-items: center; gap: 10px; }
 
+.btn-nav {
+  font-size: 12px; font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  transition: background .15s;
+  &:hover { background: rgba(255,255,255,0.2); color: #fff; }
+}
+
 .btn-back {
   display: flex; align-items: center; gap: 5px;
   font-size: 12px; font-weight: 500;

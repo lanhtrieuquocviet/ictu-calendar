@@ -10,4 +10,12 @@ export const adminRoutes: Routes = [
         (m) => m.UserManagementComponent,
       ),
   },
+  {
+    path: 'categories',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./components/category-management/category-management.component').then(
+        (m) => m.CategoryManagementComponent,
+      ),
+  },
 ];

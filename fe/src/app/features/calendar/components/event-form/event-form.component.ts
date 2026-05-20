@@ -7,6 +7,7 @@ import { CalendarEvent, CreateEventRequest } from '@models/event.model';
 import { AutocompleteInputComponent } from '@shared/components/autocomplete-input/autocomplete-input.component';
 import { ToastService } from '@shared/services/toast.service';
 import { ICTU_UNIT_GROUPS } from '@core/constants/ictu-units';
+import { CategoryService } from '@features/admin/services/category.service';
 
 @Component({
   selector: 'app-event-form',
@@ -24,6 +25,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
 
   private readonly fb = inject(FormBuilder);
   private readonly calendarService = inject(CalendarService);
+  private readonly categoryService = inject(CategoryService);
   readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
 
@@ -179,39 +181,30 @@ export class EventFormComponent implements OnInit, OnDestroy {
     if (e.key === 'Enter') { e.preventDefault(); this.addCustomUnit(e); }
   }
 
-  readonly suggestions = {
-    location: [
-      'Phòng họp số 1 ĐHTN',
-      'Phòng họp số 2',
-      'Phòng họp số 3',
-      'Phòng họp số 3, 2',
-      'Hội trường đa năng',
-      'Hội trường tầng 5',
-      'Phòng Lab Samsung',
-      'Phòng họp 2',
-      'Bộ GD&ĐT',
-      'Công an tỉnh Thái Nguyên',
-      'Định Hóa',
-    ],
-    vehicleArrangement: [
-      'Xe 00715',
-      'Xe 004.70',
-    ],
-    mediaUnit: [
-      'Trung tâm TTTS',
-      'Truyền thông',
-    ],
-    supervisor: [
-      'PGS.TS. Phùng Trung Nghĩa',
-      'TS. Nguyễn Duy Minh',
-      'TS. Đỗ Đình Cường',
-      'TS. Nguyễn Văn Tào',
-    ],
-    approvedBy: [
-      'Đồng ý',
-      'Từ chối',
-    ],
+  suggestions = {
+    location: [] as string[],
+    vehicleArrangement: [] as string[],
+    mediaUnit: [] as string[],
+    supervisor: [] as string[],
+    approvedBy: ['Đồng ý', 'Từ chối'],
   };
+
+  private loadSuggestions(): void {
+    this.categoryService.getPublic().subscribe({
+      next: res => {
+        const data = Array.isArray(res?.data) ? res.data : [];
+        const byType = (t: string) => data.filter(c => c.type === t).map(c => c.value);
+        this.suggestions = {
+          location: byType('location'),
+          vehicleArrangement: byType('vehicle'),
+          mediaUnit: byType('mediaUnit'),
+          supervisor: byType('supervisor'),
+          approvedBy: ['Đồng ý', 'Từ chối'],
+        };
+      },
+      error: () => {},
+    });
+  }
 
   readonly timeSlots: string[] = (() => {
     const slots: string[] = [];
@@ -266,6 +259,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadSuggestions();
     if (this.event) {
       this.form.patchValue({
         ...this.event,
