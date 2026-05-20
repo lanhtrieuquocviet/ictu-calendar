@@ -12,6 +12,7 @@ import { ToastService } from '@shared/services/toast.service';
 import { ToastComponent } from '@shared/components/toast/toast.component';
 import { NotificationService } from '@shared/services/notification.service';
 import { NotificationBellComponent } from '@shared/components/notification-bell/notification-bell.component';
+import { ICTU_UNIT_GROUPS } from '@core/constants/ictu-units';
 
 export type ViewMode = 'week' | 'month' | 'list' | 'pending' | 'mine' | 'stats';
 
@@ -62,6 +63,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   statusFilter = signal<string>('all');
   myStatusFilter = signal<string>('all');
   searchKeyword = signal<string>('');
+  unitFilter = signal<string>('');
 
   private authSub?: Subscription;
 
@@ -70,16 +72,21 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   }
 
   canEditEvent(event: CalendarEvent): boolean {
-    return this.authService.isAdmin() || event.userId === this.authService.getCurrentUserId();
+    if (this.authService.isAdmin()) return true;
+    return event.userId === this.authService.getCurrentUserId() && event.status !== 'approved';
   }
 
   get filteredEvents(): CalendarEvent[] {
     const f = this.statusFilter();
     const q = this.searchKeyword().toLowerCase().trim();
+    const u = this.unitFilter();
     let events = f === 'all' ? this.allEvents : this.allEvents.filter(e => e.status === f);
+    if (u) events = events.filter(e => e.organizingUnit?.split(';').some(s => s.trim() === u));
     if (q) events = events.filter(e => this.matchKeyword(e, q));
     return events;
   }
+
+  readonly unitGroups = ICTU_UNIT_GROUPS;
 
   get filteredMyEvents(): CalendarEvent[] {
     const f = this.myStatusFilter();
@@ -504,6 +511,22 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   onFormClosed(draft: Record<string, any>): void { if (!this.editingEvent()) this.createDraft.set(draft); this.showForm.set(false); }
   onFormDiscarded(): void { this.createDraft.set(null); this.showForm.set(false); }
 
+  toggleHidden(event: CalendarEvent): void {
+    this.calendarService.toggleHidden(event.id).subscribe({
+      next: () => {
+        const msg = event.isHidden ? 'Đã hiện sự kiện trở lại.' : 'Đã ẩn sự kiện khỏi lịch công khai.';
+        this.toast.success(msg);
+        const mode = this.viewMode();
+        if (mode === 'mine') this.loadMyEvents();
+        else if (mode === 'pending') this.loadPendingEvents();
+        else this.loadEvents();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || 'Có lỗi xảy ra');
+      },
+    });
+  }
+
   async deleteEvent(id: string): Promise<void> {
     const ok = await this.confirmDialog.confirm({
       title: 'Xóa sự kiện',
@@ -514,9 +537,13 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     if (!ok) return;
     this.calendarService.deleteEvent(id).subscribe({
       next: () => {
+        this.toast.success('Đã xóa sự kiện thành công!');
         const mode = this.viewMode();
         if (mode === 'mine') this.loadMyEvents();
         else this.loadEvents();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || 'Có lỗi xảy ra khi xóa sự kiện');
       },
     });
   }

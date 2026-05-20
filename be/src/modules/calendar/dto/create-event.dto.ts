@@ -81,4 +81,9 @@ export class CreateEventDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiProperty({ required: false, default: false })
+  @IsBoolean()
+  @IsOptional()
+  isImportant?: boolean;
 }

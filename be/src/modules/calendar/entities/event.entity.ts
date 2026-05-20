@@ -79,6 +79,12 @@ export class Event {
   @Column({ nullable: true, default: '#4f46e5' })
   color: string;               // Màu hiển thị trên calendar
 
+  @Column({ default: false })
+  isImportant: boolean;        // Sự kiện quan trọng
+
+  @Column({ default: false })
+  isHidden: boolean;           // Ẩn khỏi lịch công khai
+
   @Column({ nullable: true, type: 'text' })
   notes: string;               // Ghi chú thêm
 

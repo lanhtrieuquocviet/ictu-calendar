@@ -55,4 +55,8 @@ export class CalendarService {
   approveEvent(id: string, payload: { status: string; rejectionReason?: string }): Observable<{ data: CalendarEvent }> {
     return this.api.patch<{ data: CalendarEvent }>(`calendar/events/${id}/approve`, payload);
   }
+
+  toggleHidden(id: string): Observable<{ data: CalendarEvent }> {
+    return this.api.patch<{ data: CalendarEvent }>(`calendar/events/${id}/toggle-hidden`, {});
+  }
 }

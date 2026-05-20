@@ -17,8 +17,10 @@ export interface CalendarEvent {
   meetingCode?: string;
   status: EventStatus;
   color?: string;
+  isImportant?: boolean;
   notes?: string;
   rejectionReason?: string;
+  isHidden?: boolean;
   createdByName?: string;
   approvedByName?: string;
   approvedAt?: string;
@@ -44,6 +46,7 @@ export interface CreateEventRequest {
   meetingCode?: string;
   status?: EventStatus;
   color?: string;
+  isImportant?: boolean;
   notes?: string;
 }
 

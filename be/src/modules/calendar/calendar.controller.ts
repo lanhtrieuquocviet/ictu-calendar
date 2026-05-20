@@ -25,7 +25,7 @@ export class CalendarController {
   @ApiQuery({ name: 'to', required: false, example: '2026-05-31' })
   @ApiQuery({ name: 'q', required: false, description: 'Từ khóa tìm kiếm' })
   findAll(@Query('from') from?: string, @Query('to') to?: string, @Query('q') q?: string) {
-    return this.calendarService.findAll(from, to, EventStatus.APPROVED, q);
+    return this.calendarService.findAll(from, to, EventStatus.APPROVED, q, true);
   }
 
   // ── Quản lý: editor / approver / admin thấy tất cả ─
@@ -98,6 +98,17 @@ export class CalendarController {
   @ApiOperation({ summary: 'Xóa sự kiện (admin / editor)' })
   remove(@Param('id') id: string, @Req() req: any) {
     return this.calendarService.remove(id, req.user.sub, req.user.role === 'admin');
+  }
+
+  // ── Ẩn / hiện sự kiện: admin hoặc approver ───────
+
+  @Patch('events/:id/toggle-hidden')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'approver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Ẩn / hiện sự kiện (admin / approver)' })
+  toggleHidden(@Param('id') id: string) {
+    return this.calendarService.toggleHidden(id);
   }
 
   // ── Phê duyệt: admin hoặc approver ───────────────

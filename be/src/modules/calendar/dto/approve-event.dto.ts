@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EventStatus } from '../entities/event.entity';
 
@@ -11,4 +11,9 @@ export class ApproveEventDto {
   @IsOptional()
   @IsString()
   rejectionReason?: string;
+
+  @ApiPropertyOptional({ description: 'Đánh dấu sự kiện quan trọng' })
+  @IsOptional()
+  @IsBoolean()
+  isImportant?: boolean;
 }

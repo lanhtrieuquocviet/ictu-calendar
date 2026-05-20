@@ -1,4 +1,4 @@
-<div class="modal-backdrop" (click)="onBackdropClose()">
+<div class="modal-backdrop" (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClose()">
   <div class="modal" (click)="$event.stopPropagation()">
 
     <div class="modal-header">
@@ -166,6 +166,14 @@
 
         </div>
 
+        <!-- Important toggle -->
+        <div class="important-toggle" [class.active]="form.get('isImportant')?.value" (click)="toggleImportant()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <span>Sự kiện quan trọng</span>
+        </div>
+
         <button type="button" class="details-toggle" (click)="toggleDetails()">
           <svg class="toggle-icon" [class.open]="showDetails"
             width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -184,11 +192,62 @@
 
             <div class="field">
               <label>Đơn vị chủ trì</label>
-              <app-autocomplete-input
-                formControlName="organizingUnit"
-                placeholder="Phòng KHCN&HTQT"
-                [suggestions]="suggestions.organizingUnit">
-              </app-autocomplete-input>
+              <div class="unit-picker" data-picker="unit">
+                <div class="unit-chips-wrap" [class.open]="unitDropdownOpen" [class.disabled]="approverOnly" (click)="toggleUnitDropdown($event)">
+                  @if (selectedUnits.length === 0) {
+                    <span class="unit-placeholder">Chọn đơn vị...</span>
+                  }
+                  @for (unit of selectedUnits; track unit) {
+                    <span class="unit-chip">
+                      {{ unit }}
+                      <button type="button" class="chip-remove" (click)="removeUnit(unit, $event)">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </span>
+                  }
+                  <svg class="unit-chevron" [class.rotated]="unitDropdownOpen" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
+                @if (unitDropdownOpen) {
+                  <div class="unit-dropdown" (click)="$event.stopPropagation()">
+                    @for (group of unitGroups; track group.label) {
+                      <div class="unit-group-label">{{ group.label }}</div>
+                      @for (unit of group.units; track unit) {
+                        <div class="unit-option" [class.selected]="isUnitSelected(unit)" (click)="toggleUnit(unit, $event)">
+                          <span class="unit-check">
+                            @if (isUnitSelected(unit)) {
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                            }
+                          </span>
+                          {{ unit }}
+                        </div>
+                      }
+                    }
+                    <div class="unit-custom-row">
+                      <input
+                        class="unit-custom-input"
+                        type="text"
+                        placeholder="Nhập đơn vị khác..."
+                        [value]="customUnitInput"
+                        (input)="customUnitInput = $any($event.target).value"
+                        (keydown)="onCustomUnitKeydown($event)"
+                        (click)="$event.stopPropagation()"
+                      />
+                      <button type="button" class="unit-custom-add" (click)="addCustomUnit($event)" [disabled]="!customUnitInput.trim()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Thêm
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
             </div>
 
             <div class="field full">
@@ -297,7 +356,7 @@
     </div>
 
     <div class="modal-footer">
-      <button type="button" class="btn-cancel" (click)="onBackdropClose()">Hủy</button>
+      <button type="button" class="btn-cancel" (click)="cancel()">Hủy</button>
 
       @if (canApprove) {
         @if (showRejectInput) {

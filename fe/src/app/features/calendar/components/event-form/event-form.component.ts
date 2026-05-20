@@ -5,6 +5,8 @@ import { CalendarService } from '../../services/calendar.service';
 import { AuthService } from '@core/services/auth.service';
 import { CalendarEvent, CreateEventRequest } from '@models/event.model';
 import { AutocompleteInputComponent } from '@shared/components/autocomplete-input/autocomplete-input.component';
+import { ToastService } from '@shared/services/toast.service';
+import { ICTU_UNIT_GROUPS } from '@core/constants/ictu-units';
 
 @Component({
   selector: 'app-event-form',
@@ -23,18 +25,20 @@ export class EventFormComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly calendarService = inject(CalendarService);
   readonly authService = inject(AuthService);
+  private readonly toast = inject(ToastService);
 
   loading = false;
   error = '';
   approving = false;
   approveError = '';
+  private _backdropMouseDownOnSelf = false;
   showDetails = false;
   showRejectInput = false;
   rejectReason = '';
 
   get canEditContent(): boolean  { return this.authService.isEditor(); }
-  get canApprove(): boolean      { return this.authService.isApprover() && this.isEdit; }
-  get approverOnly(): boolean    { return this.canApprove && !this.canEditContent; }
+  get canApprove(): boolean      { return this.authService.isApprover() && this.isEdit && this.event?.status === 'pending'; }
+  get approverOnly(): boolean    { return this.authService.isApprover() && !this.canEditContent && this.isEdit; }
   get isAllDay(): boolean        { return !!this.form.get('allDay')?.value; }
 
   endTimeError = false;
@@ -97,12 +101,22 @@ export class EventFormComponent implements OnInit, OnDestroy {
     if (!this.event?.id) return;
     this.approving = true;
     this.approveError = '';
-    const payload: { status: string; rejectionReason?: string } = { status };
+    const payload: { status: string; rejectionReason?: string; isImportant?: boolean } = { status };
     if (status === 'rejected') payload.rejectionReason = rejectionReason;
+    payload.isImportant = !!this.form.get('isImportant')?.value;
     this.calendarService.approveEvent(this.event.id, payload).subscribe({
-      next: () => { this.approving = false; this.saved.emit(); },
+      next: () => {
+        this.approving = false;
+        if (status === 'approved') {
+          this.toast.success('Đã duyệt sự kiện thành công!');
+        } else {
+          this.toast.warning('Đã từ chối sự kiện.');
+        }
+        this.saved.emit();
+      },
       error: (err) => {
         this.approveError = err.error?.message || 'Có lỗi xảy ra';
+        this.toast.error(this.approveError);
         this.approving = false;
       },
     });
@@ -117,6 +131,54 @@ export class EventFormComponent implements OnInit, OnDestroy {
 
   readonly dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
+  readonly unitGroups = ICTU_UNIT_GROUPS;
+  selectedUnits: string[] = [];
+  unitDropdownOpen = false;
+  customUnitInput = '';
+
+  toggleUnitDropdown(e: MouseEvent): void {
+    if (this.approverOnly) return;
+    e.stopPropagation();
+    this.unitDropdownOpen = !this.unitDropdownOpen;
+    this.showDatePicker = false;
+    this.showStartTimePicker = false;
+    this.showEndTimePicker = false;
+  }
+
+  toggleUnit(unit: string, e: MouseEvent): void {
+    if (this.approverOnly) return;
+    e.stopPropagation();
+    const idx = this.selectedUnits.indexOf(unit);
+    this.selectedUnits = idx >= 0
+      ? this.selectedUnits.filter((_, i) => i !== idx)
+      : [...this.selectedUnits, unit];
+    this.form.get('organizingUnit')?.setValue(this.selectedUnits.join('; '));
+  }
+
+  removeUnit(unit: string, e: MouseEvent): void {
+    if (this.approverOnly) return;
+    e.stopPropagation();
+    this.selectedUnits = this.selectedUnits.filter(u => u !== unit);
+    this.form.get('organizingUnit')?.setValue(this.selectedUnits.join('; '));
+  }
+
+  isUnitSelected(unit: string): boolean {
+    return this.selectedUnits.includes(unit);
+  }
+
+  addCustomUnit(e?: MouseEvent | KeyboardEvent): void {
+    if (e) e.stopPropagation();
+    const val = this.customUnitInput.trim();
+    if (!val || this.selectedUnits.includes(val)) { this.customUnitInput = ''; return; }
+    this.selectedUnits = [...this.selectedUnits, val];
+    this.form.get('organizingUnit')?.setValue(this.selectedUnits.join('; '));
+    this.customUnitInput = '';
+  }
+
+  onCustomUnitKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Enter') { e.preventDefault(); this.addCustomUnit(e); }
+  }
+
   readonly suggestions = {
     location: [
       'Phòng họp số 1 ĐHTN',
@@ -130,21 +192,6 @@ export class EventFormComponent implements OnInit, OnDestroy {
       'Bộ GD&ĐT',
       'Công an tỉnh Thái Nguyên',
       'Định Hóa',
-    ],
-    organizingUnit: [
-      'ĐHTN',
-      'ĐHTN; Phòng HC-TC',
-      'Khoa KHCB',
-      'Phòng KHĐT&TC',
-      'Phòng HCTC',
-      'Phòng KHCN&HTQT',
-      'Phòng Đào tạo',
-      'Phòng CTNH',
-      'Phòng ĐT',
-      'Trung tâm TTTS',
-      'Trung tâm HTDN',
-      'Chi bộ NT&TT',
-      'Chi bộ SV',
     ],
     vehicleArrangement: [
       'Xe 00715',
@@ -179,6 +226,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
     if (!t.closest('[data-picker="date"]'))  this.showDatePicker = false;
     if (!t.closest('[data-picker="start"]')) this.showStartTimePicker = false;
     if (!t.closest('[data-picker="end"]'))   this.showEndTimePicker = false;
+    if (!t.closest('[data-picker="unit"]'))  this.unitDropdownOpen = false;
   };
 
   form = this.fb.group({
@@ -198,11 +246,22 @@ export class EventFormComponent implements OnInit, OnDestroy {
     status: ['pending'],
     color: ['#4f46e5'],
     notes: [''],
+    isImportant: [false],
   });
 
   get isEdit(): boolean { return !!this.event; }
 
+  onBackdropMouseDown(e: MouseEvent): void {
+    this._backdropMouseDownOnSelf = e.target === e.currentTarget;
+  }
+
+  cancel(): void {
+    this.closed.emit(this.form.value as Record<string, any>);
+  }
+
   onBackdropClose(): void {
+    if (!this._backdropMouseDownOnSelf) return;
+    this._backdropMouseDownOnSelf = false;
     this.closed.emit(this.form.value as Record<string, any>);
   }
 
@@ -222,11 +281,14 @@ export class EventFormComponent implements OnInit, OnDestroy {
     }
     if (this.approverOnly) {
       this.form.disable();
+      this.form.get('isImportant')?.enable();
     }
     this.startTimeInput = this.form.get('startTime')?.value || '';
     this.endTimeInput   = this.form.get('endTime')?.value   || '';
     const dateStr = this.form.get('eventDate')?.value;
     if (dateStr) this.calendarViewDate = new Date(dateStr + 'T00:00:00');
+    const existingUnit = this.form.get('organizingUnit')?.value as string;
+    if (existingUnit) this.selectedUnits = existingUnit.split(';').map(u => u.trim()).filter(u => u);
     document.addEventListener('click', this.docClickHandler, true);
   }
 
@@ -400,6 +462,11 @@ export class EventFormComponent implements OnInit, OnDestroy {
 
   toggleDetails(): void { this.showDetails = !this.showDetails; }
 
+  toggleImportant(): void {
+    const current = this.form.get('isImportant')?.value;
+    this.form.patchValue({ isImportant: !current });
+  }
+
   onSubmit(): void {
     if (this.form.invalid) return;
     this.loading = true;
@@ -415,8 +482,16 @@ export class EventFormComponent implements OnInit, OnDestroy {
       ? this.calendarService.updateEvent(this.event!.id, data)
       : this.calendarService.createEvent(data);
     req$.subscribe({
-      next: () => { this.loading = false; this.saved.emit(); },
-      error: (err) => { this.error = err.error?.message || 'Có lỗi xảy ra'; this.loading = false; },
+      next: () => {
+        this.loading = false;
+        this.toast.success(this.isEdit ? 'Cập nhật sự kiện thành công!' : 'Thêm sự kiện mới thành công!');
+        this.saved.emit();
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Có lỗi xảy ra';
+        this.toast.error(this.error);
+        this.loading = false;
+      },
     });
   }
 }

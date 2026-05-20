@@ -24,7 +24,15 @@
       "PowerShell(if \\($LASTEXITCODE -ne 0\\) { \"Request returned error \\(expected - need auth token\\)\" })",
       "Bash(Get-ChildItem -Path \"d:\\\\ictu-calendar\" -Recurse -Directory)",
       "Bash(Select-Object -First 30)",
-      "Bash(Format-Table FullName)"
+      "Bash(Format-Table FullName)",
+      "PowerShell(& \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -c \"\\\\l\" 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -p 5433 -c \"SELECT 1\" 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -p 5433 -c \"\\\\l\" 2>&1; Write-Output \"EXIT: $LASTEXITCODE\")",
+      "PowerShell(Get-NetTCPConnection -LocalPort 5432,5433 -State Listen -ErrorAction SilentlyContinue)",
+      "Bash(docker start *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\ictu-calendar\" -Recurse -Directory -Depth 2)",
+      "Bash(Get-ChildItem -Path \"d:\\\\ictu-calendar\" -Recurse -ErrorAction SilentlyContinue)",
+      "Bash(Get-ChildItem -Path \"d:\\\\ictu-calendar\\\\fe\" -Recurse -Directory)"
     ]
   }
 }

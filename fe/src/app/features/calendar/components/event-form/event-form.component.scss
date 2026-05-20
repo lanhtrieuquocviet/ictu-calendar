@@ -392,6 +392,201 @@
   animation: fadeIn 0.15s ease;
 }
 
+// ── Unit multi-select picker ────────────────────────────────────
+
+.unit-picker {
+  position: relative;
+}
+
+.unit-chips-wrap {
+  min-height: 40px;
+  padding: 5px 32px 5px 8px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 7px;
+  background: #f8fafc;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  position: relative;
+
+  &:hover { border-color: #94a3b8; }
+
+  &.open {
+    border-color: #1a3a6b;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(26, 58, 107, 0.08);
+  }
+
+  &.disabled {
+    cursor: default;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+}
+
+.unit-placeholder {
+  font-size: 13.5px;
+  color: #94a3b8;
+  padding: 2px 4px;
+  user-select: none;
+}
+
+.unit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 8px;
+  background: #eff6ff;
+  color: #1a3a6b;
+  border: 1px solid #bfdbfe;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-remove {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  padding: 1px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  &:hover { color: #dc2626; background: #fee2e2; }
+}
+
+.unit-chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+
+  &.rotated { transform: translateY(-50%) rotate(180deg); }
+}
+
+.unit-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  z-index: 200;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.unit-group-label {
+  padding: 8px 12px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 2px;
+
+  &:first-child { border-top: none; margin-top: 0; }
+}
+
+.unit-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover { background: #f8fafc; }
+
+  &.selected {
+    color: #1a3a6b;
+    font-weight: 600;
+    background: #eff6ff;
+  }
+}
+
+.unit-check {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #1a3a6b;
+  transition: border-color 0.1s, background 0.1s;
+
+  .unit-option.selected & {
+    background: #1a3a6b;
+    border-color: #1a3a6b;
+    color: #fff;
+  }
+}
+
+.unit-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 6px;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 2px;
+}
+
+.unit-custom-input {
+  flex: 1;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 12.5px;
+  color: #334155;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+
+  &::placeholder { color: #94a3b8; }
+  &:focus { border-color: #1a3a6b; }
+}
+
+.unit-custom-add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #1a3a6b;
+  color: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+
+  &:hover:not(:disabled) { background: #1e4a8a; }
+  &:disabled { opacity: 0.4; cursor: default; }
+}
+
 // ── Details ─────────────────────────────────────────────────────
 
 .details-toggle {
@@ -655,5 +850,38 @@
     transition: opacity 0.15s;
     &:hover:not(:disabled) { opacity: 0.88; }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}
+
+// ── Toggle quan trọng ─────────────────────────────────────────────────────────
+
+.important-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 4px;
+  padding: 7px 14px;
+  border: 1.5px dashed #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #6b7280;
+  user-select: none;
+  transition: all 0.15s;
+  svg { color: #d1d5db; transition: color 0.15s; }
+
+  &:hover {
+    border-color: #f59e0b;
+    color: #92400e;
+    svg { color: #f59e0b; }
+  }
+
+  &.active {
+    border-style: solid;
+    border-color: #f59e0b;
+    background: #fffbeb;
+    color: #92400e;
+    font-weight: 600;
+    svg { color: #f59e0b; filter: drop-shadow(0 0 3px #fbbf2480); }
   }
 }

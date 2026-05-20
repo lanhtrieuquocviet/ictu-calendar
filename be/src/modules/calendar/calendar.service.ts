@@ -33,7 +33,7 @@ export class CalendarService {
     return this.eventRepository.save(event);
   }
 
-  async findAll(from?: string, to?: string, status?: EventStatus, q?: string): Promise<Event[]> {
+  async findAll(from?: string, to?: string, status?: EventStatus, q?: string, excludeHidden = false): Promise<Event[]> {
     const qb = this.eventRepository.createQueryBuilder('event')
       .leftJoinAndSelect('event.user', 'user')
       .orderBy('event.eventDate', 'ASC')
@@ -41,6 +41,7 @@ export class CalendarService {
 
     if (from && to) qb.andWhere('event.eventDate BETWEEN :from AND :to', { from, to });
     if (status) qb.andWhere('event.status = :status', { status });
+    if (excludeHidden) qb.andWhere('event.isHidden = false');
     if (q) {
       qb.andWhere(
         `(event.title ILIKE :q OR event.location ILIKE :q OR event.organizingUnit ILIKE :q
@@ -98,7 +99,14 @@ export class CalendarService {
         ? (dto.rejectionReason ?? null)
         : null;
     }
+    if (dto.isImportant !== undefined) updateData.isImportant = dto.isImportant;
     await this.eventRepository.update(id, updateData);
+    return this.findOne(id);
+  }
+
+  async toggleHidden(id: string): Promise<Event> {
+    const event = await this.findOne(id);
+    await this.eventRepository.update(id, { isHidden: !event.isHidden });
     return this.findOne(id);
   }
 

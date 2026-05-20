@@ -125,6 +125,34 @@
           </div>
         }
       }
+
+      <!-- Lọc theo đơn vị chủ trì -->
+      @if (viewMode() !== 'pending' && viewMode() !== 'mine' && viewMode() !== 'stats') {
+        <div class="unit-filter-wrap">
+          <svg class="unit-filter-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <select class="unit-filter-select" [class.unit-filter-select--active]="unitFilter()"
+            [value]="unitFilter()"
+            (change)="unitFilter.set($any($event.target).value)">
+            <option value="">Tất cả đơn vị</option>
+            @for (group of unitGroups; track group.label) {
+              <optgroup [label]="group.label">
+                @for (unit of group.units; track unit) {
+                  <option [value]="unit">{{ unit }}</option>
+                }
+              </optgroup>
+            }
+          </select>
+          @if (unitFilter()) {
+            <button class="unit-filter-clear" (click)="unitFilter.set('')" title="Bỏ lọc">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          }
+        </div>
+      }
     </div>
 
     <!-- Điều hướng ngày (chỉ trong view chính week/month) -->
@@ -237,17 +265,28 @@
             </thead>
             <tbody>
               @for (event of filteredPendingEvents; track event.id) {
-                <tr [style]="'--evt-clr:' + (event.color || '#f59e0b')">
+                <tr [style]="'--evt-clr:' + (event.color || '#f59e0b')" [class.row-important]="event.isImportant">
                   <td class="td-day-simple">
                     {{ formatEventDate(event.eventDate) }}
                   </td>
                   <td class="td-time">
-                    <span class="time-pill">{{ formatEventTime(event) }}</span>
+                    <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
                   </td>
                   <td class="td-title">
                     <div class="title-row">
                       <span class="evt-dot"></span>
-                      <span class="title-text">{{ event.title }}</span>
+                      @if (event.isImportant) {
+                        <svg class="icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                      }
+                      <span class="title-text" [class.text-important]="event.isImportant" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
+                      @if (event.isImportant) {
+                        <span class="badge-important">Quan trọng</span>
+                      }
+                      @if (event.isHidden && authService.isApprover()) {
+                        <span class="badge-hidden">Đang ẩn</span>
+                      }
                       <button class="btn-detail" (click)="openDetail(event)" title="Xem chi tiết">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -307,15 +346,26 @@
             </thead>
             <tbody>
               @for (event of filteredMyEvents; track event.id) {
-                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')">
+                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.row-important]="event.isImportant">
                   <td class="td-day-simple">{{ formatEventDate(event.eventDate) }}</td>
                   <td class="td-time">
-                    <span class="time-pill">{{ formatEventTime(event) }}</span>
+                    <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
                   </td>
                   <td class="td-title">
                     <div class="title-row">
                       <span class="evt-dot"></span>
-                      <span class="title-text">{{ event.title }}</span>
+                      @if (event.isImportant) {
+                        <svg class="icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                      }
+                      <span class="title-text" [class.text-important]="event.isImportant" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
+                      @if (event.isImportant) {
+                        <span class="badge-important">Quan trọng</span>
+                      }
+                      @if (event.isHidden && authService.isApprover()) {
+                        <span class="badge-hidden">Đang ẩn</span>
+                      }
                       <button class="btn-detail" (click)="openDetail(event)" title="Xem chi tiết">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -334,20 +384,22 @@
                     } @else { — }
                   </td>
                   <td class="td-actions">
-                    <button class="btn-edit" (click)="openEdit(event)" title="Chỉnh sửa">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                      Sửa
-                    </button>
-                    <button class="btn-delete" (click)="deleteEvent(event.id)" title="Xóa">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                      </svg>
-                      Xóa
-                    </button>
+                    @if (canEditEvent(event)) {
+                      <button class="btn-edit" (click)="openEdit(event)" title="Chỉnh sửa">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Sửa
+                      </button>
+                      <button class="btn-delete" (click)="deleteEvent(event.id)" title="Xóa">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                        </svg>
+                        Xóa
+                      </button>
+                    }
                   </td>
                 </tr>
               }
@@ -503,10 +555,16 @@
                   @for (evt of getEventsForDay(day).slice(0, 3); track evt.id) {
                     <div class="cell-chip"
                       [style.background]="evt.color || '#4f46e5'"
+                      [class.chip-important]="evt.isImportant"
                       [title]="evt.title"
                       (click)="openDetail(evt)">
                       @if (evt.startTime) {
                         <span class="chip-time">{{ formatEventTime(evt).split(' - ')[0] }}</span>
+                      }
+                      @if (evt.isImportant) {
+                        <svg class="chip-star" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
                       }
                       {{ evt.title }}
                     </div>
@@ -581,19 +639,30 @@
                 </tr>
               } @else {
               @for (event of group.events; track event.id; let i = $index) {
-                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.group-start]="i === 0">
+                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.group-start]="i === 0" [class.row-important]="event.isImportant">
                   @if (i === 0) {
                     <td class="td-day" [attr.rowspan]="group.events.length">
                       <div class="day-cell">{{ group.dateLabel }}</div>
                     </td>
                   }
                   <td class="td-time">
-                    <span class="time-pill">{{ formatEventTime(event) }}</span>
+                    <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
                   </td>
                   <td class="td-title">
                     <div class="title-row">
                       <span class="evt-dot"></span>
-                      <span class="title-text">{{ event.title }}</span>
+                      @if (event.isImportant) {
+                        <svg class="icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                      }
+                      <span class="title-text" [class.text-important]="event.isImportant" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
+                      @if (event.isImportant) {
+                        <span class="badge-important">Quan trọng</span>
+                      }
+                      @if (event.isHidden && authService.isApprover()) {
+                        <span class="badge-hidden">Đang ẩn</span>
+                      }
                       <button class="btn-detail" (click)="openDetail(event)" title="Xem chi tiết">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -677,6 +746,24 @@
                           Xóa
                         </button>
                       }
+                      @if (authService.isApprover() && event.status === 'approved') {
+                        <button class="btn-hide" [class.btn-unhide]="event.isHidden" (click)="toggleHidden(event)" [title]="event.isHidden ? 'Bỏ ẩn sự kiện' : 'Ẩn sự kiện'">
+                          @if (event.isHidden) {
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                              <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            Hiện
+                          } @else {
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                              <line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                            Ẩn
+                          }
+                        </button>
+                      }
                     </td>
                   }
                 </tr>
@@ -705,11 +792,21 @@
     <div class="detail-card" [style.--evt-accent]="detailEvent()!.color || '#4f46e5'" (click)="$event.stopPropagation()">
 
       <!-- Header -->
-      <div class="dc-header">
+      <div class="dc-header" [class.dc-header--important]="detailEvent()!.isImportant">
         <div class="dc-accent-bar"></div>
         <div class="dc-header-content">
           <p class="dc-date">{{ formatDetailDate(detailEvent()!) }}</p>
-          <h3 class="dc-title">{{ detailEvent()!.title }}</h3>
+          <div class="dc-title-row">
+            @if (detailEvent()!.isImportant) {
+              <svg class="dc-icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            }
+            <h3 class="dc-title" [class.dc-title--important]="detailEvent()!.isImportant">{{ detailEvent()!.title }}</h3>
+          </div>
+          @if (detailEvent()!.isImportant) {
+            <span class="badge-important" style="margin-top:6px; display:inline-flex;">Quan trọng</span>
+          }
         </div>
         <button class="dc-close" (click)="closeDetail()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
