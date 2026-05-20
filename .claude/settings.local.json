@@ -37,7 +37,8 @@
       "Bash(powershell -Command \"Get-ChildItem -Path 'd:\\\\ictu-calendar' -Name 'package.json' -Recurse | Select-Object -First 5\")",
       "Bash(Get-Content \"d:\\\\ictu-calendar\\\\fe\\\\src\\\\app\\\\features\\\\calendar\\\\components\\\\calendar-view\\\\calendar-view.component.scss\")",
       "Bash(Select-String -Pattern \"detail|dc-\")",
-      "Bash(Select-Object -First 5)"
+      "Bash(Select-Object -First 5)",
+      "Bash(node -e \"require\\('uuid'\\)\")"
     ]
   }
 }

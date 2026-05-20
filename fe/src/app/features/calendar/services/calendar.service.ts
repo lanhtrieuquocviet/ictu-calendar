@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
 import { ApiService } from '@core/services/api.service';
-import { CalendarEvent, CreateEventRequest, ApiListResponse } from '@models/event.model';
+import { CalendarEvent, CreateEventRequest, ApiListResponse, EventAttachment } from '@models/event.model';
+import { environment } from '@env/environment';
 
 export interface AdminStats {
   total: number;
@@ -14,6 +16,8 @@ export interface AdminStats {
 @Injectable({ providedIn: 'root' })
 export class CalendarService {
   private readonly api = inject(ApiService);
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = environment.apiUrl;
 
   getEvents(from: string, to: string, q?: string): Observable<ApiListResponse<CalendarEvent>> {
     const params: Record<string, string> = { from, to };
@@ -58,5 +62,32 @@ export class CalendarService {
 
   toggleHidden(id: string): Observable<{ data: CalendarEvent }> {
     return this.api.patch<{ data: CalendarEvent }>(`calendar/events/${id}/toggle-hidden`, {});
+  }
+
+  // ── Attachments ──────────────────────────────────────────────
+  getAttachments(eventId: string): Observable<EventAttachment[]> {
+    return this.api.get<{ data: EventAttachment[] }>(`calendar/events/${eventId}/attachments`).pipe(
+      map(res => res.data)
+    );
+  }
+
+  uploadAttachment(eventId: string, file: File): Observable<EventAttachment> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<{ data: EventAttachment }>(`${this.baseUrl}/calendar/events/${eventId}/attachments`, fd).pipe(
+      map(res => res.data)
+    );
+  }
+
+  getEventById(id: string): Observable<CalendarEvent> {
+    return this.api.get<{ data: CalendarEvent }>(`calendar/events/${id}`).pipe(map(res => res.data));
+  }
+
+  deleteAttachment(eventId: string, attachmentId: string): Observable<void> {
+    return this.api.delete<void>(`calendar/events/${eventId}/attachments/${attachmentId}`);
+  }
+
+  getDownloadUrl(filename: string): string {
+    return `${this.baseUrl}/calendar/attachments/${filename}`;
   }
 }

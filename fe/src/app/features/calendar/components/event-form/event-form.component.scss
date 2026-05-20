@@ -885,3 +885,111 @@
     svg { color: #f59e0b; filter: drop-shadow(0 0 3px #fbbf2480); }
   }
 }
+
+// ── Đính kèm văn bản ──────────────────────────────────────────────────────────
+
+.att-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.att-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.att-icon {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  min-width: 32px;
+  text-align: center;
+  text-transform: uppercase;
+  &::after { content: attr(data-type); }
+  &[data-type="pdf"]  { background: #fee2e2; color: #dc2626; }
+  &[data-type="doc"]  { background: #dbeafe; color: #1d4ed8; }
+  &[data-type="xls"]  { background: #dcfce7; color: #15803d; }
+  &[data-type="ppt"]  { background: #ffedd5; color: #c2410c; }
+  &[data-type="img"]  { background: #f3e8ff; color: #7e22ce; }
+  &[data-type="file"] { background: #f1f5f9; color: #475569; }
+}
+
+.att-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1e40af;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+  span & { color: #334155; }
+}
+
+.att-size {
+  font-size: 11px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.att-remove {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 3px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+  &:hover { color: #ef4444; background: #fee2e2; }
+}
+
+.att-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 16px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 13px;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+
+  &:hover, &.dragging {
+    border-color: #6366f1;
+    background: #f5f3ff;
+    color: #4f46e5;
+    svg { color: #6366f1; }
+  }
+
+  svg { color: #94a3b8; transition: color 0.15s; }
+  strong { color: #4f46e5; }
+}
+
+.att-hint {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.att-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #ef4444;
+}
+

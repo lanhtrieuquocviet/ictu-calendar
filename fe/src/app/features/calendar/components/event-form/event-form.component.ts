@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CalendarService } from '../../services/calendar.service';
 import { AuthService } from '@core/services/auth.service';
-import { CalendarEvent, CreateEventRequest } from '@models/event.model';
+import { CalendarEvent, CreateEventRequest, EventAttachment } from '@models/event.model';
 import { AutocompleteInputComponent } from '@shared/components/autocomplete-input/autocomplete-input.component';
 import { ToastService } from '@shared/services/toast.service';
 import { ICTU_UNIT_GROUPS } from '@core/constants/ictu-units';
@@ -37,6 +37,103 @@ export class EventFormComponent implements OnInit, OnDestroy {
   showDetails = false;
   showRejectInput = false;
   rejectReason = '';
+
+  // ── Đính kèm văn bản ──────────────────────────────
+  attachments: EventAttachment[] = [];
+  pendingFiles: File[] = [];
+  isDragging = false;
+  attachError = '';
+
+  get totalAttachments(): number {
+    return this.attachments.length + this.pendingFiles.length;
+  }
+
+  getFileIcon(mimeType: string): string {
+    if (mimeType === 'application/pdf') return 'pdf';
+    if (mimeType.includes('word')) return 'doc';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'xls';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'ppt';
+    if (mimeType.startsWith('image/')) return 'img';
+    return 'file';
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  getDownloadUrl(filename: string): string {
+    return this.calendarService.getDownloadUrl(filename);
+  }
+
+  private loadAttachments(): void {
+    if (!this.event?.id) return;
+    this.calendarService.getAttachments(this.event.id).subscribe({
+      next: list => { this.attachments = list; },
+      error: () => {},
+    });
+  }
+
+  removeAttachment(att: EventAttachment): void {
+    if (!this.event?.id) return;
+    this.calendarService.deleteAttachment(this.event.id, att.id).subscribe({
+      next: () => { this.attachments = this.attachments.filter(a => a.id !== att.id); },
+      error: () => { this.toast.error('Không thể xóa file'); },
+    });
+  }
+
+  removePendingFile(f: File): void {
+    this.pendingFiles = this.pendingFiles.filter(p => p !== f);
+  }
+
+  onDragOver(e: DragEvent): void {
+    e.preventDefault();
+    this.isDragging = true;
+  }
+
+  onDrop(e: DragEvent): void {
+    e.preventDefault();
+    this.isDragging = false;
+    if (e.dataTransfer?.files) this.addFiles(e.dataTransfer.files);
+  }
+
+  onFilesSelected(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    if (input.files) this.addFiles(input.files);
+    input.value = '';
+  }
+
+  private addFiles(files: FileList | File[]): void {
+    this.attachError = '';
+    const arr = Array.from(files);
+    const allowed = ['application/pdf','application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'image/jpeg','image/png'];
+    for (const f of arr) {
+      if (!allowed.includes(f.type)) { this.attachError = `"${f.name}" không được hỗ trợ`; continue; }
+      if (f.size > 10 * 1024 * 1024) { this.attachError = `"${f.name}" vượt quá 10 MB`; continue; }
+      if (this.totalAttachments >= 5) { this.attachError = 'Tối đa 5 file mỗi sự kiện'; break; }
+      if (this.isEdit) {
+        this.calendarService.uploadAttachment(this.event!.id, f).subscribe({
+          next: att => { this.attachments = [...this.attachments, att]; },
+          error: (err) => { this.attachError = err.error?.message || 'Upload thất bại'; },
+        });
+      } else {
+        this.pendingFiles = [...this.pendingFiles, f];
+      }
+    }
+  }
+
+  private uploadPendingFiles(eventId: string, files: File[]): void {
+    files.forEach(f => {
+      this.calendarService.uploadAttachment(eventId, f).subscribe({ error: () => {} });
+    });
+  }
 
   get canEditContent(): boolean  { return this.authService.isEditor(); }
   get canApprove(): boolean      { return this.authService.isApprover() && this.isEdit && this.event?.status === 'pending'; }
@@ -268,6 +365,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
       });
       const detailFields = ['meetingCode', 'participants', 'organizingUnit', 'vehicleArrangement', 'mediaUnit', 'supervisor', 'approvedBy', 'notes'] as const;
       this.showDetails = detailFields.some(f => !!(this.event as any)[f]);
+      this.loadAttachments();
     } else if (this.draft) {
       this.form.patchValue(this.draft);
       const detailFields = ['meetingCode', 'participants', 'organizingUnit', 'vehicleArrangement', 'mediaUnit', 'supervisor', 'approvedBy', 'notes'] as const;
@@ -476,8 +574,12 @@ export class EventFormComponent implements OnInit, OnDestroy {
       ? this.calendarService.updateEvent(this.event!.id, data)
       : this.calendarService.createEvent(data);
     req$.subscribe({
-      next: () => {
+      next: (res: any) => {
         this.loading = false;
+        if (!this.isEdit && this.pendingFiles.length > 0) {
+          const newId = res?.data?.id;
+          if (newId) this.uploadPendingFiles(newId, this.pendingFiles);
+        }
         this.toast.success(this.isEdit ? 'Cập nhật sự kiện thành công!' : 'Thêm sự kiện mới thành công!');
         this.saved.emit();
       },

@@ -50,7 +50,7 @@
         </a>
       }
       @if (authService.isLoggedIn()) {
-        <app-notification-bell />
+        <app-notification-bell (viewDetail)="openDetailById($event)" />
         <button class="btn-auth" (click)="authService.logout()">Đăng xuất</button>
       } @else {
         <a class="btn-auth" href="/auth/login">Đăng nhập</a>
@@ -285,8 +285,9 @@
                   </td>
                   <td class="td-title">
                     <div class="title-row">
-                      <span class="evt-dot"></span>
-                      @if (event.isImportant) {
+                      @if (!event.isImportant) {
+                        <span class="evt-dot"></span>
+                      } @else {
                         <svg class="icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                         </svg>
@@ -364,8 +365,9 @@
                   </td>
                   <td class="td-title">
                     <div class="title-row">
-                      <span class="evt-dot"></span>
-                      @if (event.isImportant) {
+                      @if (!event.isImportant) {
+                        <span class="evt-dot"></span>
+                      } @else {
                         <svg class="icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                         </svg>
@@ -661,8 +663,9 @@
                   </td>
                   <td class="td-title">
                     <div class="title-row">
-                      <span class="evt-dot"></span>
-                      @if (event.isImportant) {
+                      @if (!event.isImportant) {
+                        <span class="evt-dot"></span>
+                      } @else {
                         <svg class="icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                         </svg>
@@ -947,6 +950,29 @@
               Ghi chú
             </p>
             <div class="sp-notes-box">{{ detailEvent()!.notes }}</div>
+          </div>
+        }
+
+        <!-- Văn bản đính kèm -->
+        @if (detailAttachments().length > 0) {
+          <div class="sp-section">
+            <p class="sp-section-title">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              Văn bản đính kèm
+            </p>
+            <div class="sp-att-list">
+              @for (att of detailAttachments(); track att.id) {
+                <a class="sp-att-item" [href]="getAttachmentDownloadUrl(att.filename)" target="_blank" rel="noopener">
+                  <span class="sp-att-icon" [attr.data-type]="getAttachmentIcon(att.mimeType)"></span>
+                  <span class="sp-att-name">{{ att.originalName }}</span>
+                  <span class="sp-att-size">{{ formatAttachmentSize(att.size) }}</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sp-att-dl">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                </a>
+              }
+            </div>
           </div>
         }
 

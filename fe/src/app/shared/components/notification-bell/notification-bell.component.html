@@ -67,7 +67,12 @@
             <div class="notif-content">
               <div class="notif-title">{{ n.title }}</div>
               <div class="notif-message">{{ n.message }}</div>
-              <div class="notif-time">{{ timeAgo(n.createdAt) }}</div>
+              <div class="notif-footer">
+                <span class="notif-time">{{ timeAgo(n.createdAt) }}</span>
+                @if (n.type === 'reminder' && n.eventId) {
+                  <button class="notif-detail-btn" (click)="onViewDetail($event, n.eventId)">Xem chi tiết</button>
+                }
+              </div>
             </div>
 
             <button class="dismiss-btn" (click)="dismissNotif($event, n.id)" title="Xóa">

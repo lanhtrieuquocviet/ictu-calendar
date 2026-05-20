@@ -1,4 +1,4 @@
-import { Component, inject, HostListener, ElementRef, signal } from '@angular/core';
+import { Component, inject, HostListener, ElementRef, signal, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationService, AppNotification, NotificationType } from '../../services/notification.service';
 
@@ -14,6 +14,7 @@ export class NotificationBellComponent {
   private readonly el = inject(ElementRef);
 
   isOpen = signal(false);
+  viewDetail = output<string>();
 
   @HostListener('document:click', ['$event.target'])
   onDocumentClick(target: HTMLElement): void {
@@ -33,6 +34,12 @@ export class NotificationBellComponent {
   dismissNotif(event: Event, id: string): void {
     event.stopPropagation();
     this.notifService.dismiss(id);
+  }
+
+  onViewDetail(event: Event, eventId: string): void {
+    event.stopPropagation();
+    this.isOpen.set(false);
+    this.viewDetail.emit(eventId);
   }
 
   timeAgo(isoDate: string): string {

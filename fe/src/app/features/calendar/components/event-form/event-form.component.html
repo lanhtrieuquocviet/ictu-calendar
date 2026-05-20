@@ -287,6 +287,73 @@
               <textarea formControlName="notes" placeholder="Ghi chú thêm..."></textarea>
             </div>
 
+            <!-- Đính kèm văn bản -->
+            @if (canEditContent) {
+              <div class="field full">
+                <label>Văn bản đính kèm</label>
+
+                <!-- Danh sách file đã đính kèm (khi edit) -->
+                @if (isEdit && attachments.length > 0) {
+                  <div class="att-list">
+                    @for (att of attachments; track att.id) {
+                      <div class="att-item">
+                        <span class="att-icon" [attr.data-type]="getFileIcon(att.mimeType)"></span>
+                        <a class="att-name" [href]="getDownloadUrl(att.filename)" target="_blank" rel="noopener">
+                          {{ att.originalName }}
+                        </a>
+                        <span class="att-size">{{ formatFileSize(att.size) }}</span>
+                        <button type="button" class="att-remove" (click)="removeAttachment(att)" [disabled]="loading">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- File chờ upload (khi create) -->
+                @if (!isEdit && pendingFiles.length > 0) {
+                  <div class="att-list">
+                    @for (f of pendingFiles; track f.name) {
+                      <div class="att-item">
+                        <span class="att-icon" [attr.data-type]="getFileIcon(f.type)"></span>
+                        <span class="att-name">{{ f.name }}</span>
+                        <span class="att-size">{{ formatFileSize(f.size) }}</span>
+                        <button type="button" class="att-remove" (click)="removePendingFile(f)">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Upload zone -->
+                @if (totalAttachments < 5) {
+                  <div class="att-dropzone" [class.dragging]="isDragging"
+                    (dragover)="onDragOver($event)" (dragleave)="isDragging = false"
+                    (drop)="onDrop($event)" (click)="fileInput.click()">
+                    <input #fileInput type="file" hidden multiple
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+                      (change)="onFilesSelected($event)" />
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span>Kéo thả hoặc <strong>chọn file</strong></span>
+                    <span class="att-hint">PDF, Word, Excel, PowerPoint, JPG, PNG · Tối đa 10 MB/file · {{ 5 - totalAttachments }} file còn lại</span>
+                  </div>
+                }
+
+                @if (attachError) {
+                  <p class="att-error">{{ attachError }}</p>
+                }
+              </div>
+            }
+
           </div>
         }
 

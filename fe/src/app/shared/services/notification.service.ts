@@ -59,6 +59,11 @@ export class NotificationService {
     this.save();
   }
 
+  dismissByEventId(eventId: string): void {
+    this.notifications.update(list => list.filter(n => n.eventId !== eventId));
+    this.save();
+  }
+
   clearAll(): void {
     this.notifications.set([]);
     this.save();

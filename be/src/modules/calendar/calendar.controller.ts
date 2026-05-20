@@ -1,9 +1,16 @@
 import {
   Controller, Get, Post, Body, Patch, Param,
   Delete, UseGuards, Req, Query,
+  UseInterceptors, UploadedFile, Res, BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CalendarService } from './calendar.service';
+import { AttachmentService } from './attachment.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { ApproveEventDto } from './dto/approve-event.dto';
@@ -11,11 +18,24 @@ import { EventStatus } from './entities/event.entity';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const multerStorage = diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => cb(null, `${uuidv4()}${extname(file.originalname)}`),
+});
 
 @ApiTags('Calendar')
 @Controller('calendar')
 export class CalendarController {
-  constructor(private readonly calendarService: CalendarService) {}
+  constructor(
+    private readonly calendarService: CalendarService,
+    private readonly attachmentService: AttachmentService,
+  ) {}
 
   // ── Public: chỉ sự kiện đã được duyệt ──────────────
 
@@ -120,5 +140,47 @@ export class CalendarController {
   @ApiOperation({ summary: 'Phê duyệt / từ chối sự kiện (admin / approver)' })
   approve(@Param('id') id: string, @Req() req: any, @Body() dto: ApproveEventDto) {
     return this.calendarService.approve(id, req.user.sub, dto);
+  }
+
+  // ── Đính kèm văn bản ─────────────────────────────
+
+  @Get('events/:id/attachments')
+  @ApiOperation({ summary: 'Lấy danh sách file đính kèm của sự kiện' })
+  listAttachments(@Param('id') id: string) {
+    return this.attachmentService.findByEvent(id);
+  }
+
+  @Post('events/:id/attachments')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'editor')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Upload file đính kèm (admin / editor)' })
+  @UseInterceptors(FileInterceptor('file', { storage: multerStorage }))
+  uploadAttachment(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    if (!file) throw new BadRequestException('Không có file được gửi lên');
+    return this.attachmentService.upload(id, file, req.user.sub);
+  }
+
+  @Delete('events/:id/attachments/:attachmentId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'editor')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xóa file đính kèm (admin / editor)' })
+  deleteAttachment(
+    @Param('attachmentId') attachmentId: string,
+    @Req() req: any,
+  ) {
+    return this.attachmentService.delete(attachmentId, req.user.sub, req.user.role === 'admin');
+  }
+
+  @Get('attachments/:filename')
+  @ApiOperation({ summary: 'Tải xuống file đính kèm' })
+  downloadAttachment(@Param('filename') filename: string, @Res() res: Response) {
+    const filePath = this.attachmentService.getFilePath(filename);
+    res.download(filePath);
   }
 }

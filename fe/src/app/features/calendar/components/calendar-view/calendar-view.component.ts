@@ -5,10 +5,10 @@ import { Subscription } from 'rxjs';
 import { skip } from 'rxjs/operators';
 import { CalendarService, AdminStats } from '../../services/calendar.service';
 import { AuthService } from '@core/services/auth.service';
-import { CalendarEvent } from '@models/event.model';
+import { CalendarEvent, EventAttachment } from '@models/event.model';
 import { EventFormComponent } from '../event-form/event-form.component';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
-import { ToastService } from '@shared/services/toast.service';
+import { ToastService, ReminderMeta } from '@shared/services/toast.service';
 import { ToastComponent } from '@shared/components/toast/toast.component';
 import { NotificationService } from '@shared/services/notification.service';
 import { NotificationBellComponent } from '@shared/components/notification-bell/notification-bell.component';
@@ -432,7 +432,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
     let reminded: Set<string>;
     try {
-      reminded = new Set(JSON.parse(localStorage.getItem(REMINDER_KEY) ?? '[]'));
+      reminded = new Set(JSON.parse(sessionStorage.getItem(REMINDER_KEY) ?? '[]'));
     } catch {
       reminded = new Set();
     }
@@ -445,6 +445,8 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       next: (res) => {
         const nowMins = today.getHours() * 60 + today.getMinutes();
 
+        const batch: { meta: ReminderMeta; eventId: string; msg: string }[] = [];
+
         for (const event of res.data) {
           if (event.allDay || !event.startTime || reminded.has(event.id)) continue;
 
@@ -454,15 +456,29 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
           if (diff >= 10 && diff <= 30) {
             const parts = [`"${event.title}" bắt đầu sau ${diff} phút (${event.startTime.slice(0, 5)})`];
             if (event.location) parts.push(`tại ${event.location}`);
-            const msg = parts.join(' ');
-
-            this.notifService.add({ type: 'reminder', title: 'Nhắc nhở sự kiện', message: msg, eventId: event.id });
-            this.toast.show(msg, 'info');
+            batch.push({
+              eventId: event.id,
+              msg: parts.join(' '),
+              meta: {
+                eventTitle: event.title,
+                startTime: event.startTime.slice(0, 5),
+                diffMins: diff,
+                location: event.location ?? undefined,
+                onViewDetail: () => this.openDetail(event),
+              },
+            });
             reminded.add(event.id);
           }
         }
 
-        localStorage.setItem(REMINDER_KEY, JSON.stringify([...reminded]));
+        if (batch.length > 0) {
+          for (const item of batch) {
+            this.notifService.add({ type: 'reminder', title: 'Nhắc nhở sự kiện', message: item.msg, eventId: item.eventId });
+          }
+          this.toast.reminderBatch(batch.map(b => b.meta));
+        }
+
+        sessionStorage.setItem(REMINDER_KEY, JSON.stringify([...reminded]));
       },
     });
   }
@@ -485,9 +501,51 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   openAdd(): void { this.editingEvent.set(null); this.showForm.set(true); }
   openEdit(event: CalendarEvent): void { this.editingEvent.set(event); this.showForm.set(true); }
-  openDetail(event: CalendarEvent): void { this.detailEvent.set(event); }
-  closeDetail(): void { this.detailEvent.set(null); }
-  openEditFromDetail(): void { const e = this.detailEvent(); this.detailEvent.set(null); if (e) this.openEdit(e); }
+  detailAttachments = signal<EventAttachment[]>([]);
+
+  openDetail(event: CalendarEvent): void {
+    this.detailEvent.set(event);
+    this.detailAttachments.set([]);
+    this.calendarService.getAttachments(event.id).subscribe({
+      next: list => this.detailAttachments.set(list),
+      error: () => {},
+    });
+  }
+  openDetailById(eventId: string): void {
+    this.calendarService.getEventById(eventId).subscribe({
+      next: event => this.openDetail(event),
+      error: (err) => {
+        if (err?.status === 404) {
+          this.toast.warning('Sự kiện này không còn tồn tại hoặc đã bị xóa.');
+          this.notifService.dismissByEventId(eventId);
+        } else {
+          this.toast.error('Không thể tải chi tiết sự kiện. Vui lòng thử lại.');
+        }
+      },
+    });
+  }
+
+  closeDetail(): void { this.detailEvent.set(null); this.detailAttachments.set([]); }
+  openEditFromDetail(): void { const e = this.detailEvent(); this.detailEvent.set(null); this.detailAttachments.set([]); if (e) this.openEdit(e); }
+
+  getAttachmentDownloadUrl(filename: string): string {
+    return this.calendarService.getDownloadUrl(filename);
+  }
+
+  getAttachmentIcon(mimeType: string): string {
+    if (mimeType === 'application/pdf') return 'pdf';
+    if (mimeType.includes('word')) return 'doc';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'xls';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'ppt';
+    if (mimeType.startsWith('image/')) return 'img';
+    return 'file';
+  }
+
+  formatAttachmentSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
 
   formatDetailDate(event: CalendarEvent): string {
     if (!event.eventDate) return '—';

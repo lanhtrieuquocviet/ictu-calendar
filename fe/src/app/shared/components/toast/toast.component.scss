@@ -77,3 +77,286 @@
   from { transform: translateX(100%); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
 }
+
+/* ── Reminder popup trung tâm ── */
+
+.reminder-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInOverlay 0.2s ease;
+}
+
+.reminder-card {
+  background: #fff;
+  border-radius: 16px;
+  width: 460px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: popIn 0.25s ease;
+}
+
+/* Header */
+.reminder-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+  color: #fff;
+}
+
+.reminder-bell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: bellShake 0.7s ease 0.3s;
+}
+
+.reminder-header-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reminder-header-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.reminder-header-count {
+  font-size: 12px;
+  opacity: 0.85;
+  font-weight: 400;
+}
+
+.reminder-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  &:hover { background: rgba(255, 255, 255, 0.35); }
+}
+
+/* Body */
+.reminder-body {
+  padding: 16px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  &.multi {
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 16px;
+  }
+}
+
+.reminder-event-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 0;
+
+  &.has-separator {
+    border-top: 1px solid #f1f5f9;
+  }
+}
+
+.reminder-event-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff7ed;
+  border-left: 4px solid #ea580c;
+  border-radius: 0 8px 8px 0;
+
+  .ri-icon { margin-top: 1px; color: #ea580c; flex-shrink: 0; }
+  .event-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.5;
+  }
+}
+
+.reminder-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.ri-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .ri-icon { color: #64748b; flex-shrink: 0; display: flex; }
+}
+
+.reminder-detail-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  padding: 5px 12px;
+  background: #fff;
+  color: #ea580c;
+  border: 1.5px solid #ea580c;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #fff7ed; }
+}
+
+.ri-time-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ri-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.ri-time-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ea580c;
+  letter-spacing: 0.5px;
+}
+
+.ri-badge {
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 20px;
+  border: 1px solid #fcd34d;
+}
+
+.ri-value {
+  font-size: 14px;
+  color: #334155;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Progress bar */
+.reminder-progress-bar {
+  height: 5px;
+  background: #fed7aa;
+  margin: 16px 24px 8px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.reminder-progress-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ea580c, #f97316);
+  border-radius: 3px;
+  transform-origin: left;
+  animation: progressShrink linear forwards;
+}
+
+/* Nút */
+.reminder-actions {
+  display: flex;
+  gap: 10px;
+  margin: 8px 24px 20px;
+}
+
+.reminder-detail-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px;
+  background: #fff;
+  color: #ea580c;
+  border: 2px solid #ea580c;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  &:hover {
+    background: #fff7ed;
+  }
+}
+
+.reminder-dismiss-btn {
+  flex: 1;
+  display: block;
+  padding: 11px;
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  &:hover { opacity: 0.88; }
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.88); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  20%       { transform: rotate(-18deg); }
+  40%       { transform: rotate(18deg); }
+  60%       { transform: rotate(-10deg); }
+  80%       { transform: rotate(10deg); }
+}
+
+@keyframes progressShrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}

@@ -1,33 +1,127 @@
 <div class="toast-container">
   @for (toast of toastService.toasts(); track toast.id) {
-    <div class="toast" [attr.data-type]="toast.type">
-      <span class="toast-icon">
-        @if (toast.type === 'success') {
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-        } @else if (toast.type === 'error') {
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    @if (toast.type !== 'reminder') {
+      <div class="toast" [attr.data-type]="toast.type">
+        <span class="toast-icon">
+          @if (toast.type === 'success') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          } @else if (toast.type === 'error') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          } @else if (toast.type === 'warning') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          } @else {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          }
+        </span>
+        <span class="toast-msg">{{ toast.message }}</span>
+        <button class="toast-close" (click)="toastService.dismiss(toast.id)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
-        } @else if (toast.type === 'warning') {
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-        } @else {
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        }
-      </span>
-      <span class="toast-msg">{{ toast.message }}</span>
-      <button class="toast-close" (click)="toastService.dismiss(toast.id)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
+        </button>
+      </div>
+    }
   }
 </div>
+
+@for (toast of toastService.toasts(); track toast.id) {
+  @if (toast.type === 'reminder' && toast.reminderMetas?.length) {
+    <div class="reminder-overlay" (click)="toastService.dismiss(toast.id)">
+      <div class="reminder-card" (click)="$event.stopPropagation()">
+
+        <!-- Header -->
+        <div class="reminder-header">
+          <div class="reminder-bell">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+          <div class="reminder-header-text">
+            <span class="reminder-header-title">Nhắc nhở sự kiện</span>
+            @if (toast.reminderMetas!.length > 1) {
+              <span class="reminder-header-count">{{ toast.reminderMetas!.length }} sự kiện sắp bắt đầu</span>
+            }
+          </div>
+          <button class="reminder-close" (click)="toastService.dismiss(toast.id)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Body: danh sách sự kiện -->
+        <div class="reminder-body" [class.multi]="toast.reminderMetas!.length > 1">
+          @for (meta of toast.reminderMetas!; track meta.eventTitle; let i = $index) {
+            <div class="reminder-event-card" [class.has-separator]="i > 0">
+
+              <!-- Tên sự kiện -->
+              <div class="reminder-event-title">
+                <span class="ri-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </span>
+                <span class="ri-value event-name">{{ meta.eventTitle }}</span>
+              </div>
+
+              <!-- Thời gian + địa điểm -->
+              <div class="reminder-meta-row">
+                <div class="ri-time-group">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span class="ri-time-val">{{ meta.startTime }}</span>
+                  <span class="ri-badge">còn {{ meta.diffMins }} phút</span>
+                </div>
+                @if (meta.location) {
+                  <div class="ri-location">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>{{ meta.location }}</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Nút xem chi tiết riêng từng sự kiện -->
+              @if (meta.onViewDetail) {
+                <button class="reminder-detail-btn-sm" (click)="meta.onViewDetail!(); toastService.dismiss(toast.id)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  Xem chi tiết
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Progress bar -->
+        <div class="reminder-progress-bar">
+          <div class="reminder-progress-fill" [style.animation-duration]="toast.duration + 'ms'"></div>
+        </div>
+
+        <!-- Nút đóng chung -->
+        <div class="reminder-actions">
+          <button class="reminder-dismiss-btn" (click)="toastService.dismiss(toast.id)">Đã biết</button>
+        </div>
+
+      </div>
+    </div>
+  }
+}
