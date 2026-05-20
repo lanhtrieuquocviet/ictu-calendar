@@ -583,7 +583,7 @@
                     </div>
                   }
                   @if (getEventsForDay(day).length > 3) {
-                    <div class="cell-more">+{{ getEventsForDay(day).length - 3 }} thêm</div>
+                    <div class="cell-more" (click)="openDayPopup(day, $event)">+{{ getEventsForDay(day).length - 3 }} thêm</div>
                   }
                 </div>
               }
@@ -790,6 +790,30 @@
     }
   </div>
 </div>
+
+@if (dayPopup) {
+  <div class="day-popup-backdrop" (click)="closeDayPopup()">
+    <div class="day-popup" (click)="$event.stopPropagation()">
+      <div class="day-popup-header">
+        <span class="day-popup-title">{{ formatDayPopupTitle(dayPopup.day) }}</span>
+        <button type="button" class="day-popup-close" (click)="closeDayPopup()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="day-popup-list">
+        @for (evt of dayPopup.events; track evt.id) {
+          <div class="day-popup-item" [style.--accent]="evt.color || '#4f46e5'" (click)="openDetail(evt); closeDayPopup()">
+            <span class="day-popup-dot" [style.background]="evt.color || '#4f46e5'"></span>
+            <span class="day-popup-time">{{ evt.startTime ? evt.startTime.slice(0,5) : 'Cả ngày' }}</span>
+            <span class="day-popup-name" [class.day-popup-important]="evt.isImportant">{{ evt.title }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
 
 @if (showForm()) {
   <app-event-form

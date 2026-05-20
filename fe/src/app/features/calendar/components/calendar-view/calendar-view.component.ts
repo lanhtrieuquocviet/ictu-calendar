@@ -500,6 +500,19 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   openAdd(): void { this.editingEvent.set(null); this.showForm.set(true); }
   openEdit(event: CalendarEvent): void { this.editingEvent.set(event); this.showForm.set(true); }
+
+  dayPopup: { day: Date; events: CalendarEvent[] } | null = null;
+
+  openDayPopup(day: Date, e: MouseEvent): void {
+    e.stopPropagation();
+    this.dayPopup = { day, events: this.getEventsForDay(day) };
+  }
+
+  closeDayPopup(): void { this.dayPopup = null; }
+
+  formatDayPopupTitle(day: Date): string {
+    return day.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
   detailAttachments = signal<EventAttachment[]>([]);
 
   openDetail(event: CalendarEvent): void {
