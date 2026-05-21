@@ -1,6 +1,6 @@
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a3a6b 0%, #1e4d8c 60%, #2563a8 100%);
+  background: linear-gradient(135deg, #004d8a 0%, #006cb5 60%, #1a82cc 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,13 +23,13 @@
   .logo {
     width: 56px;
     height: 56px;
-    background: linear-gradient(135deg, #1a3a6b, #1e4d8c);
+    background: linear-gradient(135deg, #004d8a, #006cb5);
     border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 16px;
-    box-shadow: 0 4px 12px rgba(26, 58, 107, 0.35);
+    box-shadow: 0 4px 12px rgba(0, 108, 181, 0.35);
 
     span {
       font-size: 16px;
@@ -78,9 +78,9 @@
 
     &:focus {
       outline: none;
-      border-color: #1a3a6b;
+      border-color: #006cb5;
       background: #fff;
-      box-shadow: 0 0 0 3px rgba(26, 58, 107, 0.1);
+      box-shadow: 0 0 0 3px rgba(0, 108, 181, 0.1);
     }
 
     &::placeholder { color: #94a3b8; }
@@ -161,7 +161,7 @@
 .btn-submit {
   width: 100%;
   padding: 12px;
-  background: linear-gradient(135deg, #1a3a6b, #1e4d8c);
+  background: linear-gradient(135deg, #004d8a, #006cb5);
   color: #fff;
   border: none;
   border-radius: 9px;
@@ -207,7 +207,7 @@
   color: #64748b;
 
   a {
-    color: #1a3a6b;
+    color: #006cb5;
     font-weight: 600;
     text-decoration: none;
 

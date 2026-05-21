@@ -1,4 +1,4 @@
-.page {
+﻿.page {
   background: #f0f4f8;
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   display: flex;
@@ -27,7 +27,7 @@
 .page-title {
   font-size: 20px;
   font-weight: 700;
-  color: #0f2d5e;
+  color: #004d8a;
   margin: 0 0 4px;
 }
 
@@ -73,8 +73,8 @@
   transition: all .15s;
   border-radius: 6px 6px 0 0;
 
-  &:hover { color: #1a3a6b; background: #f1f5f9; }
-  &.active { color: #1a3a6b; border-bottom-color: #1a3a6b; font-weight: 600; }
+  &:hover { color: #006cb5; background: #f1f5f9; }
+  &.active { color: #006cb5; border-bottom-color: #006cb5; font-weight: 600; }
 }
 
 .tab-count {
@@ -89,7 +89,7 @@
 }
 
 .tab.active .tab-count {
-  background: #1a3a6b;
+  background: #006cb5;
   color: #fff;
 }
 
@@ -111,14 +111,14 @@
 
 .btn-add {
   display: flex; align-items: center; gap: 6px;
-  background: #1a3a6b;
+  background: #006cb5;
   color: #fff;
   border: none;
   border-radius: 8px;
   padding: 8px 16px;
   font-size: 13px; font-weight: 500;
   cursor: pointer; transition: background .15s;
-  &:hover { background: #0f2d5e; }
+  &:hover { background: #004d8a; }
 }
 
 .add-form {
@@ -137,7 +137,7 @@
   color: #1e293b;
   outline: none;
   transition: border .15s;
-  &:focus { border-color: #1a3a6b; }
+  &:focus { border-color: #006cb5; }
   &.error { border-color: #ef4444; }
 }
 
@@ -151,11 +151,11 @@
 }
 
 .btn-confirm, .btn-confirm-sm {
-  background: #1a3a6b; color: #fff;
+  background: #006cb5; color: #fff;
   border: none; border-radius: 7px;
   padding: 7px 16px; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: background .15s; white-space: nowrap;
-  &:hover:not(:disabled) { background: #0f2d5e; }
+  &:hover:not(:disabled) { background: #004d8a; }
   &:disabled { opacity: .5; cursor: not-allowed; }
 }
 
@@ -252,7 +252,7 @@
   transition: all .15s; margin-right: 4px;
 
   &.btn-edit {
-    color: #1a3a6b;
+    color: #006cb5;
     &:hover { background: #e0e7ff; border-color: #c7d2fe; }
   }
 
@@ -266,7 +266,7 @@
 .toast {
   position: fixed;
   bottom: 24px; right: 24px;
-  background: #1a3a6b; color: #fff;
+  background: #006cb5; color: #fff;
   padding: 12px 20px;
   border-radius: 10px;
   font-size: 13px; font-weight: 500;

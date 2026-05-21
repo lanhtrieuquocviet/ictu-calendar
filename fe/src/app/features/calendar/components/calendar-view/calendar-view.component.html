@@ -54,7 +54,7 @@
       <span class="section-label">LỊCH CÔNG TÁC</span>
 
       <!-- Nút quay lại khi đang ở view đặc biệt -->
-      @if (viewMode() === 'pending' || viewMode() === 'mine' || viewMode() === 'stats') {
+      @if (viewMode() === 'pending' || viewMode() === 'mine') {
         <button class="btn-back-view" (click)="setView('week')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <polyline points="15 18 9 12 15 6"/>
@@ -64,7 +64,7 @@
       }
 
       <!-- Tab chính: Tuần / Tháng / Danh sách -->
-      @if (viewMode() !== 'pending' && viewMode() !== 'mine' && viewMode() !== 'stats') {
+      @if (viewMode() !== 'pending' && viewMode() !== 'mine') {
         <div class="view-switcher">
           <button [class.active]="viewMode() === 'week'"  (click)="setView('week')">Tuần</button>
           <button [class.active]="viewMode() === 'month'" (click)="setView('month')">Tháng</button>
@@ -85,18 +85,6 @@
         </button>
       }
 
-      <!-- Tab đặc biệt: Thống kê (Admin) -->
-      @if (authService.isAdmin()) {
-        <button class="tab-special" [class.active]="viewMode() === 'stats'" (click)="setView('stats')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="18" y1="20" x2="18" y2="10"/>
-            <line x1="12" y1="20" x2="12" y2="4"/>
-            <line x1="6" y1="20" x2="6" y2="14"/>
-          </svg>
-          Thống kê
-        </button>
-      }
-
       <!-- Tab đặc biệt: Lịch của tôi (Editor) -->
       @if (authService.isEditor() && !authService.isAdmin()) {
         <button class="tab-special" [class.active]="viewMode() === 'mine'" (click)="setView('mine')">
@@ -108,26 +96,80 @@
       }
 
       <!-- Bộ lọc trạng thái (chỉ hiện trong view chính và mine) -->
-      @if (canSeeStatus && viewMode() !== 'pending' && viewMode() !== 'stats') {
+      @if (canSeeStatus && viewMode() !== 'pending') {
         @if (viewMode() !== 'mine') {
-          <div class="status-filter">
-            <button [class.active]="statusFilter() === 'all'"      (click)="statusFilter.set('all')">Tất cả</button>
-            <button [class.active]="statusFilter() === 'pending'"  (click)="statusFilter.set('pending')"  class="filter-pending">Chờ duyệt</button>
-            <button [class.active]="statusFilter() === 'approved'" (click)="statusFilter.set('approved')" class="filter-approved">Đã duyệt</button>
-            <button [class.active]="statusFilter() === 'rejected'" (click)="statusFilter.set('rejected')" class="filter-rejected">Từ chối</button>
+          <div class="sf-wrap" (click)="$event.stopPropagation()">
+            <button class="sf-trigger" [attr.data-val]="statusFilter()"
+              (click)="statusDropdownOpen.set(!statusDropdownOpen())">
+              <span class="sf-indicator" [attr.data-val]="statusFilter()"></span>
+              <span>{{ statusFilterLabel() }}</span>
+              <svg class="sf-chevron" [class.open]="statusDropdownOpen()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            @if (statusDropdownOpen()) {
+              <div class="sf-menu">
+                <button class="sf-item" [class.active]="statusFilter()==='all'"
+                  (click)="statusFilter.set('all'); statusDropdownOpen.set(false)">
+                  <span class="sf-item-dot" data-val="all"></span>Tất cả
+                </button>
+                <button class="sf-item sf-item--pending" [class.active]="statusFilter()==='pending'"
+                  (click)="statusFilter.set('pending'); statusDropdownOpen.set(false)">
+                  <span class="sf-item-dot" data-val="pending"></span>Chờ duyệt
+                </button>
+                <button class="sf-item sf-item--approved" [class.active]="statusFilter()==='approved'"
+                  (click)="statusFilter.set('approved'); statusDropdownOpen.set(false)">
+                  <span class="sf-item-dot" data-val="approved"></span>Đã duyệt
+                </button>
+                <button class="sf-item sf-item--rejected" [class.active]="statusFilter()==='rejected'"
+                  (click)="statusFilter.set('rejected'); statusDropdownOpen.set(false)">
+                  <span class="sf-item-dot" data-val="rejected"></span>Từ chối
+                </button>
+                @if (authService.isApprover()) {
+                  <button class="sf-item sf-item--hidden" [class.active]="statusFilter()==='hidden'"
+                    (click)="statusFilter.set('hidden'); statusDropdownOpen.set(false)">
+                    <span class="sf-item-dot" data-val="hidden"></span>Đang ẩn
+                  </button>
+                }
+              </div>
+            }
           </div>
         } @else {
-          <div class="status-filter">
-            <button [class.active]="myStatusFilter() === 'all'"      (click)="myStatusFilter.set('all')">Tất cả</button>
-            <button [class.active]="myStatusFilter() === 'pending'"  (click)="myStatusFilter.set('pending')"  class="filter-pending">Chờ duyệt</button>
-            <button [class.active]="myStatusFilter() === 'approved'" (click)="myStatusFilter.set('approved')" class="filter-approved">Đã duyệt</button>
-            <button [class.active]="myStatusFilter() === 'rejected'" (click)="myStatusFilter.set('rejected')" class="filter-rejected">Từ chối</button>
+          <div class="sf-wrap" (click)="$event.stopPropagation()">
+            <button class="sf-trigger" [attr.data-val]="myStatusFilter()"
+              (click)="myStatusDropdownOpen.set(!myStatusDropdownOpen())">
+              <span class="sf-indicator" [attr.data-val]="myStatusFilter()"></span>
+              <span>{{ statusFilterLabel(myStatusFilter()) }}</span>
+              <svg class="sf-chevron" [class.open]="myStatusDropdownOpen()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            @if (myStatusDropdownOpen()) {
+              <div class="sf-menu">
+                <button class="sf-item" [class.active]="myStatusFilter()==='all'"
+                  (click)="myStatusFilter.set('all'); myStatusDropdownOpen.set(false)">
+                  <span class="sf-item-dot" data-val="all"></span>Tất cả
+                </button>
+                <button class="sf-item sf-item--pending" [class.active]="myStatusFilter()==='pending'"
+                  (click)="myStatusFilter.set('pending'); myStatusDropdownOpen.set(false)">
+                  <span class="sf-item-dot" data-val="pending"></span>Chờ duyệt
+                </button>
+                <button class="sf-item sf-item--approved" [class.active]="myStatusFilter()==='approved'"
+                  (click)="myStatusFilter.set('approved'); myStatusDropdownOpen.set(false)">
+                  <span class="sf-item-dot" data-val="approved"></span>Đã duyệt
+                </button>
+                <button class="sf-item sf-item--rejected" [class.active]="myStatusFilter()==='rejected'"
+                  (click)="myStatusFilter.set('rejected'); myStatusDropdownOpen.set(false)">
+                  <span class="sf-item-dot" data-val="rejected"></span>Từ chối
+                </button>
+              </div>
+            }
           </div>
         }
       }
 
       <!-- Lọc theo đơn vị chủ trì -->
-      @if (viewMode() !== 'pending' && viewMode() !== 'mine' && viewMode() !== 'stats') {
+      @if (viewMode() !== 'pending' && viewMode() !== 'mine') {
         <div class="unit-filter-wrap">
           <svg class="unit-filter-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
@@ -181,15 +223,10 @@
       <div class="period-nav">
         <span class="period-label">Tất cả sự kiện của tôi</span>
       </div>
-    } @else if (viewMode() === 'stats') {
-      <div class="period-nav">
-        <span class="period-label">Tổng quan hệ thống</span>
-      </div>
     }
 
     <div class="toolbar-right">
-      @if (viewMode() !== 'stats') {
-        <div class="search-wrap">
+      <div class="search-wrap">
           <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
@@ -217,7 +254,6 @@
           }
           <span class="badge-label">sự kiện</span>
         </div>
-      }
     </div>
 
   </div>
@@ -265,7 +301,7 @@
             </thead>
             <tbody>
               @for (event of filteredPendingEvents; track event.id) {
-                <tr [style]="'--evt-clr:' + (event.color || '#f59e0b')" [class.row-important]="event.isImportant">
+                <tr [style]="'--evt-clr:' + (event.color || '#f59e0b')" [class.row-important]="event.isImportant" (click)="openDetail(event)">
                   <td class="td-day-simple">
                     {{ formatEventDate(event.eventDate) }}
                   </td>
@@ -285,18 +321,12 @@
                       @if (event.isHidden && authService.isApprover()) {
                         <span class="badge-hidden">Đang ẩn</span>
                       }
-                      <button class="btn-detail" (click)="openDetail(event)" title="Xem chi tiết">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      </button>
                     </div>
                   </td>
                   <td>{{ event.createdByName || '—' }}</td>
                   <td><span class="cell-truncate">{{ event.organizingUnit || '—' }}</span></td>
                   <td><span class="cell-truncate">{{ event.location || '—' }}</span></td>
-                  <td class="td-actions">
+                  <td class="td-actions" (click)="$event.stopPropagation()">
                     <button class="btn-approve" (click)="openEdit(event)" title="Phê duyệt">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -344,7 +374,7 @@
             </thead>
             <tbody>
               @for (event of filteredMyEvents; track event.id) {
-                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.row-important]="event.isImportant">
+                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.row-important]="event.isImportant" (click)="openDetail(event)">
                   <td class="td-day-simple">{{ formatEventDate(event.eventDate) }}</td>
                   <td class="td-time">
                     <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
@@ -362,12 +392,6 @@
                       @if (event.isHidden && authService.isApprover()) {
                         <span class="badge-hidden">Đang ẩn</span>
                       }
-                      <button class="btn-detail" (click)="openDetail(event)" title="Xem chi tiết">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      </button>
                     </div>
                   </td>
                   <td><span class="cell-truncate">{{ event.location || '—' }}</span></td>
@@ -381,151 +405,31 @@
                   </td>
                   <td class="td-actions">
                     @if (canEditEvent(event)) {
-                      <button class="btn-edit" (click)="openEdit(event)" title="Chỉnh sửa">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                        Sửa
-                      </button>
-                      <button class="btn-delete" (click)="deleteEvent(event.id)" title="Xóa">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="3 6 5 6 21 6"/>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                        </svg>
-                        Xóa
-                      </button>
+                      <div class="kebab-wrap" (click)="$event.stopPropagation()">
+                        <button class="kebab-btn" (click)="openMenuId.set(openMenuId() === event.id ? null : event.id)" title="Thao tác">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+                          </svg>
+                        </button>
+                        @if (openMenuId() === event.id) {
+                          <div class="kebab-menu">
+                            <button class="kebab-item" (click)="openEdit(event); openMenuId.set(null)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                              Sửa
+                            </button>
+                            <button class="kebab-item kebab-item--danger" (click)="deleteEvent(event.id); openMenuId.set(null)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                              Xóa
+                            </button>
+                          </div>
+                        }
+                      </div>
                     }
                   </td>
                 </tr>
               }
             </tbody>
           </table>
-        </div>
-      }
-
-    <!-- ── STATS VIEW (Thống kê) ─────────────────── -->
-    } @else if (viewMode() === 'stats') {
-
-      @if (statsLoading()) {
-        <div class="state-box">
-          <div class="spinner"></div>
-          <div class="state-text">Đang tải thống kê...</div>
-        </div>
-      } @else if (!adminStats()) {
-        <div class="state-box">
-          <div class="state-text">Không thể tải dữ liệu thống kê</div>
-        </div>
-      } @else {
-        <div class="stats-dashboard">
-
-          <!-- Thẻ số liệu tổng quan -->
-          <div class="stats-cards">
-            <div class="scard scard--total">
-              <div class="scard-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-              </div>
-              <div class="scard-body">
-                <span class="scard-num">{{ adminStats()!.total }}</span>
-                <span class="scard-label">Tổng sự kiện</span>
-              </div>
-            </div>
-
-            <div class="scard scard--month">
-              <div class="scard-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                </svg>
-              </div>
-              <div class="scard-body">
-                <span class="scard-num">{{ adminStats()!.thisMonth }}</span>
-                <span class="scard-label">Trong tháng này</span>
-              </div>
-            </div>
-
-            <div class="scard scard--pending">
-              <div class="scard-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
-              </div>
-              <div class="scard-body">
-                <span class="scard-num">{{ adminStats()!.pending }}</span>
-                <span class="scard-label">Chờ duyệt</span>
-              </div>
-            </div>
-
-            <div class="scard scard--approved">
-              <div class="scard-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              </div>
-              <div class="scard-body">
-                <span class="scard-num">{{ adminStats()!.approved }}</span>
-                <span class="scard-label">Đã duyệt</span>
-              </div>
-            </div>
-
-            <div class="scard scard--rejected">
-              <div class="scard-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </div>
-              <div class="scard-body">
-                <span class="scard-num">{{ adminStats()!.rejected }}</span>
-                <span class="scard-label">Từ chối</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tỷ lệ duyệt bằng progress bar -->
-          @if (adminStats()!.total > 0) {
-            <div class="stats-breakdown">
-              <h3 class="breakdown-title">Phân bổ trạng thái</h3>
-              <div class="breakdown-bar-wrap">
-                @if (adminStats()!.approved > 0) {
-                  <div class="bar-seg bar-seg--approved"
-                    [style.width.%]="adminStats()!.approved / adminStats()!.total * 100"
-                    [title]="'Đã duyệt: ' + adminStats()!.approved">
-                  </div>
-                }
-                @if (adminStats()!.pending > 0) {
-                  <div class="bar-seg bar-seg--pending"
-                    [style.width.%]="adminStats()!.pending / adminStats()!.total * 100"
-                    [title]="'Chờ duyệt: ' + adminStats()!.pending">
-                  </div>
-                }
-                @if (adminStats()!.rejected > 0) {
-                  <div class="bar-seg bar-seg--rejected"
-                    [style.width.%]="adminStats()!.rejected / adminStats()!.total * 100"
-                    [title]="'Từ chối: ' + adminStats()!.rejected">
-                  </div>
-                }
-              </div>
-              <div class="breakdown-legend">
-                <span class="legend-item">
-                  <span class="legend-dot legend-dot--approved"></span>
-                  Đã duyệt {{ adminStats()!.approved }} ({{ (adminStats()!.approved / adminStats()!.total * 100) | number:'1.0-0' }}%)
-                </span>
-                <span class="legend-item">
-                  <span class="legend-dot legend-dot--pending"></span>
-                  Chờ duyệt {{ adminStats()!.pending }} ({{ (adminStats()!.pending / adminStats()!.total * 100) | number:'1.0-0' }}%)
-                </span>
-                <span class="legend-item">
-                  <span class="legend-dot legend-dot--rejected"></span>
-                  Từ chối {{ adminStats()!.rejected }} ({{ (adminStats()!.rejected / adminStats()!.total * 100) | number:'1.0-0' }}%)
-                </span>
-              </div>
-            </div>
-          }
-
         </div>
       }
 
@@ -616,9 +520,8 @@
               <th>Địa điểm</th>
               <th>Điều xe / Truyền thông</th>
               <th>ĐU/BGH Chỉ đạo</th>
-              <th>ĐU/BGH Phê duyệt</th>
-              @if (canSeeStatus) {
-                <th class="th-status">Trạng thái</th>
+              @if (authService.isApprover() || authService.isAdmin()) {
+                <th>ĐU/BGH Phê duyệt</th>
               }
               <th>Mã CH</th>
               @if (authService.isEditor() || authService.isApprover()) {
@@ -635,9 +538,9 @@
                 </tr>
               } @else {
               @for (event of group.events; track event.id; let i = $index) {
-                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.group-start]="i === 0" [class.row-important]="event.isImportant">
+                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.group-start]="i === 0" [class.row-important]="event.isImportant" (click)="openDetail(event)">
                   @if (i === 0) {
-                    <td class="td-day" [attr.rowspan]="group.events.length">
+                    <td class="td-day" [attr.rowspan]="group.events.length" (click)="$event.stopPropagation()">
                       <div class="day-cell">{{ group.dateLabel }}</div>
                     </td>
                   }
@@ -657,12 +560,6 @@
                       @if (event.isHidden && authService.isApprover()) {
                         <span class="badge-hidden">Đang ẩn</span>
                       }
-                      <button class="btn-detail" (click)="openDetail(event)" title="Xem chi tiết">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      </button>
                     </div>
                     @if (authService.isApprover() && (event.createdByName || event.user?.fullName)) {
                       <span class="event-creator">
@@ -687,77 +584,71 @@
                     } @else { — }
                   </td>
                   <td [title]="event.supervisor || ''"><span class="cell-truncate">{{ event.supervisor || '—' }}</span></td>
-                  <td class="td-approved">
-                    @if (event.status === 'approved') {
-                      <div class="approved-info">
-                        <span class="approved-check">
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                        </span>
-                        <span class="approved-text">
-                          <span class="approved-label">Đã duyệt</span>
-                          @if (event.approvedByName) {
-                            <span class="approved-name">{{ event.approvedByName }}</span>
-                          }
-                          @if (event.approvedAt) {
-                            <span class="approved-time">{{ formatApprovedAt(event.approvedAt) }}</span>
-                          }
-                        </span>
-                      </div>
-                    } @else { — }
-                  </td>
-                  @if (canSeeStatus) {
-                    <td class="td-status td-center">
-                      <span class="status-badge" [attr.data-status]="event.status">{{ statusLabel(event.status) }}</span>
+                  @if (authService.isApprover() || authService.isAdmin()) {
+                    <td class="td-approved">
+                      @if (event.status === 'approved') {
+                        <div class="approved-info">
+                          <span class="approved-check">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                          </span>
+                          <span class="approved-text">
+                            <span class="approved-label">Đã duyệt</span>
+                            @if (event.approvedByName) {
+                              <span class="approved-name">{{ event.approvedByName }}</span>
+                            }
+                            @if (event.approvedAt) {
+                              <span class="approved-time">{{ formatApprovedAt(event.approvedAt) }}</span>
+                            }
+                          </span>
+                        </div>
+                      } @else { — }
                     </td>
                   }
                   <td class="td-code">{{ event.meetingCode || '—' }}</td>
                   @if (authService.isEditor() || authService.isApprover()) {
                     <td class="td-actions">
-                      @if (authService.isApprover() && !authService.isEditor() && event.status === 'pending') {
-                        <button class="btn-edit" (click)="openEdit(event)" title="Phê duyệt">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      <div class="kebab-wrap" (click)="$event.stopPropagation()">
+                        <button class="kebab-btn" (click)="openMenuId.set(openMenuId() === event.id ? null : event.id)" title="Thao tác">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
                           </svg>
-                          Duyệt
                         </button>
-                      }
-                      @if (authService.isEditor() && canEditEvent(event)) {
-                        <button class="btn-edit" (click)="openEdit(event)" title="Chỉnh sửa">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                          </svg>
-                          Sửa
-                        </button>
-                        <button class="btn-delete" (click)="deleteEvent(event.id)" title="Xóa">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                          </svg>
-                          Xóa
-                        </button>
-                      }
-                      @if (authService.isApprover() && event.status === 'approved') {
-                        <button class="btn-hide" [class.btn-unhide]="event.isHidden" (click)="toggleHidden(event)" [title]="event.isHidden ? 'Bỏ ẩn sự kiện' : 'Ẩn sự kiện'">
-                          @if (event.isHidden) {
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                              <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                            Hiện
-                          } @else {
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                              <line x1="1" y1="1" x2="23" y2="23"/>
-                            </svg>
-                            Ẩn
-                          }
-                        </button>
-                      }
+                        @if (openMenuId() === event.id) {
+                          <div class="kebab-menu">
+                            @if (authService.isApprover() && !authService.isEditor() && event.status === 'pending') {
+                              <button class="kebab-item" (click)="openEdit(event); openMenuId.set(null)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                Phê duyệt
+                              </button>
+                            }
+                            @if (authService.isEditor() && canEditEvent(event)) {
+                              <button class="kebab-item" (click)="openEdit(event); openMenuId.set(null)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                Sửa
+                              </button>
+                              <button class="kebab-item kebab-item--danger" (click)="deleteEvent(event.id); openMenuId.set(null)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                Xóa
+                              </button>
+                            }
+                            @if (authService.isApprover() && event.status === 'approved') {
+                              @if (event.isHidden) {
+                                <button class="kebab-item" (click)="toggleHidden(event); openMenuId.set(null)">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                  Hiện lại
+                                </button>
+                              } @else {
+                                <button class="kebab-item" (click)="toggleHidden(event); openMenuId.set(null)">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                  Ẩn
+                                </button>
+                              }
+                            }
+                          </div>
+                        }
+                      </div>
                     </td>
                   }
                 </tr>

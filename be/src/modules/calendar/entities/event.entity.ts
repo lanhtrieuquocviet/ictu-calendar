@@ -102,6 +102,9 @@ export class Event {
   @Column({ type: 'timestamp', nullable: true })
   approvedAt: Date;            // Thời điểm phê duyệt (tự động ghi)
 
+  @Column({ type: 'timestamp', nullable: true })
+  lastNotifiedAt: Date;        // Thời điểm gửi mail gần nhất (chống gửi trùng)
+
   // ── Quan hệ ───────────────────────────────────────
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })

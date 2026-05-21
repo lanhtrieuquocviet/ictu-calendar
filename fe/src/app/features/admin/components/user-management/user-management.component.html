@@ -72,7 +72,7 @@
         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
       </svg>
       <span>Quản lý người dùng</span>
-      <span class="user-count">{{ users().length }} tài khoản</span>
+      <span class="user-count">{{ filteredUsers().length }}{{ filteredUsers().length !== users().length ? ' / ' + users().length : '' }} tài khoản</span>
     </div>
     <button class="btn-create" (click)="openCreateModal()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -175,12 +175,38 @@
                   <div class="avatar" [class.inactive-avatar]="!user.isActive">
                     {{ user.fullName.charAt(0).toUpperCase() }}
                   </div>
-                  <span>{{ user.fullName }}</span>
-                  @if (user.id === currentUserId) {
-                    <span class="badge-you">Bạn</span>
+                  @if (editingNameId() === user.id) {
+                    <input
+                      class="name-edit-input"
+                      type="text"
+                      [value]="editingNameValue()"
+                      (input)="editingNameValue.set($any($event.target).value)"
+                      (keydown.enter)="saveEditName(user)"
+                      (keydown.escape)="cancelEditName()"
+                      (blur)="saveEditName(user)"
+                      autofocus />
+                  } @else {
+                    <span class="name-text" (click)="startEditName(user)" title="Nhấn để sửa tên">{{ user.fullName }}</span>
+                    @if (user.id === currentUserId) {
+                      <span class="badge-you">Bạn</span>
+                    }
                   }
                 </td>
-                <td class="td-email">{{ user.email }}</td>
+                <td class="td-email">
+                  @if (editingEmailId() === user.id) {
+                    <input
+                      class="name-edit-input"
+                      type="email"
+                      [value]="editingEmailValue()"
+                      (input)="editingEmailValue.set($any($event.target).value)"
+                      (keydown.enter)="saveEditEmail(user)"
+                      (keydown.escape)="cancelEditEmail()"
+                      (blur)="saveEditEmail(user)"
+                      autofocus />
+                  } @else {
+                    <span class="name-text" (click)="startEditEmail(user)" title="Nhấn để sửa email">{{ user.email }}</span>
+                  }
+                </td>
                 <td class="td-dept">
                   <select
                     class="dept-select"

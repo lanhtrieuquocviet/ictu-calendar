@@ -1,6 +1,5 @@
-import { IsString, IsDateString, IsBoolean, IsOptional, IsEnum, IsNotEmpty, IsArray } from 'class-validator';
+import { IsString, IsDateString, IsBoolean, IsOptional, IsNotEmpty, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { EventStatus } from '../entities/event.entity';
 
 export class CreateEventDto {
   @ApiProperty({ example: 'Hội nghị Ban chấp hành Đảng bộ ĐHTN' })
@@ -66,11 +65,6 @@ export class CreateEventDto {
   @IsString()
   @IsOptional()
   meetingCode?: string;
-
-  @ApiProperty({ enum: EventStatus, default: EventStatus.PENDING, required: false })
-  @IsEnum(EventStatus)
-  @IsOptional()
-  status?: EventStatus;
 
   @ApiProperty({ example: '#4f46e5', required: false })
   @IsString()

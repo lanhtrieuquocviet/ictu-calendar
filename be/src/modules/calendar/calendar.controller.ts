@@ -86,8 +86,17 @@ export class CalendarController {
   }
 
   @Get('events/:id')
-  @ApiOperation({ summary: 'Xem chi tiết sự kiện (công khai)' })
+  @ApiOperation({ summary: 'Xem chi tiết sự kiện đã duyệt (công khai)' })
   findOne(@Param('id') id: string) {
+    return this.calendarService.findOnePublic(id);
+  }
+
+  @Get('events/:id/detail')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'editor', 'approver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xem chi tiết sự kiện bất kỳ trạng thái (admin / editor / approver)' })
+  findOneManaged(@Param('id') id: string) {
     return this.calendarService.findOne(id);
   }
 
@@ -99,7 +108,7 @@ export class CalendarController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Tạo sự kiện (admin / editor)' })
   create(@Req() req: any, @Body() createEventDto: CreateEventDto) {
-    return this.calendarService.create(req.user.sub, createEventDto);
+    return this.calendarService.create(req.user.sub, req.user.role, createEventDto);
   }
 
   @Patch('events/:id')

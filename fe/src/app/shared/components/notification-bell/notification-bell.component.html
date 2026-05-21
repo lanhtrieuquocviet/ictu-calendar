@@ -69,8 +69,10 @@
               <div class="notif-message">{{ n.message }}</div>
               <div class="notif-footer">
                 <span class="notif-time">{{ timeAgo(n.createdAt) }}</span>
-                @if (n.type === 'reminder' && n.eventId) {
-                  <button class="notif-detail-btn" (click)="onViewDetail($event, n.eventId)">Xem chi tiết</button>
+                @if (n.eventId) {
+                  <button class="notif-detail-btn" (click)="onViewDetail($event, n.eventId)">
+                    {{ n.type === 'pending_approval' ? 'Xem danh sách' : 'Xem chi tiết' }}
+                  </button>
                 }
               </div>
             </div>

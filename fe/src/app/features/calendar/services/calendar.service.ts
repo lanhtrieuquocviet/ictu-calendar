@@ -83,6 +83,10 @@ export class CalendarService {
     return this.api.get<{ data: CalendarEvent }>(`calendar/events/${id}`).pipe(map(res => res.data));
   }
 
+  getEventByIdManaged(id: string): Observable<CalendarEvent> {
+    return this.api.get<{ data: CalendarEvent }>(`calendar/events/${id}/detail`).pipe(map(res => res.data));
+  }
+
   deleteAttachment(eventId: string, attachmentId: string): Observable<void> {
     return this.api.delete<void>(`calendar/events/${eventId}/attachments/${attachmentId}`);
   }

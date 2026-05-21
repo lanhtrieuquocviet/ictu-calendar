@@ -63,6 +63,10 @@ export class UsersService {
   }
 
   async update(id: string, data: Partial<User>): Promise<User> {
+    if (data.email) {
+      const existing = await this.findByEmail(data.email);
+      if (existing && existing.id !== id) throw new ConflictException('Email đã tồn tại');
+    }
     await this.usersRepository.update(id, data);
     return this.findOne(id);
   }
@@ -74,5 +78,13 @@ export class UsersService {
 
   async remove(id: string): Promise<void> {
     await this.usersRepository.delete(id);
+  }
+
+  async hasCorruptedNames(): Promise<boolean> {
+    const count = await this.usersRepository
+      .createQueryBuilder('user')
+      .where("user.fullName LIKE '%?%'")
+      .getCount();
+    return count > 0;
   }
 }

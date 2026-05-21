@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { skip } from 'rxjs/operators';
-import { CalendarService, AdminStats } from '../../services/calendar.service';
+import { CalendarService } from '../../services/calendar.service';
 import { AuthService } from '@core/services/auth.service';
 import { CalendarEvent, EventAttachment } from '@models/event.model';
 import { EventFormComponent } from '../event-form/event-form.component';
@@ -14,7 +14,7 @@ import { NotificationService } from '@shared/services/notification.service';
 import { NotificationBellComponent } from '@shared/components/notification-bell/notification-bell.component';
 import { ICTU_UNIT_GROUPS } from '@core/constants/ictu-units';
 
-export type ViewMode = 'week' | 'month' | 'list' | 'pending' | 'mine' | 'stats';
+export type ViewMode = 'week' | 'month' | 'list' | 'pending' | 'mine';
 
 export interface DayGroup {
   dateLabel: string;
@@ -41,6 +41,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   readonly authService = inject(AuthService);
 
   private reminderInterval?: ReturnType<typeof setInterval>;
+  private approvalCheckInterval?: ReturnType<typeof setInterval>;
 
   viewMode = signal<ViewMode>('week');
   anchorDate = signal<Date>(new Date());
@@ -51,19 +52,34 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   myEvents = signal<CalendarEvent[]>([]);
   pendingCount = signal(0);
 
-  // Dashboard thống kê (admin)
-  adminStats = signal<AdminStats | null>(null);
-  statsLoading = signal(false);
 
   loading = false;
   showForm = signal(false);
   editingEvent = signal<CalendarEvent | null>(null);
   detailEvent = signal<CalendarEvent | null>(null);
   createDraft = signal<Record<string, any> | null>(null);
-  statusFilter = signal<string>('all');
+  statusFilter = signal<string>('approved');
   myStatusFilter = signal<string>('all');
   searchKeyword = signal<string>('');
   unitFilter = signal<string>('');
+  statusDropdownOpen = signal(false);
+  myStatusDropdownOpen = signal(false);
+  openMenuId = signal<string | null>(null);
+
+  @HostListener('document:click')
+  closeDropdowns(): void {
+    this.statusDropdownOpen.set(false);
+    this.myStatusDropdownOpen.set(false);
+    this.openMenuId.set(null);
+  }
+
+  statusFilterLabel(f = this.statusFilter()): string {
+    const map: Record<string, string> = {
+      all: 'Tất cả', pending: 'Chờ duyệt', approved: 'Đã duyệt',
+      rejected: 'Từ chối', hidden: 'Đang ẩn',
+    };
+    return map[f] ?? 'Tất cả';
+  }
 
   private authSub?: Subscription;
 
@@ -80,7 +96,14 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     const f = this.statusFilter();
     const q = this.searchKeyword().toLowerCase().trim();
     const u = this.unitFilter();
-    let events = f === 'all' ? this.allEvents : this.allEvents.filter(e => e.status === f);
+    let events: CalendarEvent[];
+    if (f === 'all') {
+      events = this.allEvents;
+    } else if (f === 'hidden') {
+      events = this.allEvents.filter(e => e.isHidden);
+    } else {
+      events = this.allEvents.filter(e => e.status === f);
+    }
     if (u) events = events.filter(e => e.organizingUnit?.split(';').some(s => s.trim() === u));
     if (q) events = events.filter(e => this.matchKeyword(e, q));
     return events;
@@ -256,8 +279,6 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       this.loadPendingEvents();
     } else if (mode === 'mine') {
       this.loadMyEvents();
-    } else if (mode === 'stats') {
-      this.loadAdminStats();
     } else {
       this.loadEvents();
     }
@@ -281,6 +302,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
     if (this.authService.isEditor()) {
       this.checkApprovalNotifications();
+      this.approvalCheckInterval = setInterval(() => this.checkApprovalNotifications(), 5 * 60 * 1000);
     }
 
     if (this.authService.isApprover()) {
@@ -300,6 +322,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.authSub?.unsubscribe();
     clearInterval(this.reminderInterval);
+    clearInterval(this.approvalCheckInterval);
   }
 
   loadEvents(): void {
@@ -341,6 +364,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
               type: 'pending_approval',
               title: 'Chờ phê duyệt',
               message: `Có ${count} sự kiện đang chờ bạn phê duyệt.`,
+              eventId: '__pending_tab__',
             });
             localStorage.setItem(PENDING_KEY, today);
           }
@@ -357,13 +381,6 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadAdminStats(): void {
-    this.statsLoading.set(true);
-    this.calendarService.getAdminStats().subscribe({
-      next: (res) => { this.adminStats.set(res.data); this.statsLoading.set(false); },
-      error: () => this.statsLoading.set(false),
-    });
-  }
 
   // ── Notifications ───────────────────────────────────────
 
@@ -391,6 +408,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
         this.saveStatusCache(res.data);
       },
+      error: () => {},
     });
   }
 
@@ -422,6 +440,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
         this.notifService.add({ type: 'today_summary', title: 'Lịch hôm nay', message: msg });
         this.toast.show(msg, 'info', 8000);
       },
+      error: () => {},
     });
   }
 
@@ -441,6 +460,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     const req$ = this.calendarService.getEvents(todayISO, todayISO);
 
     req$.subscribe({
+      error: () => {},
       next: (res) => {
         const nowMins = today.getHours() * 60 + today.getMinutes();
 
@@ -524,7 +544,14 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     });
   }
   openDetailById(eventId: string): void {
-    this.calendarService.getEventById(eventId).subscribe({
+    if (eventId === '__pending_tab__') {
+      this.setView('pending');
+      return;
+    }
+    const obs$ = (this.authService.isEditor() || this.authService.isApprover())
+      ? this.calendarService.getEventByIdManaged(eventId)
+      : this.calendarService.getEventById(eventId);
+    obs$.subscribe({
       next: event => this.openDetail(event),
       error: (err) => {
         if (err?.status === 404) {

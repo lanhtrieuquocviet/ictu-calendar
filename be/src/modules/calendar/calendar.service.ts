@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { Event, EventStatus } from './entities/event.entity';
 import { EventParticipant, ParticipantType } from './entities/event-participant.entity';
+import { EventAttachment } from './entities/event-attachment.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { ApproveEventDto } from './dto/approve-event.dto';
@@ -26,27 +27,34 @@ export class CalendarService {
     private eventRepository: Repository<Event>,
     @InjectRepository(EventParticipant)
     private participantRepository: Repository<EventParticipant>,
+    @InjectRepository(EventAttachment)
+    private attachmentRepository: Repository<EventAttachment>,
     private usersService: UsersService,
     private departmentsService: DepartmentsService,
     private notificationService: NotificationService,
   ) {}
 
-  async create(userId: string, dto: CreateEventDto): Promise<Event> {
+  async create(userId: string, creatorRole: string, dto: CreateEventDto): Promise<Event> {
     const creator = await this.usersService.findOne(userId);
     const { structuredParticipants, ...eventData } = dto as any;
+    const isAdmin = creatorRole === 'admin';
 
-    const event = this.eventRepository.create({
+    const eventInit: any = {
       ...eventData,
       userId,
       createdByName: creator.fullName,
-    });
+      status: isAdmin ? EventStatus.APPROVED : EventStatus.PENDING,
+    };
+    if (isAdmin) {
+      eventInit.approvedByName = creator.fullName;
+      eventInit.approvedAt = new Date();
+    }
+
+    const event = this.eventRepository.create(eventInit);
     const saved = (await this.eventRepository.save(event)) as unknown as Event;
 
     if (structuredParticipants?.length) {
       await this.saveParticipants(saved.id, structuredParticipants);
-      const recipients = await this.resolveRecipients(structuredParticipants);
-      // Gửi mail bất đồng bộ — không block response
-      this.notificationService.sendEventCreated(saved, recipients).catch(() => null);
     }
 
     return this.findOne(saved.id);
@@ -84,6 +92,14 @@ export class CalendarService {
     return event;
   }
 
+  async findOnePublic(id: string): Promise<Event> {
+    const event = await this.findOne(id);
+    if (event.status !== EventStatus.APPROVED || event.isHidden) {
+      throw new NotFoundException(`Sự kiện #${id} không tồn tại`);
+    }
+    return event;
+  }
+
   async updateByEditor(id: string, requestingUserId: string, isAdmin: boolean, dto: UpdateEventDto): Promise<Event> {
     const event = await this.findOne(id);
     if (!isAdmin && event.userId !== requestingUserId) {
@@ -91,7 +107,8 @@ export class CalendarService {
     }
     const { status, rejectionReason, approvedByName, approvedAt, structuredParticipants, ...safeDto } = dto as any;
     const updateData: any = { ...safeDto };
-    if (event.status === EventStatus.REJECTED) {
+    const wasRejected = event.status === EventStatus.REJECTED;
+    if (wasRejected) {
       updateData.status = EventStatus.PENDING;
       updateData.rejectionReason = null;
       updateData.approvedByName = null;
@@ -99,12 +116,11 @@ export class CalendarService {
     }
     await this.eventRepository.update(id, updateData);
 
-    if (structuredParticipants?.length) {
+    if (structuredParticipants !== undefined) {
       await this.participantRepository.delete({ eventId: id });
-      await this.saveParticipants(id, structuredParticipants);
-      const recipients = await this.resolveRecipients(structuredParticipants);
-      const updated = await this.findOne(id);
-      this.notificationService.sendEventUpdated(updated, recipients).catch(() => null);
+      if (structuredParticipants.length > 0) {
+        await this.saveParticipants(id, structuredParticipants);
+      }
     }
 
     return this.findOne(id);
@@ -115,6 +131,7 @@ export class CalendarService {
       throw new BadRequestException('Lý do từ chối là bắt buộc');
     }
     const event = await this.findOne(id);
+    if (event.status === dto.status) return event;
     const updateData: any = { status: dto.status };
     if (dto.status === EventStatus.APPROVED) {
       const approver = await this.usersService.findOne(approverId);
@@ -131,10 +148,32 @@ export class CalendarService {
     if (dto.isImportant !== undefined) updateData.isImportant = dto.isImportant;
     await this.eventRepository.update(id, updateData);
 
+    if (dto.status === EventStatus.REJECTED) {
+      try {
+        const creator = await this.usersService.findOne(event.userId);
+        if (creator?.email) {
+          const rejected = await this.findOne(id);
+          this.notificationService.sendEventRejected(
+            rejected,
+            { name: creator.fullName, email: creator.email },
+            dto.rejectionReason ?? '',
+          ).catch(() => null);
+        }
+      } catch { /* creator đã bị xóa */ }
+    }
+
     if (dto.status === EventStatus.APPROVED && event.eventParticipants?.length) {
-      const approved = await this.findOne(id);
-      const recipients = await this.resolveRecipients(event.eventParticipants as any);
-      this.notificationService.sendEventApproved(approved, recipients).catch(() => null);
+      const DEBOUNCE_MS = 5 * 60 * 1000; // 5 phút
+      const alreadySent = event.lastNotifiedAt
+        && (Date.now() - new Date(event.lastNotifiedAt).getTime()) < DEBOUNCE_MS;
+
+      if (!alreadySent) {
+        await this.eventRepository.update(id, { lastNotifiedAt: new Date() });
+        const approved = await this.findOne(id);
+        const attachments = await this.attachmentRepository.find({ where: { eventId: id } });
+        const recipients = await this.resolveRecipients(event.eventParticipants as any);
+        this.notificationService.sendEventApproved(approved, recipients, attachments).catch(() => null);
+      }
     }
 
     return this.findOne(id);
@@ -170,10 +209,13 @@ export class CalendarService {
       this.eventRepository.count({ where: { status: EventStatus.REJECTED } }),
     ]);
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+    const monthStart = `${y}-${m}-01`;
+    const monthEnd = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
     const thisMonth = await this.eventRepository.count({
-      where: { eventDate: Between(monthStart, monthEnd) },
+      where: { eventDate: Between(monthStart as any, monthEnd as any) },
     });
     return { total, pending, approved, rejected, thisMonth };
   }
@@ -200,9 +242,8 @@ export class CalendarService {
         } catch { /* user bị xóa */ }
 
       } else if (p.type === ParticipantType.DEPARTMENT && p.departmentId) {
-        const emails = await this.departmentsService.getMemberEmails(p.departmentId);
-        const displayName = (p as any).displayName ?? 'Thành viên';
-        emails.forEach((email) => recipients.push({ name: displayName, email }));
+        const members = await this.departmentsService.getMemberEmails(p.departmentId);
+        members.forEach(({ name, email }) => recipients.push({ name, email }));
 
       } else if (p.type === ParticipantType.EXTERNAL && p.email) {
         recipients.push({ name: (p as any).displayName ?? p.email, email: p.email });

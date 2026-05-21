@@ -7,6 +7,22 @@ import { UsersService } from '../../modules/users/users.service';
 import { UserRole } from '../../modules/users/entities/user.entity';
 import { Department, DepartmentGroup } from '../../modules/departments/entities/department.entity';
 
+const USER_NAME_FIX: Record<string, string> = {
+  'luong.thi.hien@ictu.edu.vn': 'Lương Thị Hiện',
+  'vo.van.cuong@ictu.edu.vn': 'Võ Văn Cường',
+  'tran.thi.bich@ictu.edu.vn': 'Trần Thị Bạch',
+  'nguyen.van.hung2@ictu.edu.vn': 'Nguyễn Văn Hùng',
+  'phan.thi.mau@ictu.edu.vn': 'Phan Thị Mậu',
+  'ly.van.binh@ictu.edu.vn': 'Lý Văn Bình',
+  'hoang.van.tuan@ictu.edu.vn': 'Hoàng Văn Tuấn',
+  'vu.thi.thanh@ictu.edu.vn': 'Vũ Thị Thanh',
+  'dao.van.manh@ictu.edu.vn': 'Đào Văn Mạnh',
+  'nguyen.thi.kimanh@ictu.edu.vn': 'Nguyễn Thị Kim Anh',
+  'truong.thi.hoa@ictu.edu.vn': 'Trương Thị Hoa',
+  'chu.thi.ly@ictu.edu.vn': 'Chu Thị Lý',
+  'mai.thi.loan@ictu.edu.vn': 'Mai Thị Loan',
+};
+
 const DEPARTMENTS_SEED: Omit<Department, 'id' | 'isActive' | 'createdAt' | 'updatedAt'>[] = [
   // Ban Giám Hiệu
   { name: 'Ban Giám Hiệu', code: 'BGH', groupType: DepartmentGroup.BAN_GIAM_HIEU, sortOrder: 0 },
@@ -59,6 +75,7 @@ export class SeederService implements OnApplicationBootstrap {
   async onApplicationBootstrap(): Promise<void> {
     await this.seedAdmin();
     await this.seedDepartments();
+    await this.fixCorruptedUserNames();
   }
 
   private async seedAdmin(): Promise<void> {
@@ -80,7 +97,22 @@ export class SeederService implements OnApplicationBootstrap {
       role: UserRole.ADMIN,
     });
 
-    this.logger.log(`✅ Admin seeded — email: ${email} | password: ${password}`);
+    this.logger.log(`✅ Admin seeded — email: ${email}`);
+  }
+
+  private async fixCorruptedUserNames(): Promise<void> {
+    const needsFix = await this.usersService.hasCorruptedNames();
+    if (!needsFix) return;
+
+    let fixed = 0;
+    for (const [email, correctName] of Object.entries(USER_NAME_FIX)) {
+      const user = await this.usersService.findByEmail(email);
+      if (user && user.fullName.includes('?')) {
+        await this.usersService.update(user.id, { fullName: correctName });
+        fixed++;
+      }
+    }
+    if (fixed > 0) this.logger.log(`✅ Fixed ${fixed} corrupted user name(s)`);
   }
 
   private async seedDepartments(): Promise<void> {

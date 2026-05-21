@@ -1,4 +1,4 @@
-.page {
+﻿.page {
   background: #f0f4f8;
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   display: flex;
@@ -23,7 +23,7 @@
 }
 
 .page-title {
-  font-size: 20px; font-weight: 700; color: #0f2d5e; margin: 0 0 4px;
+  font-size: 20px; font-weight: 700; color: #004d8a; margin: 0 0 4px;
 }
 
 .page-sub {
@@ -43,8 +43,8 @@
   border-bottom: 2px solid transparent; margin-bottom: -2px;
   cursor: pointer; transition: all .15s;
   border-radius: 6px 6px 0 0; white-space: nowrap;
-  &:hover { color: #1a3a6b; background: #f1f5f9; }
-  &.active { color: #1a3a6b; border-bottom-color: #1a3a6b; font-weight: 600; }
+  &:hover { color: #006cb5; background: #f1f5f9; }
+  &.active { color: #006cb5; border-bottom-color: #006cb5; font-weight: 600; }
 }
 
 .tab-count {
@@ -52,7 +52,7 @@
   border-radius: 10px; padding: 1px 7px; font-weight: 600;
   min-width: 20px; text-align: center;
 }
-.tab.active .tab-count { background: #1a3a6b; color: #fff; }
+.tab.active .tab-count { background: #006cb5; color: #fff; }
 
 /* ── Card ─────────────────────────────────────────── */
 .card {
@@ -72,11 +72,11 @@
 
 .btn-add {
   display: flex; align-items: center; gap: 6px;
-  background: #1a3a6b; color: #fff; border: none;
+  background: #006cb5; color: #fff; border: none;
   border-radius: 8px; padding: 8px 16px;
   font-size: 13px; font-weight: 500; cursor: pointer;
   transition: background .15s;
-  &:hover { background: #0f2d5e; }
+  &:hover { background: #004d8a; }
 }
 
 .add-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; }
@@ -85,7 +85,7 @@
   border: 1px solid #e2e8f0; border-radius: 7px;
   padding: 7px 12px; font-size: 13px; color: #1e293b;
   outline: none; transition: border .15s;
-  &:focus { border-color: #1a3a6b; }
+  &:focus { border-color: #006cb5; }
   &.error { border-color: #ef4444; }
 }
 .add-input { width: 260px; max-width: 100%; }
@@ -95,10 +95,10 @@
 .add-error { font-size: 12px; color: #ef4444; width: 100%; }
 
 .btn-confirm, .btn-confirm-sm {
-  background: #1a3a6b; color: #fff; border: none; border-radius: 7px;
+  background: #006cb5; color: #fff; border: none; border-radius: 7px;
   padding: 7px 16px; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: background .15s; white-space: nowrap;
-  &:hover:not(:disabled) { background: #0f2d5e; }
+  &:hover:not(:disabled) { background: #004d8a; }
   &:disabled { opacity: .5; cursor: not-allowed; }
 }
 .btn-cancel, .btn-cancel-sm {
@@ -165,10 +165,10 @@
 
   .chevron { transition: transform .2s; }
 
-  &:hover { background: #e0e7ff; border-color: #c7d2fe; color: #1a3a6b; }
+  &:hover { background: #e0e7ff; border-color: #c7d2fe; color: #006cb5; }
 
   &.active {
-    background: #1a3a6b; border-color: #1a3a6b; color: #fff;
+    background: #006cb5; border-color: #006cb5; color: #fff;
     .chevron { transform: rotate(180deg); }
   }
 }
@@ -235,7 +235,7 @@
   color: #64748b; border-radius: 8px;
   padding: 7px 14px; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: all .15s;
-  &:hover { border-color: #1a3a6b; color: #1a3a6b; background: #f0f4ff; }
+  &:hover { border-color: #006cb5; color: #006cb5; background: #f0f4ff; }
 }
 
 .member-add-form {
@@ -273,7 +273,7 @@
   background: #fff;
   outline: none;
   transition: border-color .15s, box-shadow .15s;
-  &:focus { border-color: #1a3a6b; box-shadow: 0 0 0 3px rgba(26,58,107,.07); }
+  &:focus { border-color: #006cb5; box-shadow: 0 0 0 3px rgba(26,58,107,.07); }
   &::placeholder { color: #94a3b8; }
 }
 
@@ -340,7 +340,7 @@
 }
 
 .user-picked-name {
-  font-size: 13px; font-weight: 500; color: #1a3a6b;
+  font-size: 13px; font-weight: 500; color: #006cb5;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -369,14 +369,14 @@
   border-radius: 6px; border: 1px solid #e2e8f0;
   background: #f8fafc; cursor: pointer;
   transition: all .15s; margin-right: 4px;
-  &.btn-edit { color: #1a3a6b; &:hover { background: #e0e7ff; border-color: #c7d2fe; } }
+  &.btn-edit { color: #006cb5; &:hover { background: #e0e7ff; border-color: #c7d2fe; } }
   &.btn-delete { color: #dc2626; &:hover { background: #fee2e2; border-color: #fecaca; } }
 }
 
 /* ── Toast ────────────────────────────────────────── */
 .toast {
   position: fixed; bottom: 24px; right: 24px;
-  background: #1a3a6b; color: #fff;
+  background: #006cb5; color: #fff;
   padding: 12px 20px; border-radius: 10px;
   font-size: 13px; font-weight: 500;
   box-shadow: 0 4px 16px rgba(0,0,0,0.18);

@@ -24,7 +24,7 @@ export class AdminService {
     return this.http.post<{ data: User }>(this.base, payload);
   }
 
-  updateUser(id: string, payload: { role?: UserRole; isActive?: boolean; departmentId?: string | null }): Observable<{ data: User }> {
+  updateUser(id: string, payload: { fullName?: string; email?: string; role?: UserRole; isActive?: boolean; departmentId?: string | null }): Observable<{ data: User }> {
     return this.http.patch<{ data: User }>(`${this.base}/${id}`, payload);
   }
 

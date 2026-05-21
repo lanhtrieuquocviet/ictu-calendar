@@ -36,7 +36,6 @@ export class EventFormComponent implements OnInit, OnDestroy {
   approving = false;
   approveError = '';
   private _backdropMouseDownOnSelf = false;
-  showDetails = false;
   showRejectInput = false;
   rejectReason = '';
 
@@ -142,7 +141,9 @@ export class EventFormComponent implements OnInit, OnDestroy {
 
   private uploadPendingFiles(eventId: string, files: File[]): void {
     files.forEach(f => {
-      this.calendarService.uploadAttachment(eventId, f).subscribe({ error: () => {} });
+      this.calendarService.uploadAttachment(eventId, f).subscribe({
+        error: (err) => { this.attachError = err.error?.message || `Upload "${f.name}" thất bại`; },
+      });
     });
   }
 
@@ -384,13 +385,9 @@ export class EventFormComponent implements OnInit, OnDestroy {
           email: ep.email,
         } as StructuredParticipant));
       }
-      const detailFields = ['meetingCode', 'participants', 'organizingUnit', 'vehicleArrangement', 'mediaUnit', 'supervisor', 'approvedBy', 'notes'] as const;
-      this.showDetails = detailFields.some(f => !!(this.event as any)[f]);
       this.loadAttachments();
     } else if (this.draft) {
       this.form.patchValue(this.draft);
-      const detailFields = ['meetingCode', 'participants', 'organizingUnit', 'vehicleArrangement', 'mediaUnit', 'supervisor', 'approvedBy', 'notes'] as const;
-      this.showDetails = detailFields.some(f => !!this.draft![f]);
     }
     if (this.approverOnly) {
       this.form.disable();
@@ -573,8 +570,6 @@ export class EventFormComponent implements OnInit, OnDestroy {
       ?.scrollIntoView({ block: 'center', behavior: 'instant' });
   }
 
-  toggleDetails(): void { this.showDetails = !this.showDetails; }
-
   toggleImportant(): void {
     const current = this.form.get('isImportant')?.value;
     this.form.patchValue({ isImportant: !current });
@@ -584,9 +579,10 @@ export class EventFormComponent implements OnInit, OnDestroy {
     if (this.form.invalid) return;
     this.loading = true;
     this.error = '';
-    const raw = this.form.value;
+    const raw = this.form.getRawValue();
+    const { status: _status, ...rest } = raw as any;
     const data: CreateEventRequest = {
-      ...raw as any,
+      ...rest,
       mediaUnit: raw.mediaUnit || '',
       startTime: raw.startTime || null,
       endTime:   raw.endTime   || null,
@@ -604,7 +600,12 @@ export class EventFormComponent implements OnInit, OnDestroy {
           const newId = res?.data?.id;
           if (newId) this.uploadPendingFiles(newId, this.pendingFiles);
         }
-        this.toast.success(this.isEdit ? 'Cập nhật sự kiện thành công!' : 'Thêm sự kiện mới thành công!');
+        const successMsg = this.isEdit
+          ? 'Cập nhật sự kiện thành công!'
+          : this.authService.isAdmin()
+            ? 'Thêm sự kiện mới thành công!'
+            : 'Sự kiện đã được gửi và đang chờ phê duyệt.';
+        this.toast.success(successMsg);
         this.saved.emit();
       },
       error: (err) => {

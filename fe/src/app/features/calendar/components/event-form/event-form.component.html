@@ -174,16 +174,7 @@
           <span>Sự kiện quan trọng</span>
         </div>
 
-        <button type="button" class="details-toggle" (click)="toggleDetails()">
-          <svg class="toggle-icon" [class.open]="showDetails"
-            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-          {{ showDetails ? 'Ẩn chi tiết' : 'Thêm chi tiết' }}
-        </button>
-
-        @if (showDetails) {
-          <div class="form-grid details-section">
+        <div class="form-grid details-section">
 
             <div class="field">
               <label>Mã cuộc họp</label>
@@ -313,7 +304,7 @@
             </div>
 
             <!-- Đính kèm văn bản -->
-            @if (canEditContent) {
+            @if (canEditContent || (approverOnly && attachments.length > 0)) {
               <div class="field full">
                 <label>Văn bản đính kèm</label>
 
@@ -327,11 +318,13 @@
                           {{ att.originalName }}
                         </a>
                         <span class="att-size">{{ formatFileSize(att.size) }}</span>
-                        <button type="button" class="att-remove" (click)="removeAttachment(att)" [disabled]="loading">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                          </svg>
-                        </button>
+                        @if (canEditContent) {
+                          <button type="button" class="att-remove" (click)="removeAttachment(att)" [disabled]="loading">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        }
                       </div>
                     }
                   </div>
@@ -355,8 +348,8 @@
                   </div>
                 }
 
-                <!-- Upload zone -->
-                @if (totalAttachments < 5) {
+                <!-- Upload zone: chỉ editor mới được upload -->
+                @if (canEditContent && totalAttachments < 5) {
                   <div class="att-dropzone" [class.dragging]="isDragging"
                     (dragover)="onDragOver($event)" (dragleave)="isDragging = false"
                     (drop)="onDrop($event)" (click)="fileInput.click()">
@@ -380,7 +373,6 @@
             }
 
           </div>
-        }
 
         <!-- Hiển thị lý do từ chối cho editor khi sự kiện bị từ chối -->
         @if (canEditContent && event?.status === 'rejected' && event?.rejectionReason) {

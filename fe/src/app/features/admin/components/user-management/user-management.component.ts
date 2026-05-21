@@ -54,6 +54,77 @@ export class UserManagementComponent implements OnInit {
   createErrors = signal<Partial<Record<keyof CreateUserPayload, string>>>({});
   creating = signal(false);
 
+  // Inline edit fullName
+  editingNameId = signal<string | null>(null);
+  editingNameValue = signal('');
+
+  startEditName(user: User): void {
+    this.editingNameId.set(user.id);
+    this.editingNameValue.set(user.fullName);
+  }
+
+  cancelEditName(): void {
+    this.editingNameId.set(null);
+    this.editingNameValue.set('');
+  }
+
+  saveEditName(user: User): void {
+    if (this.editingNameId() !== user.id) return;
+    const newName = this.editingNameValue().trim();
+    if (!newName || newName === user.fullName) { this.cancelEditName(); return; }
+    this.saving.set(user.id);
+    this.adminService.updateUser(user.id, { fullName: newName }).subscribe({
+      next: res => {
+        this.users.update(list => list.map(u => u.id === user.id ? res.data : u));
+        this.saving.set(null);
+        this.editingNameId.set(null);
+        this.showToast('Đã cập nhật tên', 'success');
+      },
+      error: () => {
+        this.saving.set(null);
+        this.showToast('Cập nhật tên thất bại', 'error');
+      },
+    });
+  }
+
+  // Inline edit email
+  editingEmailId = signal<string | null>(null);
+  editingEmailValue = signal('');
+
+  startEditEmail(user: User): void {
+    this.editingEmailId.set(user.id);
+    this.editingEmailValue.set(user.email);
+  }
+
+  cancelEditEmail(): void {
+    this.editingEmailId.set(null);
+    this.editingEmailValue.set('');
+  }
+
+  saveEditEmail(user: User): void {
+    if (this.editingEmailId() !== user.id) return;
+    const newEmail = this.editingEmailValue().trim();
+    if (!newEmail || newEmail === user.email) { this.cancelEditEmail(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      this.showToast('Email không hợp lệ', 'error');
+      return;
+    }
+    this.saving.set(user.id);
+    this.adminService.updateUser(user.id, { email: newEmail }).subscribe({
+      next: res => {
+        this.users.update(list => list.map(u => u.id === user.id ? res.data : u));
+        this.saving.set(null);
+        this.editingEmailId.set(null);
+        this.showToast('Đã cập nhật email', 'success');
+      },
+      error: err => {
+        this.saving.set(null);
+        const msg = err?.error?.message ?? 'Cập nhật email thất bại';
+        this.showToast(msg, 'error');
+      },
+    });
+  }
+
   // Reset password modal
   resetUserId = signal<string | null>(null);
   resetUser = computed(() => this.users().find(u => u.id === this.resetUserId()) ?? null);

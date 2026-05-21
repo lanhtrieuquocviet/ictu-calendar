@@ -82,12 +82,12 @@ export class DepartmentsService {
     return { ...dept, members };
   }
 
-  async getMemberEmails(departmentId: string): Promise<string[]> {
+  async getMemberEmails(departmentId: string): Promise<{ name: string; email: string }[]> {
     const members = await this.userRepository.find({
       where: { departmentId, isActive: true },
-      select: ['email'],
+      select: ['fullName', 'email'],
     });
-    return members.map((m) => m.email).filter(Boolean);
+    return members.filter((m) => m.email).map((m) => ({ name: m.fullName, email: m.email }));
   }
 
   async findAllAdmin(): Promise<Department[]> {

@@ -73,6 +73,7 @@ export class AttachmentService {
   ): Promise<void> {
     const att = await this.repo.findOne({ where: { id: attachmentId }, relations: ['event'] });
     if (!att) throw new NotFoundException('File không tồn tại');
+    if (!att.event) throw new NotFoundException('Sự kiện liên quan không tồn tại');
     if (!isAdmin && att.event.userId !== requesterId) {
       throw new ForbiddenException('Bạn không có quyền xóa file này');
     }

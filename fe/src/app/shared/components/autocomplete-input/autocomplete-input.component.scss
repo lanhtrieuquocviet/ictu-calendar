@@ -1,4 +1,4 @@
-.ac-wrap {
+﻿.ac-wrap {
   position: relative;
 }
 
@@ -18,9 +18,9 @@
 
   &:focus {
     outline: none;
-    border-color: #1a3a6b;
+    border-color: #006cb5;
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(26, 58, 107, 0.08);
+    box-shadow: 0 0 0 3px rgba(0, 108, 181, 0.08);
   }
 
   &::placeholder { color: #94a3b8; font-size: 13px; }
@@ -91,7 +91,7 @@
 
   &:hover {
     background: #eff6ff;
-    color: #1a3a6b;
+    color: #006cb5;
     font-weight: 500;
   }
 }
