@@ -13,6 +13,8 @@ export interface User {
   email: string;
   role: UserRole;
   isActive: boolean;
+  departmentId?: string;
+  department?: { id: string; name: string; code: string };
   createdAt: string;
   updatedAt: string;
 }

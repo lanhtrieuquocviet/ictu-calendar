@@ -252,7 +252,15 @@
 
             <div class="field full">
               <label>Thành phần tham dự</label>
-              <textarea formControlName="participants" placeholder="Đ/c Nguyễn Văn A, Trưởng phòng..."></textarea>
+              @if (!approverOnly) {
+                <app-participant-selector
+                  [disabled]="approverOnly"
+                  [initialParticipants]="structuredParticipants"
+                  (participantsChange)="onParticipantsChange($event)">
+                </app-participant-selector>
+              } @else {
+                <p class="participants-readonly">{{ form.get('participants')?.value || '—' }}</p>
+              }
             </div>
 
             <div class="field">

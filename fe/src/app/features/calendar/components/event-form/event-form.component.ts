@@ -4,7 +4,9 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CalendarService } from '../../services/calendar.service';
 import { AuthService } from '@core/services/auth.service';
 import { CalendarEvent, CreateEventRequest, EventAttachment } from '@models/event.model';
+import { StructuredParticipant } from '@models/department.model';
 import { AutocompleteInputComponent } from '@shared/components/autocomplete-input/autocomplete-input.component';
+import { ParticipantSelectorComponent } from '@shared/components/participant-selector/participant-selector.component';
 import { ToastService } from '@shared/services/toast.service';
 import { ICTU_UNIT_GROUPS } from '@core/constants/ictu-units';
 import { CategoryService } from '@features/admin/services/category.service';
@@ -12,7 +14,7 @@ import { CategoryService } from '@features/admin/services/category.service';
 @Component({
   selector: 'app-event-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AutocompleteInputComponent],
+  imports: [CommonModule, ReactiveFormsModule, AutocompleteInputComponent, ParticipantSelectorComponent],
   templateUrl: './event-form.component.html',
   styleUrl: './event-form.component.scss',
 })
@@ -37,6 +39,15 @@ export class EventFormComponent implements OnInit, OnDestroy {
   showDetails = false;
   showRejectInput = false;
   rejectReason = '';
+
+  structuredParticipants: StructuredParticipant[] = [];
+
+  onParticipantsChange(items: StructuredParticipant[]): void {
+    this.structuredParticipants = items;
+    // Sync text summary vào form field participants để backward-compat
+    const summary = items.map(p => p.displayName).join(', ');
+    this.form.patchValue({ participants: summary });
+  }
 
   // ── Đính kèm văn bản ──────────────────────────────
   attachments: EventAttachment[] = [];
@@ -363,6 +374,16 @@ export class EventFormComponent implements OnInit, OnDestroy {
         eventDate: this.event.eventDate?.slice(0, 10) ?? '',
         mediaUnit: this.event.mediaUnit || '',
       });
+      // Khôi phục structuredParticipants khi edit
+      if ((this.event as any).eventParticipants?.length) {
+        this.structuredParticipants = (this.event as any).eventParticipants.map((ep: any) => ({
+          type: ep.type,
+          userId: ep.userId,
+          departmentId: ep.departmentId,
+          displayName: ep.displayName,
+          email: ep.email,
+        } as StructuredParticipant));
+      }
       const detailFields = ['meetingCode', 'participants', 'organizingUnit', 'vehicleArrangement', 'mediaUnit', 'supervisor', 'approvedBy', 'notes'] as const;
       this.showDetails = detailFields.some(f => !!(this.event as any)[f]);
       this.loadAttachments();
@@ -564,12 +585,15 @@ export class EventFormComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
     const raw = this.form.value;
-    const data = {
-      ...raw,
+    const data: CreateEventRequest = {
+      ...raw as any,
       mediaUnit: raw.mediaUnit || '',
       startTime: raw.startTime || null,
       endTime:   raw.endTime   || null,
-    } as CreateEventRequest;
+      structuredParticipants: this.structuredParticipants.length
+        ? this.structuredParticipants
+        : undefined,
+    };
     const req$ = this.isEdit
       ? this.calendarService.updateEvent(this.event!.id, data)
       : this.calendarService.createEvent(data);

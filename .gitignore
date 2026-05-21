@@ -27,3 +27,18 @@ Thumbs.db
 
 # NestJS
 /be/coverage/
+
+# Uploaded files (user content - không commit vào git)
+be/uploads/*
+!be/uploads/.gitkeep
+
+# Database dumps / SQL sessions
+*.sql
+*.session.sql
+
+# Claude local settings
+.claude/settings.local.json
+
+# Server logs
+be_server.log
+*.log

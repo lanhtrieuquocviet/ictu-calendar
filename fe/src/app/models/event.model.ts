@@ -60,6 +60,7 @@ export interface CreateEventRequest {
   color?: string;
   isImportant?: boolean;
   notes?: string;
+  structuredParticipants?: import('./department.model').StructuredParticipant[];
 }
 
 export interface ApiListResponse<T> {

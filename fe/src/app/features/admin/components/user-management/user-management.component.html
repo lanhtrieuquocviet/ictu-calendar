@@ -189,6 +189,7 @@
             <tr>
               <th>Họ tên</th>
               <th>Email</th>
+              <th>Phòng ban</th>
               <th>Quyền</th>
               <th>Trạng thái</th>
               <th>Ngày tạo</th>
@@ -208,6 +209,20 @@
                   }
                 </td>
                 <td class="td-email">{{ user.email }}</td>
+                <td class="td-dept">
+                  <select
+                    class="dept-select"
+                    [value]="user.departmentId ?? ''"
+                    [disabled]="saving() === user.id"
+                    (change)="onDepartmentChange(user, $any($event.target).value)">
+                    <option value="">— Chưa phân công —</option>
+                    @for (dept of departments(); track dept.id) {
+                      <option [value]="dept.id" [selected]="user.departmentId === dept.id">
+                        {{ dept.name }}
+                      </option>
+                    }
+                  </select>
+                </td>
                 <td class="td-role">
                   <select
                     [value]="user.role"

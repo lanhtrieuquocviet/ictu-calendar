@@ -25,7 +25,27 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find({ order: { createdAt: 'DESC' } });
+    return this.usersRepository.find({
+      order: { createdAt: 'DESC' },
+      relations: ['department'],
+    });
+  }
+
+  async search(q?: string, departmentId?: string): Promise<User[]> {
+    const qb = this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.department', 'department')
+      .where('user.isActive = true')
+      .orderBy('user.fullName', 'ASC');
+
+    if (q?.trim()) {
+      qb.andWhere('user.fullName ILIKE :q', { q: `%${q.trim()}%` });
+    }
+    if (departmentId) {
+      qb.andWhere('user.departmentId = :departmentId', { departmentId });
+    }
+
+    return qb.getMany();
   }
 
   async findOne(id: string): Promise<User> {

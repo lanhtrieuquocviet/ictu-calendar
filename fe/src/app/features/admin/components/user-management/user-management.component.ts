@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminService, CreateUserPayload } from '../../services/admin.service';
+import { DepartmentService } from '../../services/department.service';
 import { AuthService } from '@core/services/auth.service';
 import { User, UserRole, ROLE_LABELS } from '@models/user.model';
+import { Department } from '@models/department.model';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { CalendarService, AdminStats } from '@features/calendar/services/calendar.service';
 
@@ -17,6 +19,7 @@ import { CalendarService, AdminStats } from '@features/calendar/services/calenda
 })
 export class UserManagementComponent implements OnInit {
   private readonly adminService = inject(AdminService);
+  private readonly departmentService = inject(DepartmentService);
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly calendarService = inject(CalendarService);
   readonly authService = inject(AuthService);
@@ -63,6 +66,8 @@ export class UserManagementComponent implements OnInit {
   readonly ROLE_LABELS = ROLE_LABELS;
   readonly ROLES: UserRole[] = ['admin', 'editor', 'approver', 'user'];
 
+  departments = signal<Department[]>([]);
+
   currentUserId = '';
 
   ngOnInit(): void {
@@ -71,6 +76,34 @@ export class UserManagementComponent implements OnInit {
     });
     this.loadUsers();
     this.loadStats();
+    this.loadDepartments();
+  }
+
+  loadDepartments(): void {
+    this.departmentService.getAll().subscribe({
+      next: (groups) => {
+        const all: Department[] = groups.flatMap(g => g.departments);
+        this.departments.set(all);
+      },
+      error: () => {},
+    });
+  }
+
+  onDepartmentChange(user: User, departmentId: string): void {
+    this.saving.set(user.id);
+    this.adminService.updateUser(user.id, {
+      departmentId: departmentId || null,
+    }).subscribe({
+      next: (res) => {
+        this.users.update(list => list.map(u => u.id === user.id ? res.data : u));
+        this.saving.set(null);
+        this.showToast('Đã cập nhật phòng ban', 'success');
+      },
+      error: () => {
+        this.saving.set(null);
+        this.showToast('Cập nhật thất bại', 'error');
+      },
+    });
   }
 
   loadStats(): void {

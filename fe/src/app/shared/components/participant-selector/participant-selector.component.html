@@ -1,0 +1,163 @@
+<div class="ps-container" [class.ps-disabled]="disabled">
+
+  <!-- Chips + toggle -->
+  <div class="ps-chips-wrap" [class.open]="dropdownOpen" [class.disabled]="disabled"
+       (click)="toggleDropdown($event)">
+
+    @if (selected.length === 0) {
+      <span class="ps-placeholder">Chọn thành phần tham dự...</span>
+    }
+
+    @for (item of selected; track $index) {
+      <span class="ps-chip" [attr.data-type]="item.type">
+        <span class="ps-chip-icon">{{ getChipIcon(item.type) }}</span>
+        <span class="ps-chip-label">
+          {{ item.displayName }}
+          @if (item.type === 'department') {
+            <span class="ps-chip-count">({{ getMemberCount(item.departmentId!) }} người)</span>
+          }
+        </span>
+        @if (!disabled) {
+          <button type="button" class="ps-chip-remove" (click)="removeSelected($index, $event)">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        }
+      </span>
+    }
+
+    @if (!disabled) {
+      <svg class="ps-chevron" [class.rotated]="dropdownOpen" width="12" height="12"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    }
+  </div>
+
+  <!-- Dropdown -->
+  @if (dropdownOpen && !disabled) {
+    <div class="ps-dropdown" (click)="$event.stopPropagation()">
+
+      <!-- Search -->
+      <div class="ps-search-wrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input class="ps-search" type="text" placeholder="Tìm theo tên hoặc phòng ban..."
+               [(ngModel)]="searchQuery" (click)="$event.stopPropagation()" />
+        @if (searchQuery) {
+          <button type="button" class="ps-search-clear" (click)="searchQuery = ''; $event.stopPropagation()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        }
+      </div>
+
+      @if (loading) {
+        <div class="ps-loading">Đang tải...</div>
+      } @else {
+
+        <div class="ps-list">
+          @for (group of filteredGroups; track group.groupType) {
+            <!-- Group header -->
+            <div class="ps-group-header" (click)="toggleGroup(group.groupType, $event)">
+              <svg class="ps-toggle-icon" [class.open]="expandedGroups.has(group.groupType)"
+                   width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+              <span>{{ group.label }}</span>
+            </div>
+
+            @if (expandedGroups.has(group.groupType)) {
+              @for (dept of group.departments; track dept.id) {
+
+                <!-- Department row -->
+                <div class="ps-dept-row">
+                  <div class="ps-dept-header" [class.selected]="isDeptSelected(dept.id)">
+                    <!-- Checkbox chọn cả phòng -->
+                    <label class="ps-dept-check" (click)="toggleDeptSelect(dept, $event)">
+                      <span class="ps-checkbox" [class.checked]="isDeptSelected(dept.id)">
+                        @if (isDeptSelected(dept.id)) {
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        }
+                      </span>
+                      <span class="ps-dept-name">{{ dept.name }}</span>
+                      <span class="ps-dept-count">{{ dept.memberCount ?? dept.members?.length ?? 0 }} người</span>
+                    </label>
+
+                    <!-- Toggle expand members -->
+                    @if ((dept.members?.length ?? 0) > 0) {
+                      <button type="button" class="ps-expand-btn" (click)="toggleDept(dept.id, $event)">
+                        <svg [class.open]="expandedDepts.has(dept.id)"
+                             width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                      </button>
+                    }
+                  </div>
+
+                  <!-- Individual members -->
+                  @if (expandedDepts.has(dept.id) && (dept.members?.length ?? 0) > 0) {
+                    <div class="ps-members">
+                      @for (member of dept.members!; track member.id) {
+                        <div class="ps-member-row" [class.selected]="isMemberSelected(member.id)"
+                             (click)="toggleMember(member, $event)">
+                          <span class="ps-checkbox" [class.checked]="isMemberSelected(member.id)">
+                            @if (isMemberSelected(member.id)) {
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                            }
+                          </span>
+                          <span class="ps-member-name">{{ member.fullName }}</span>
+                          <span class="ps-member-email">{{ member.email }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+              }
+            }
+          }
+
+          @if (filteredGroups.length === 0) {
+            <div class="ps-empty">Không tìm thấy kết quả</div>
+          }
+        </div>
+
+        <!-- External guest -->
+        <div class="ps-guest-section">
+          <div class="ps-guest-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            Thêm khách bên ngoài
+          </div>
+          <div class="ps-guest-row">
+            <input type="text" class="ps-guest-input" placeholder="Họ tên..."
+                   [(ngModel)]="guestName" (click)="$event.stopPropagation()" />
+            <input type="email" class="ps-guest-input" placeholder="Email..."
+                   [(ngModel)]="guestEmail" (click)="$event.stopPropagation()" />
+            <button type="button" class="ps-guest-add" (click)="addGuest($event)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Thêm
+            </button>
+          </div>
+          @if (guestError) {
+            <p class="ps-guest-error">{{ guestError }}</p>
+          }
+        </div>
+
+      }
+    </div>
+  }
+
+</div>

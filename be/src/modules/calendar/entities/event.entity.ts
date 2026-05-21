@@ -3,11 +3,13 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { EventParticipant } from './event-participant.entity';
 
 export enum EventStatus {
   PENDING = 'pending',     // Chờ duyệt
@@ -108,6 +110,9 @@ export class Event {
 
   @Column()
   userId: string;              // Người tạo lịch
+
+  @OneToMany(() => EventParticipant, (ep) => ep.event, { cascade: true })
+  eventParticipants: EventParticipant[];
 
   @CreateDateColumn()
   createdAt: Date;

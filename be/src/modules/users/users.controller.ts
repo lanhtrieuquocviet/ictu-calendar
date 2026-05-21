@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Param, Delete, Patch, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Param, Delete, Patch, Body, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -28,6 +28,20 @@ export class UsersController {
   @ApiOperation({ summary: 'Lấy danh sách users (admin)' })
   async findAll() {
     const users = await this.usersService.findAll();
+    return users.map(({ password, ...u }) => u);
+  }
+
+  // Endpoint không cần admin — dùng cho participant picker
+  @Get('search')
+  @Roles('admin', 'editor', 'approver', 'user')
+  @ApiOperation({ summary: 'Tìm kiếm user theo tên (cho participant picker)' })
+  @ApiQuery({ name: 'q', required: false })
+  @ApiQuery({ name: 'departmentId', required: false })
+  async search(
+    @Query('q') q?: string,
+    @Query('departmentId') departmentId?: string,
+  ) {
+    const users = await this.usersService.search(q, departmentId);
     return users.map(({ password, ...u }) => u);
   }
 
