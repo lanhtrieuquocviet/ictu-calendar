@@ -1,7 +1,6 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { AdminService, CreateUserPayload } from '../../services/admin.service';
 import { DepartmentService } from '../../services/department.service';
 import { AuthService } from '@core/services/auth.service';
@@ -13,7 +12,7 @@ import { CalendarService, AdminStats } from '@features/calendar/services/calenda
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss',
 })

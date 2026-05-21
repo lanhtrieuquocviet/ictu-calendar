@@ -1,4 +1,4 @@
-import { IsString, IsDateString, IsBoolean, IsOptional, IsEnum, IsNotEmpty } from 'class-validator';
+import { IsString, IsDateString, IsBoolean, IsOptional, IsEnum, IsNotEmpty, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { EventStatus } from '../entities/event.entity';
 
@@ -86,4 +86,9 @@ export class CreateEventDto {
   @IsBoolean()
   @IsOptional()
   isImportant?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsArray()
+  @IsOptional()
+  structuredParticipants?: any[];
 }

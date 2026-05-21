@@ -132,23 +132,47 @@ export class ParticipantSelectorComponent implements OnInit, OnDestroy {
 
   // ── Member selection ────────────────────────────────────────────
 
+  private findMemberDept(userId: string): (DepartmentGrouped['departments'][0]) | null {
+    for (const g of this.groups) {
+      for (const d of g.departments) {
+        if (d.members?.some(m => m.id === userId)) return d;
+      }
+    }
+    return null;
+  }
+
   isMemberSelected(userId: string): boolean {
-    return this.selected.some(s => s.type === 'user' && s.userId === userId);
+    if (this.selected.some(s => s.type === 'user' && s.userId === userId)) return true;
+    const dept = this.findMemberDept(userId);
+    return !!dept && this.isDeptSelected(dept.id);
   }
 
   toggleMember(member: DepartmentMember, e: MouseEvent): void {
     e.stopPropagation();
+    const dept = this.findMemberDept(member.id);
+
     if (this.isMemberSelected(member.id)) {
-      this.selected = this.selected.filter(
-        s => !(s.type === 'user' && s.userId === member.id)
-      );
+      if (dept && this.isDeptSelected(dept.id)) {
+        // Phòng đang chọn cả khối → tách ra từng người, bỏ người này
+        this.selected = this.selected.filter(s => !(s.type === 'department' && s.departmentId === dept.id));
+        for (const m of dept.members ?? []) {
+          if (m.id !== member.id) {
+            this.selected = [...this.selected, { type: 'user', userId: m.id, displayName: m.fullName, email: m.email }];
+          }
+        }
+      } else {
+        this.selected = this.selected.filter(s => !(s.type === 'user' && s.userId === member.id));
+      }
     } else {
-      this.selected = [...this.selected, {
-        type: 'user',
-        userId: member.id,
-        displayName: member.fullName,
-        email: member.email,
-      }];
+      this.selected = [...this.selected, { type: 'user', userId: member.id, displayName: member.fullName, email: member.email }];
+      // Nếu đã chọn hết thành viên → tự động nâng lên chọn cả phòng
+      if (dept && (dept.members?.length ?? 0) > 0) {
+        const allSelected = (dept.members ?? []).every(m => this.isMemberSelected(m.id));
+        if (allSelected) {
+          this.selected = this.selected.filter(s => !(s.type === 'user' && dept.members!.some(m => m.id === s.userId)));
+          this.selected = [...this.selected, { type: 'department', departmentId: dept.id, displayName: dept.name }];
+        }
+      }
     }
     this.emit();
   }
@@ -159,19 +183,13 @@ export class ParticipantSelectorComponent implements OnInit, OnDestroy {
     e.stopPropagation();
     this.guestError = '';
     const name = this.guestName.trim();
-    const email = this.guestEmail.trim();
     if (!name) { this.guestError = 'Vui lòng nhập tên'; return; }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      this.guestError = 'Email không hợp lệ';
+    if (this.selected.some(s => s.type === 'external' && s.displayName === name)) {
+      this.guestError = 'Tên đã được thêm';
       return;
     }
-    if (this.selected.some(s => s.email === email)) {
-      this.guestError = 'Email đã được thêm';
-      return;
-    }
-    this.selected = [...this.selected, { type: 'external', displayName: name, email }];
+    this.selected = [...this.selected, { type: 'external', displayName: name }];
     this.guestName = '';
-    this.guestEmail = '';
     this.emit();
   }
 
@@ -184,12 +202,6 @@ export class ParticipantSelectorComponent implements OnInit, OnDestroy {
   }
 
   // ── Helpers ────────────────────────────────────────────────────
-
-  getChipIcon(type: string): string {
-    if (type === 'department') return '🏢';
-    if (type === 'external') return '✉️';
-    return '👤';
-  }
 
   getMemberCount(deptId: string): number {
     for (const g of this.groups) {

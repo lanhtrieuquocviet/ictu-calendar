@@ -1,74 +1,9 @@
 .page {
-  min-height: 100vh;
   background: #f0f4f8;
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
   display: flex;
   flex-direction: column;
-}
-
-/* ── Header ──────────────────────────────────────── */
-.header {
-  background: linear-gradient(135deg, #0f2d5e 0%, #1a3a6b 60%, #1e4d8c 100%);
-  color: #fff;
-  padding: 0 32px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
-  position: sticky;
-  top: 0;
-  z-index: 200;
-}
-
-.header-brand { display: flex; align-items: center; gap: 12px; }
-
-.brand-logo {
-  width: 36px; height: 36px;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; flex-shrink: 0;
-}
-
-.brand-text {
-  h1 { font-size: 14px; font-weight: 800; letter-spacing: 1px; line-height: 1; margin-bottom: 3px; }
-  p  { font-size: 10.5px; opacity: .7; line-height: 1; }
-}
-
-.header-actions { display: flex; align-items: center; gap: 10px; }
-
-.btn-nav {
-  font-size: 12px; font-weight: 500;
-  color: rgba(255,255,255,0.85);
-  text-decoration: none;
-  padding: 6px 14px;
-  border-radius: 7px;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.18);
-  transition: background .15s;
-  &:hover { background: rgba(255,255,255,0.2); color: #fff; }
-}
-
-.btn-back {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 12px; font-weight: 500;
-  color: rgba(255,255,255,0.85);
-  text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 7px;
-  transition: background .15s;
-  &:hover { background: rgba(255,255,255,0.12); color: #fff; }
-}
-
-.btn-auth {
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #fff; border-radius: 7px;
-  padding: 6px 14px; font-size: 12px; font-weight: 500;
-  cursor: pointer; transition: background .15s;
-  &:hover { background: rgba(255,255,255,0.22); }
+  flex: 1;
 }
 
 /* ── Body ─────────────────────────────────────────── */

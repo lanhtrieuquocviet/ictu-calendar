@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Department, DepartmentGroup, DEPARTMENT_GROUP_LABEL } from './entities/department.entity';
 import { User } from '../users/entities/user.entity';
+import { CreateDepartmentDto } from './dto/create-department.dto';
+import { UpdateDepartmentDto } from './dto/update-department.dto';
 
 @Injectable()
 export class DepartmentsService {
@@ -86,5 +88,38 @@ export class DepartmentsService {
       select: ['email'],
     });
     return members.map((m) => m.email).filter(Boolean);
+  }
+
+  async findAllAdmin(): Promise<Department[]> {
+    return this.departmentRepository.find({
+      order: { groupType: 'ASC', sortOrder: 'ASC', name: 'ASC' },
+    });
+  }
+
+  async create(dto: CreateDepartmentDto): Promise<Department> {
+    const existing = await this.departmentRepository.findOne({ where: { code: dto.code } });
+    if (existing) throw new ConflictException('Mã phòng ban đã tồn tại');
+    const dept = this.departmentRepository.create({ ...dto, sortOrder: dto.sortOrder ?? 0 });
+    return this.departmentRepository.save(dept);
+  }
+
+  async update(id: string, dto: UpdateDepartmentDto): Promise<Department> {
+    const dept = await this.departmentRepository.findOne({ where: { id } });
+    if (!dept) throw new NotFoundException(`Phòng ban #${id} không tồn tại`);
+    if (dto.code && dto.code !== dept.code) {
+      const dup = await this.departmentRepository.findOne({ where: { code: dto.code } });
+      if (dup) throw new ConflictException('Mã phòng ban đã tồn tại');
+    }
+    await this.departmentRepository.update(id, dto);
+    return this.departmentRepository.findOne({ where: { id } }) as Promise<Department>;
+  }
+
+  async remove(id: string): Promise<void> {
+    const dept = await this.departmentRepository.findOne({ where: { id } });
+    if (!dept) throw new NotFoundException(`Phòng ban #${id} không tồn tại`);
+    const userCount = await this.userRepository.count({ where: { departmentId: id } });
+    if (userCount > 0)
+      throw new BadRequestException(`Không thể xóa: có ${userCount} người dùng đang thuộc phòng ban này`);
+    await this.departmentRepository.delete(id);
   }
 }

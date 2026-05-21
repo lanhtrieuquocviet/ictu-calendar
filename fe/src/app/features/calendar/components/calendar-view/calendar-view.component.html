@@ -30,23 +30,12 @@
       @if (authService.isAdmin()) {
         <a class="btn-admin" routerLink="/admin">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
           </svg>
-          Quản lý users
-        </a>
-        <a class="btn-admin" routerLink="/admin/categories">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="8" y1="6" x2="21" y2="6"/>
-            <line x1="8" y1="12" x2="21" y2="12"/>
-            <line x1="8" y1="18" x2="21" y2="18"/>
-            <line x1="3" y1="6" x2="3.01" y2="6"/>
-            <line x1="3" y1="12" x2="3.01" y2="12"/>
-            <line x1="3" y1="18" x2="3.01" y2="18"/>
-          </svg>
-          Quản lý danh mục
+          Quản lý
         </a>
       }
       @if (authService.isLoggedIn()) {
@@ -288,14 +277,11 @@
                       @if (!event.isImportant) {
                         <span class="evt-dot"></span>
                       } @else {
-                        <svg class="icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
+                        <svg class="icon-important" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                         </svg>
                       }
                       <span class="title-text" [class.text-important]="event.isImportant" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
-                      @if (event.isImportant) {
-                        <span class="badge-important">Quan trọng</span>
-                      }
                       @if (event.isHidden && authService.isApprover()) {
                         <span class="badge-hidden">Đang ẩn</span>
                       }
@@ -368,14 +354,11 @@
                       @if (!event.isImportant) {
                         <span class="evt-dot"></span>
                       } @else {
-                        <svg class="icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
+                        <svg class="icon-important" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                         </svg>
                       }
                       <span class="title-text" [class.text-important]="event.isImportant" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
-                      @if (event.isImportant) {
-                        <span class="badge-important">Quan trọng</span>
-                      }
                       @if (event.isHidden && authService.isApprover()) {
                         <span class="badge-hidden">Đang ẩn</span>
                       }
@@ -666,14 +649,11 @@
                       @if (!event.isImportant) {
                         <span class="evt-dot"></span>
                       } @else {
-                        <svg class="icon-important" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
+                        <svg class="icon-important" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
                           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                         </svg>
                       }
                       <span class="title-text" [class.text-important]="event.isImportant" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
-                      @if (event.isImportant) {
-                        <span class="badge-important">Quan trọng</span>
-                      }
                       @if (event.isHidden && authService.isApprover()) {
                         <span class="badge-hidden">Đang ẩn</span>
                       }
@@ -913,20 +893,37 @@
         }
 
         <!-- Nhân sự & Tổ chức -->
-        @if (detailEvent()!.participants || detailEvent()!.organizingUnit || detailEvent()!.mediaUnit || detailEvent()!.supervisor) {
+        @if (detailEvent()!.eventParticipants?.length || detailEvent()!.participants || detailEvent()!.organizingUnit || detailEvent()!.mediaUnit || detailEvent()!.supervisor) {
           <div class="sp-section">
             <p class="sp-section-title">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               Nhân sự & Tổ chức
             </p>
-            @if (detailEvent()!.participants) {
+            @if (detailEvent()!.eventParticipants?.length || detailEvent()!.participants) {
               <div class="sp-info-row sp-info-row--top">
                 <span class="sp-info-icon">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </span>
                 <div class="sp-info-col">
                   <span class="sp-info-label">Thành phần tham dự</span>
-                  <span class="sp-info-value">{{ detailEvent()!.participants }}</span>
+                  @if (detailEvent()!.eventParticipants?.length) {
+                    <div class="sp-p-chips">
+                      @for (p of detailEvent()!.eventParticipants!; track p.id) {
+                        <span class="sp-p-chip" [attr.data-type]="p.type">
+                          @if (p.type === 'department') {
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                          } @else if (p.type === 'user') {
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          } @else {
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                          }
+                          {{ p.displayName }}
+                        </span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="sp-info-value">{{ detailEvent()!.participants }}</span>
+                  }
                 </div>
               </div>
             }

@@ -1,33 +1,5 @@
 <div class="page">
 
-  <!-- Header -->
-  <header class="header">
-    <div class="header-brand">
-      <div class="brand-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-      </div>
-      <div class="brand-text">
-        <h1>ICTU CALENDAR</h1>
-        <p>Trường Đại học Công nghệ thông tin và Truyền thông</p>
-      </div>
-    </div>
-    <div class="header-actions">
-      <a class="btn-nav" routerLink="/admin/categories">Quản lý danh mục</a>
-      <a class="btn-back" routerLink="/calendar">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-        Về lịch
-      </a>
-      <button class="btn-auth" (click)="authService.logout()">Đăng xuất</button>
-    </div>
-  </header>
-
   <!-- Dashboard Stats -->
   <div class="stats-bar">
       <div class="stat-card">
@@ -212,6 +184,7 @@
                 <td class="td-dept">
                   <select
                     class="dept-select"
+                    [class.dept-assigned]="!!user.departmentId"
                     [value]="user.departmentId ?? ''"
                     [disabled]="saving() === user.id"
                     (change)="onDepartmentChange(user, $any($event.target).value)">

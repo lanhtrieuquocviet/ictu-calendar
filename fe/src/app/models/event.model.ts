@@ -1,5 +1,14 @@
 export type EventStatus = 'pending' | 'approved' | 'rejected';
 
+export interface EventParticipant {
+  id: string;
+  type: 'user' | 'department' | 'external';
+  displayName: string;
+  email?: string;
+  userId?: string;
+  departmentId?: string;
+}
+
 export interface EventAttachment {
   id: string;
   eventId: string;
@@ -38,6 +47,7 @@ export interface CalendarEvent {
   userId: string;
   user?: { id: string; fullName: string; email: string };
   attachments?: EventAttachment[];
+  eventParticipants?: EventParticipant[];
   createdAt: string;
   updatedAt: string;
 }

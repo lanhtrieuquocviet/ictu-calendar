@@ -997,3 +997,25 @@
 .participants-readonly {
   font-size: 13px; color: #374151; margin: 0; line-height: 1.5;
 }
+
+.participants-chips-ro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 4px 0;
+}
+
+.participant-chip-ro {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 6px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+
+  &[data-type='department'] { background: #ede9fe; color: #5b21b6; }
+  &[data-type='user']       { background: #dbeafe; color: #1e40af; }
+  &[data-type='external']   { background: #d1fae5; color: #065f46; }
+}

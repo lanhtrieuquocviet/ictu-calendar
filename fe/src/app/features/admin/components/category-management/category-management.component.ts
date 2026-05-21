@@ -1,9 +1,7 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { CategoryService } from '../../services/category.service';
-import { AuthService } from '@core/services/auth.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import {
   Category, CategoryType,
@@ -13,15 +11,13 @@ import {
 @Component({
   selector: 'app-category-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './category-management.component.html',
   styleUrl: './category-management.component.scss',
 })
 export class CategoryManagementComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly confirmDialog = inject(ConfirmDialogService);
-  readonly authService = inject(AuthService);
-
   categories = signal<Category[]>([]);
   loading = signal(true);
   saving = signal<string | null>(null);
