@@ -40,7 +40,7 @@
       }
       @if (authService.isLoggedIn()) {
         <app-notification-bell (viewDetail)="openDetailById($event)" />
-        <button class="btn-auth" (click)="authService.logout()">Đăng xuất</button>
+        <button class="btn-auth" (click)="logout()">Đăng xuất</button>
       } @else {
         <a class="btn-auth" href="/auth/login">Đăng nhập</a>
       }

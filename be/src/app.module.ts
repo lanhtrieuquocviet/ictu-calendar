@@ -1,6 +1,8 @@
 import { Module, Logger } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
@@ -14,6 +16,11 @@ import { SeederModule } from './database/seeder/seeder.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRoot([{
+      name: 'default',
+      ttl: 60000,
+      limit: 60,
+    }]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -45,6 +52,9 @@ import { SeederModule } from './database/seeder/seeder.module';
     CategoriesModule,
     DepartmentsModule,
     SeederModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

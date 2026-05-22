@@ -17,9 +17,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; email: string; role: string; fullName: string }) {
+  async validate(payload: { sub: string }) {
     const user = await this.usersService.findOne(payload.sub);
-    if (!user.isActive) throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
-    return { sub: payload.sub, email: payload.email, role: payload.role, fullName: payload.fullName };
+    if (!user || !user.isActive) throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+    return { sub: user.id, email: user.email, role: user.role, fullName: user.fullName };
   }
 }

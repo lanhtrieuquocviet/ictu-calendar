@@ -10,6 +10,7 @@ export interface AuthResponse {
   message: string;
   data: {
     access_token: string;
+    refresh_token: string;
     user: User;
   };
 }

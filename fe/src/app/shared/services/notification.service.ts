@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { AuthService } from '@core/services/auth.service';
 
-export type NotificationType = 'approved' | 'rejected' | 'reminder' | 'today_summary' | 'pending_approval';
+export type NotificationType = 'approved' | 'rejected' | 'reminder' | 'today_summary' | 'pending_approval' | 'participant';
 
 export interface AppNotification {
   id: string;

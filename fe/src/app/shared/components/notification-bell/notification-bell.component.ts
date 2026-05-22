@@ -42,6 +42,13 @@ export class NotificationBellComponent {
     this.viewDetail.emit(eventId);
   }
 
+  onItemClick(n: AppNotification): void {
+    if (n.eventId) {
+      this.isOpen.set(false);
+      this.viewDetail.emit(n.eventId);
+    }
+  }
+
   timeAgo(isoDate: string): string {
     const diff = Date.now() - new Date(isoDate).getTime();
     const mins = Math.floor(diff / 60000);
@@ -59,6 +66,7 @@ export class NotificationBellComponent {
       case 'reminder':         return 'reminder';
       case 'today_summary':    return 'today';
       case 'pending_approval': return 'pending';
+      case 'participant':      return 'participant';
       default:                 return 'reminder';
     }
   }

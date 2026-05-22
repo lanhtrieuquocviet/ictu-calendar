@@ -73,6 +73,17 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     this.openMenuId.set(null);
   }
 
+  async logout(): Promise<void> {
+    const ok = await this.confirmDialog.confirm({
+      title: 'Đăng xuất',
+      message: 'Bạn có chắc muốn đăng xuất không?',
+      confirmText: 'Đăng xuất',
+      cancelText: 'Hủy',
+      type: 'warning',
+    });
+    if (ok) this.authService.logout();
+  }
+
   statusFilterLabel(f = this.statusFilter()): string {
     const map: Record<string, string> = {
       all: 'Tất cả', pending: 'Chờ duyệt', approved: 'Đã duyệt',
@@ -297,6 +308,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     if (this.authService.isLoggedIn()) {
       this.checkTodaySummary();
       this.checkEventReminders();
+      this.checkParticipantNotifications();
       this.reminderInterval = setInterval(() => this.checkEventReminders(), 5 * 60 * 1000);
     }
 
@@ -433,12 +445,57 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
         }
 
         const sorted = [...events].sort((a, b) => (a.startTime ?? '00:00').localeCompare(b.startTime ?? '00:00'));
-        const first = sorted[0];
-        const timeStr = first.startTime ? ` lúc ${first.startTime.slice(0, 5)}` : '';
-        const msg = `Hôm nay có ${events.length} sự kiện. Đầu tiên: "${first.title}"${timeStr}.`;
 
-        this.notifService.add({ type: 'today_summary', title: 'Lịch hôm nay', message: msg });
-        this.toast.show(msg, 'info', 8000);
+        // Toast tổng hợp (giữ nguyên)
+        const first = sorted[0];
+        const firstTime = first.startTime ? ` lúc ${first.startTime.slice(0, 5)}` : '';
+        this.toast.show(`Hôm nay có ${events.length} sự kiện. Đầu tiên: "${first.title}"${firstTime}.`, 'info', 8000);
+
+        // Tạo 1 notification riêng cho mỗi sự kiện, có eventId để bấm xem chi tiết
+        for (const event of sorted) {
+          const time = event.allDay ? 'Cả ngày' : (event.startTime ? event.startTime.slice(0, 5) : '');
+          const loc = event.location ? ` · ${event.location}` : '';
+          const msg = `${time ? time + ' – ' : ''}"${event.title}"${loc}`;
+          this.notifService.add({ type: 'today_summary', title: 'Lịch hôm nay', message: msg, eventId: event.id });
+        }
+      },
+      error: () => {},
+    });
+  }
+
+  private checkParticipantNotifications(): void {
+    const PART_KEY = this.userKey('participant_notif_date');
+    const today = new Date().toDateString();
+    if (localStorage.getItem(PART_KEY) === today) return;
+
+    const user = this.authService.getCurrentUserSnapshot();
+    if (!user) return;
+
+    const todayISO = this.toISODate(new Date());
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekISO = this.toISODate(nextWeek);
+
+    this.calendarService.getEvents(todayISO, nextWeekISO).subscribe({
+      next: (res) => {
+        localStorage.setItem(PART_KEY, today);
+
+        for (const event of res.data) {
+          if (event.status !== 'approved') continue;
+
+          const isParticipant = event.eventParticipants?.some(p =>
+            (p.type === 'user' && p.userId === user.id) ||
+            (p.type === 'department' && !!user.departmentId && p.departmentId === user.departmentId),
+          );
+          if (!isParticipant) continue;
+
+          const dateStr = new Date(event.eventDate + 'T00:00:00').toLocaleDateString('vi-VN', {
+            weekday: 'short', day: 'numeric', month: 'numeric',
+          });
+          const time = event.allDay ? 'cả ngày' : (event.startTime ? `lúc ${event.startTime.slice(0, 5)}` : '');
+          const msg = `"${event.title}" – ${dateStr}${time ? ' ' + time : ''}`;
+          this.notifService.add({ type: 'participant', title: 'Bạn có trong sự kiện', message: msg, eventId: event.id });
+        }
       },
       error: () => {},
     });

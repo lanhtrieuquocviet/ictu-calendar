@@ -145,6 +145,10 @@
 
   &:last-child { border-bottom: none; }
 
+  &.clickable {
+    cursor: pointer;
+  }
+
   &:hover {
     background: #f8fafc;
 
@@ -187,6 +191,10 @@
   &.pending {
     background: #fff7ed;
     color: #ea580c;
+  }
+  &.participant {
+    background: #e0f2fe;
+    color: #0284c7;
   }
 }
 
