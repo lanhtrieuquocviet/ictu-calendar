@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, HostListener, effect, untracked } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -66,6 +66,17 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   myStatusDropdownOpen = signal(false);
   openMenuId = signal<string | null>(null);
   menuPosition = signal<{ top: number; left: number } | null>(null);
+
+  readonly MY_PAGE_SIZE = 10;
+  myCurrentPage = signal(1);
+
+  constructor() {
+    effect(() => {
+      this.myStatusFilter();
+      this.searchKeyword();
+      untracked(() => this.myCurrentPage.set(1));
+    });
+  }
 
   @HostListener('document:click')
   closeDropdowns(): void {
@@ -163,8 +174,49 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     const q = this.searchKeyword().toLowerCase().trim();
     let events = f === 'all' ? this.myEvents() : this.myEvents().filter(e => e.status === f);
     if (q) events = events.filter(e => this.matchKeyword(e, q));
-    return events;
+    return [...events].sort((a, b) => b.eventDate.localeCompare(a.eventDate));
   }
+
+  get myTotalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredMyEvents.length / this.MY_PAGE_SIZE));
+  }
+
+  get paginatedMyMonthGroups(): { monthLabel: string; totalCount: number; events: CalendarEvent[] }[] {
+    const allEvents = this.filteredMyEvents;
+    const start = (this.myCurrentPage() - 1) * this.MY_PAGE_SIZE;
+    const pageEvents = allEvents.slice(start, start + this.MY_PAGE_SIZE);
+
+    const monthCounts = new Map<string, number>();
+    for (const e of allEvents) {
+      const k = e.eventDate.slice(0, 7);
+      monthCounts.set(k, (monthCounts.get(k) ?? 0) + 1);
+    }
+
+    const map = new Map<string, { monthLabel: string; totalCount: number; events: CalendarEvent[] }>();
+    for (const event of pageEvents) {
+      const key = event.eventDate.slice(0, 7);
+      if (!map.has(key)) {
+        const [year, month] = key.split('-');
+        map.set(key, { monthLabel: `Tháng ${parseInt(month)}/${year}`, totalCount: monthCounts.get(key) ?? 0, events: [] });
+      }
+      map.get(key)!.events.push(event);
+    }
+    return Array.from(map.values());
+  }
+
+  get myVisiblePages(): (number | '...')[] {
+    const total = this.myTotalPages;
+    const cur = this.myCurrentPage();
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | '...')[] = [1];
+    if (cur > 3) pages.push('...');
+    for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
+    if (cur < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
+  }
+
+  min(a: number, b: number): number { return Math.min(a, b); }
 
   get filteredPendingEvents(): CalendarEvent[] {
     const q = this.searchKeyword().toLowerCase().trim();

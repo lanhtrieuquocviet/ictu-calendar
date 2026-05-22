@@ -373,64 +373,91 @@
               </tr>
             </thead>
             <tbody>
-              @for (event of filteredMyEvents; track event.id) {
-                <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.row-important]="event.isImportant" (click)="openDetail(event)">
-                  <td class="td-day-simple">{{ formatEventDate(event.eventDate) }}</td>
-                  <td class="td-time">
-                    <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
-                  </td>
-                  <td class="td-title">
-                    <div class="title-row">
-                      @if (!event.isImportant) {
-                        <span class="evt-dot"></span>
-                      } @else {
-                        <svg class="icon-important" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                        </svg>
-                      }
-                      <span class="title-text" [class.text-important]="event.isImportant" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
-                      @if (event.isHidden && authService.isApprover()) {
-                        <span class="badge-hidden">Đang ẩn</span>
-                      }
-                    </div>
-                  </td>
-                  <td><span class="cell-truncate">{{ event.location || '—' }}</span></td>
-                  <td class="td-status td-center">
-                    <span class="status-badge" [attr.data-status]="event.status">{{ statusLabel(event.status) }}</span>
-                  </td>
-                  <td class="td-rejection">
-                    @if (event.rejectionReason) {
-                      <span class="rejection-text" [title]="event.rejectionReason">{{ event.rejectionReason }}</span>
-                    } @else { — }
-                  </td>
-                  <td class="td-actions">
-                    @if (canEditEvent(event)) {
-                      <div class="kebab-wrap" (click)="$event.stopPropagation()">
-                        <button class="kebab-btn" (click)="openKebabMenu($event, event.id)" title="Thao tác">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
-                          </svg>
-                        </button>
-                        @if (openMenuId() === event.id && menuPosition()) {
-                          <div class="kebab-menu" [style.top.px]="menuPosition()!.top" [style.left.px]="menuPosition()!.left">
-                            <button class="kebab-item" (click)="openEdit(event); openMenuId.set(null)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                              Sửa
-                            </button>
-                            <button class="kebab-item kebab-item--danger" (click)="deleteEvent(event.id); openMenuId.set(null)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                              Xóa
-                            </button>
-                          </div>
-                        }
-                      </div>
-                    }
+              @for (group of paginatedMyMonthGroups; track group.monthLabel) {
+                <tr class="month-group-header">
+                  <td colspan="7">
+                    <span class="month-group-label">{{ group.monthLabel }}</span>
+                    <span class="month-group-count">{{ group.totalCount }} sự kiện</span>
                   </td>
                 </tr>
+                @for (event of group.events; track event.id) {
+                  <tr [style]="'--evt-clr:' + (event.color || '#4f46e5')" [class.row-important]="event.isImportant" (click)="openDetail(event)">
+                    <td class="td-day-simple">{{ formatEventDate(event.eventDate) }}</td>
+                    <td class="td-time">
+                      <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
+                    </td>
+                    <td class="td-title">
+                      <div class="title-row">
+                        @if (!event.isImportant) {
+                          <span class="evt-dot"></span>
+                        } @else {
+                          <svg class="icon-important" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" title="Sự kiện quan trọng">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                          </svg>
+                        }
+                        <span class="title-text" [class.text-important]="event.isImportant" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
+                        @if (event.isHidden && authService.isApprover()) {
+                          <span class="badge-hidden">Đang ẩn</span>
+                        }
+                      </div>
+                    </td>
+                    <td><span class="cell-truncate">{{ event.location || '—' }}</span></td>
+                    <td class="td-status td-center">
+                      <span class="status-badge" [attr.data-status]="event.status">{{ statusLabel(event.status) }}</span>
+                    </td>
+                    <td class="td-rejection">
+                      @if (event.rejectionReason) {
+                        <span class="rejection-text" [title]="event.rejectionReason">{{ event.rejectionReason }}</span>
+                      } @else { — }
+                    </td>
+                    <td class="td-actions">
+                      @if (canEditEvent(event)) {
+                        <div class="kebab-wrap" (click)="$event.stopPropagation()">
+                          <button class="kebab-btn" (click)="openKebabMenu($event, event.id)" title="Thao tác">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+                            </svg>
+                          </button>
+                          @if (openMenuId() === event.id && menuPosition()) {
+                            <div class="kebab-menu" [style.top.px]="menuPosition()!.top" [style.left.px]="menuPosition()!.left">
+                              <button class="kebab-item" (click)="openEdit(event); openMenuId.set(null)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                Sửa
+                              </button>
+                              <button class="kebab-item kebab-item--danger" (click)="deleteEvent(event.id); openMenuId.set(null)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                Xóa
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
         </div>
+
+        @if (myTotalPages > 1) {
+          <div class="pagination">
+            <button class="page-btn page-btn--nav" [disabled]="myCurrentPage() === 1" (click)="myCurrentPage.set(myCurrentPage() - 1)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            @for (p of myVisiblePages; track $index) {
+              @if (p === '...') {
+                <span class="page-ellipsis">…</span>
+              } @else {
+                <button class="page-btn" [class.active]="myCurrentPage() === p" (click)="myCurrentPage.set(+p)">{{ p }}</button>
+              }
+            }
+            <button class="page-btn page-btn--nav" [disabled]="myCurrentPage() === myTotalPages" (click)="myCurrentPage.set(myCurrentPage() + 1)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <span class="page-info">{{ (myCurrentPage() - 1) * MY_PAGE_SIZE + 1 }}–{{ min(myCurrentPage() * MY_PAGE_SIZE, filteredMyEvents.length) }} / {{ filteredMyEvents.length }}</span>
+          </div>
+        }
       }
 
     <!-- ── MONTH VIEW ─────────────────────────────── -->
