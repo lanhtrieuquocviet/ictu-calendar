@@ -65,12 +65,41 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   statusDropdownOpen = signal(false);
   myStatusDropdownOpen = signal(false);
   openMenuId = signal<string | null>(null);
+  menuPosition = signal<{ top: number; left: number } | null>(null);
 
   @HostListener('document:click')
   closeDropdowns(): void {
     this.statusDropdownOpen.set(false);
     this.myStatusDropdownOpen.set(false);
     this.openMenuId.set(null);
+    this.menuPosition.set(null);
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    if (this.openMenuId()) {
+      this.openMenuId.set(null);
+      this.menuPosition.set(null);
+    }
+  }
+
+  openKebabMenu(e: MouseEvent, eventId: string): void {
+    e.stopPropagation();
+    if (this.openMenuId() === eventId) {
+      this.openMenuId.set(null);
+      this.menuPosition.set(null);
+      return;
+    }
+    const btn = e.currentTarget as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    const menuWidth = 148;
+    const menuHeight = 120;
+    const top = rect.bottom + 4 + menuHeight > window.innerHeight
+      ? rect.top - menuHeight - 4
+      : rect.bottom + 4;
+    const left = Math.max(4, rect.right - menuWidth);
+    this.menuPosition.set({ top, left });
+    this.openMenuId.set(eventId);
   }
 
   async logout(): Promise<void> {
@@ -101,6 +130,13 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   canEditEvent(event: CalendarEvent): boolean {
     if (this.authService.isAdmin()) return true;
     return event.userId === this.authService.getCurrentUserId() && event.status !== 'approved';
+  }
+
+  hasAnyAction(event: CalendarEvent): boolean {
+    if (this.authService.isApprover() && !this.authService.isEditor() && event.status === 'pending') return true;
+    if (this.authService.isEditor() && this.canEditEvent(event)) return true;
+    if (this.authService.isApprover() && event.status === 'approved') return true;
+    return false;
   }
 
   get filteredEvents(): CalendarEvent[] {
