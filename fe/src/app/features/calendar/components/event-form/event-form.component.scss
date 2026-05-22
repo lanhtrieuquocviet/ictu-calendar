@@ -1,4 +1,4 @@
-﻿.modal-backdrop {
+.modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -13,8 +13,8 @@
 .modal {
   background: #fff;
   border-radius: 14px;
-  width: 700px;
-  max-width: 100%;
+  width: 980px;
+  max-width: calc(100vw - 32px);
   max-height: 96vh;
   display: flex;
   flex-direction: column;
@@ -40,13 +40,131 @@
 }
 
 .modal-body {
-  padding: 14px 24px;
+  padding: 14px 20px;
   flex: 1;
   overflow-y: auto;
   min-height: 0;
 }
 
-.form-grid {
+// ── 2-panel layout ───────────────────────────────────────────────
+
+.form-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-top: 2px;
+}
+
+.panel-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+// ── Title section ────────────────────────────────────────────────
+
+.title-section {
+  margin-bottom: 4px;
+
+  > label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+  }
+}
+
+.title-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.title-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1e293b;
+  background: #f8fafc;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: #006cb5;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 108, 181, 0.08);
+  }
+
+  &::placeholder { color: #94a3b8; font-size: 13.5px; }
+}
+
+.important-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d1d5db;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: #f59e0b;
+    color: #f59e0b;
+    background: #fffbeb;
+  }
+
+  &.active {
+    border-color: #f59e0b;
+    background: #fffbeb;
+    color: #f59e0b;
+    svg { filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5)); }
+  }
+}
+
+// ── Form sections ────────────────────────────────────────────────
+
+.form-section {
+  margin-top: 12px;
+
+  &:first-child { margin-top: 0; }
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  margin-bottom: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 3px solid #006cb5;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #006cb5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  svg { color: #006cb5; flex-shrink: 0; }
+}
+
+.section-body {
+  // content padding handled by children
+}
+
+.section-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
@@ -54,29 +172,7 @@
   .full { grid-column: 1 / -1; }
 }
 
-.field-checkbox {
-  justify-content: flex-end;
-  padding-bottom: 2px;
-
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-    color: #374151;
-    text-transform: none;
-    letter-spacing: 0;
-
-    input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: #3b82f6;
-      cursor: pointer;
-    }
-  }
-}
+// ── Field ────────────────────────────────────────────────────────
 
 .field {
   display: flex;
@@ -113,18 +209,12 @@
 
   textarea {
     resize: vertical;
-    min-height: 72px;
+    min-height: 56px;
     line-height: 1.5;
-  }
-
-  input[type="color"] {
-    padding: 4px 6px;
-    height: 38px;
-    cursor: pointer;
   }
 }
 
-// ── Datetime row ────────────────────────────────────────────────
+// ── Datetime row ─────────────────────────────────────────────────
 
 .datetime-row {
   display: flex;
@@ -146,7 +236,7 @@
   flex-shrink: 0;
 }
 
-// ── Picker wrapper ──────────────────────────────────────────────
+// ── Picker wrapper ────────────────────────────────────────────────
 
 .picker-wrap {
   position: relative;
@@ -183,11 +273,9 @@
 }
 
 .date-chip { min-width: 220px; }
-.time-chip { min-width: 96px; justify-content: center; }
 
 .all-day-chip {
   gap: 6px;
-
   svg { opacity: 0.55; }
 
   &.active {
@@ -215,7 +303,6 @@
   transition: background 0.15s, border-color 0.15s;
 
   &::placeholder { color: #94a3b8; }
-
   &:hover { background: #e8edf5; border-color: #cbd5e1; }
 
   &:focus, &.open {
@@ -227,7 +314,7 @@
   &:disabled { opacity: 0.6; cursor: default; }
 }
 
-// ── Calendar popup ──────────────────────────────────────────────
+// ── Calendar popup ────────────────────────────────────────────────
 
 .calendar-popup {
   position: absolute;
@@ -310,10 +397,7 @@
 
   &:hover { background: #f1f5f9; }
 
-  &.today {
-    color: #006cb5;
-    font-weight: 700;
-  }
+  &.today { color: #006cb5; font-weight: 700; }
 
   &.selected {
     background: #006cb5;
@@ -328,7 +412,7 @@
   }
 }
 
-// ── Time dropdown ───────────────────────────────────────────────
+// ── Time dropdown ─────────────────────────────────────────────────
 
 .time-dropdown {
   position: absolute;
@@ -398,7 +482,7 @@
   animation: fadeIn 0.15s ease;
 }
 
-// ── Unit multi-select picker ────────────────────────────────────
+// ── Unit multi-select picker ──────────────────────────────────────
 
 .unit-picker {
   position: relative;
@@ -593,47 +677,7 @@
   &:disabled { opacity: 0.4; cursor: default; }
 }
 
-// ── Details ─────────────────────────────────────────────────────
-
-.details-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 14px;
-  padding: 0;
-  background: none;
-  border: none;
-  color: #006cb5;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  opacity: 0.75;
-  transition: opacity 0.15s;
-
-  &:hover { opacity: 1; }
-
-  .toggle-icon {
-    display: inline-block;
-    flex-shrink: 0;
-    transition: transform 0.2s ease;
-    &.open { transform: rotate(90deg); }
-  }
-}
-
-.details-section {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed #e2e8f0;
-  animation: fadeIn 0.18s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-// ── Rejection notice (hiện cho editor khi sự kiện bị từ chối) ───
+// ── Rejection notice ──────────────────────────────────────────────
 
 .rejection-notice {
   margin-top: 16px;
@@ -671,7 +715,7 @@
   font-style: italic;
 }
 
-// ── Reject reason input (hiện trong approval-section) ───────────
+// ── Reject reason input ───────────────────────────────────────────
 
 .prev-rejection-reason {
   margin-top: 12px;
@@ -721,7 +765,7 @@
   }
 }
 
-// ── Approval section ────────────────────────────────────────────
+// ── Approval section ──────────────────────────────────────────────
 
 .creator-info {
   display: flex;
@@ -776,39 +820,7 @@
   &[data-status="rejected"] { background: #fee2e2; color: #991b1b; }
 }
 
-// ── Footer approve buttons ───────────────────────────────────────
-
-.btn-reject {
-  display: flex; align-items: center; gap: 6px;
-  padding: 9px 18px;
-  background: #fff;
-  color: #dc2626;
-  border: 1.5px solid #fca5a5;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13.5px;
-  font-weight: 600;
-  font-family: inherit;
-  transition: all 0.15s;
-  &:hover:not(:disabled) { background: #fef2f2; border-color: #f87171; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-}
-
-.btn-approve {
-  display: flex; align-items: center; gap: 6px;
-  padding: 9px 20px;
-  background: #16a34a;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13.5px;
-  font-weight: 600;
-  font-family: inherit;
-  transition: opacity 0.15s;
-  &:hover:not(:disabled) { opacity: 0.88; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-}
+// ── Footer ────────────────────────────────────────────────────────
 
 .error-msg {
   background: #fef2f2;
@@ -819,8 +831,6 @@
   padding: 10px 14px;
   margin-top: 12px;
 }
-
-// ── Footer ───────────────────────────────────────────────────────
 
 .modal-footer {
   display: flex;
@@ -859,40 +869,39 @@
   }
 }
 
-// ── Toggle quan trọng ─────────────────────────────────────────────────────────
-
-.important-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin: 10px 0 4px;
-  padding: 7px 14px;
-  border: 1.5px dashed #d1d5db;
+.btn-reject {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 18px;
+  background: #fff;
+  color: #dc2626;
+  border: 1.5px solid #fca5a5;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
-  color: #6b7280;
-  user-select: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
   transition: all 0.15s;
-  svg { color: #d1d5db; transition: color 0.15s; }
-
-  &:hover {
-    border-color: #f59e0b;
-    color: #92400e;
-    svg { color: #f59e0b; }
-  }
-
-  &.active {
-    border-style: solid;
-    border-color: #f59e0b;
-    background: #fffbeb;
-    color: #92400e;
-    font-weight: 600;
-    svg { color: #f59e0b; filter: drop-shadow(0 0 3px #fbbf2480); }
-  }
+  &:hover:not(:disabled) { background: #fef2f2; border-color: #f87171; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
-// ── Đính kèm văn bản ──────────────────────────────────────────────────────────
+.btn-approve {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 20px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: opacity 0.15s;
+  &:hover:not(:disabled) { opacity: 0.88; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// ── Đính kèm văn bản ─────────────────────────────────────────────
 
 .att-list {
   display: flex;
@@ -968,7 +977,7 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 20px 16px;
+  padding: 14px 12px;
   border: 2px dashed #cbd5e1;
   border-radius: 10px;
   cursor: pointer;
@@ -999,6 +1008,7 @@
   color: #ef4444;
 }
 
+// ── Participants readonly ─────────────────────────────────────────
 
 .participants-readonly {
   font-size: 13px; color: #374151; margin: 0; line-height: 1.5;
@@ -1024,4 +1034,9 @@
   &[data-type='department'] { background: #ede9fe; color: #5b21b6; }
   &[data-type='user']       { background: #dbeafe; color: #1e40af; }
   &[data-type='external']   { background: #d1fae5; color: #065f46; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

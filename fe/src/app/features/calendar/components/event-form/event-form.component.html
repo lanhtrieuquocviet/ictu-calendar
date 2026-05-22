@@ -7,374 +7,358 @@
 
     <div class="modal-body">
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
-        <div class="form-grid">
 
-          <!-- Title -->
-          <div class="field full">
-            <label>Nội dung *</label>
-            <input type="text" formControlName="title" placeholder="Tên cuộc họp / sự kiện" />
+        <!-- Title + Important -->
+        <div class="title-section">
+          <label>Nội dung *</label>
+          <div class="title-input-row">
+            <input class="title-input" type="text" formControlName="title" placeholder="Tên cuộc họp / sự kiện" />
+            <button type="button" class="important-btn" [class.active]="form.get('isImportant')?.value"
+              (click)="toggleImportant()" title="Đánh dấu sự kiện quan trọng">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </button>
           </div>
-
-          <!-- Datetime row -->
-          <div class="field full">
-            <label>Thời gian *</label>
-            <div class="datetime-row">
-
-              <!-- Date picker -->
-              <div class="picker-wrap" data-picker="date">
-                <button type="button" class="picker-chip date-chip" [class.open]="showDatePicker"
-                  [disabled]="approverOnly"
-                  (click)="toggleDatePicker($event)">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  {{ displayDate }}
-                </button>
-
-                @if (showDatePicker) {
-                  <div class="calendar-popup">
-                    <div class="cal-nav">
-                      <button type="button" class="cal-nav-btn" (click)="prevMonth($event)">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="15 18 9 12 15 6"/>
-                        </svg>
-                      </button>
-                      <span class="cal-month">{{ calendarMonthLabel }}</span>
-                      <button type="button" class="cal-nav-btn" (click)="nextMonth($event)">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="9 18 15 12 9 6"/>
-                        </svg>
-                      </button>
-                    </div>
-                    <div class="cal-grid">
-                      @for (dn of dayNames; track dn) {
-                        <div class="cal-dn">{{ dn }}</div>
-                      }
-                      @for (day of calendarDays; track $index) {
-                        @if (day) {
-                          <button type="button" class="cal-day"
-                            [class.today]="isToday(day)"
-                            [class.selected]="isSelectedDate(day)"
-                            [class.past]="isPastDate(day)"
-                            [disabled]="isPastDate(day)"
-                            (click)="selectDate(day, $event)">
-                            {{ day.getDate() }}
-                          </button>
-                        } @else {
-                          <span></span>
-                        }
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
-
-              <!-- All-day toggle -->
-              <button type="button" class="picker-chip all-day-chip"
-                [class.active]="isAllDay"
-                [disabled]="approverOnly"
-                (click)="toggleAllDay()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="4"/>
-                  <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                  <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-                Cả ngày
-              </button>
-
-              <!-- Time range -->
-              @if (!isAllDay) {
-              <div class="time-range">
-                <div class="picker-wrap" data-picker="start">
-                  <input type="text" class="time-input" [class.open]="showStartTimePicker"
-                    [value]="startTimeInput"
-                    placeholder="--:--"
-                    [disabled]="approverOnly"
-                    (focus)="onStartTimeFocus($event)"
-                    (blur)="onStartTimeBlur()"
-                    (input)="startTimeInput = $any($event.target).value"
-                    (click)="$event.stopPropagation()"
-                  />
-                  @if (showStartTimePicker) {
-                    <div class="time-dropdown">
-                      @for (slot of timeSlots; track slot) {
-                        <button type="button" class="time-opt"
-                          [class.active]="slot === form.get('startTime')?.value"
-                          (click)="selectStartTime(slot, $event)">
-                          {{ formatTime(slot) }}
-                        </button>
-                      }
-                    </div>
-                  }
-                </div>
-
-                <span class="time-sep">—</span>
-
-                <div class="picker-wrap" data-picker="end">
-                  <input type="text" class="time-input" [class.open]="showEndTimePicker"
-                    [value]="endTimeInput"
-                    placeholder="--:--"
-                    [disabled]="approverOnly"
-                    (focus)="onEndTimeFocus($event)"
-                    (blur)="onEndTimeBlur()"
-                    (input)="endTimeInput = $any($event.target).value"
-                    (click)="$event.stopPropagation()"
-                  />
-                  @if (showEndTimePicker) {
-                    <div class="time-dropdown end-dropdown">
-                      @for (slot of timeSlots; track slot) {
-                        <button type="button" class="time-opt"
-                          [class.active]="slot === form.get('endTime')?.value"
-                          [class.slot-disabled]="!isValidEndSlot(slot)"
-                          [disabled]="!isValidEndSlot(slot)"
-                          (click)="selectEndTime(slot, $event)">
-                          <span>{{ formatTime(slot) }}</span>
-                          @if (getSlotDuration(slot)) {
-                            <span class="slot-dur">{{ getSlotDuration(slot) }}</span>
-                          }
-                        </button>
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-              }
-
-            </div>
-            @if (endTimeError) {
-              <div class="time-error">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                  <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                Giờ kết thúc phải sau giờ bắt đầu
-              </div>
-            }
-          </div>
-
-          <!-- Location -->
-          <div class="field full">
-            <label>Địa điểm</label>
-            <app-autocomplete-input
-              formControlName="location"
-              placeholder="Phòng họp số 1"
-              [suggestions]="suggestions.location">
-            </app-autocomplete-input>
-          </div>
-
         </div>
 
-        <!-- Important toggle -->
-        <div class="important-toggle" [class.active]="form.get('isImportant')?.value" (click)="toggleImportant()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <span>Sự kiện quan trọng</span>
-        </div>
+        <!-- 2-panel layout -->
+        <div class="form-panels">
 
-        <div class="form-grid details-section">
+          <!-- LEFT: Thời gian + Địa điểm & Phương tiện -->
+          <div class="panel-col">
 
-            <div class="field">
-              <label>Mã cuộc họp</label>
-              <input type="text" formControlName="meetingCode" placeholder="VD: 26.21.01" />
-            </div>
+            <!-- Section: THỜI GIAN -->
+            <div class="form-section">
+              <div class="section-header">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>
+                </svg>
+                <span>Thời gian</span>
+              </div>
+              <div class="section-body">
+                <div class="field">
+                  <label>Chọn ngày & giờ *</label>
+                  <div class="datetime-row">
 
-            <div class="field">
-              <label>Đơn vị chủ trì</label>
-              <div class="unit-picker" data-picker="unit">
-                <div class="unit-chips-wrap" [class.open]="unitDropdownOpen" [class.disabled]="approverOnly" (click)="toggleUnitDropdown($event)">
-                  @if (selectedUnits.length === 0) {
-                    <span class="unit-placeholder">Chọn đơn vị...</span>
-                  }
-                  @for (unit of selectedUnits; track unit) {
-                    <span class="unit-chip">
-                      {{ unit }}
-                      <button type="button" class="chip-remove" (click)="removeUnit(unit, $event)">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    <div class="picker-wrap" data-picker="date">
+                      <button type="button" class="picker-chip date-chip" [class.open]="showDatePicker"
+                        [disabled]="approverOnly" (click)="toggleDatePicker($event)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+                          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
+                        {{ displayDate }}
                       </button>
-                    </span>
-                  }
-                  <svg class="unit-chevron" [class.rotated]="unitDropdownOpen" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </div>
-                @if (unitDropdownOpen) {
-                  <div class="unit-dropdown" (click)="$event.stopPropagation()">
-                    @for (group of unitGroups; track group.label) {
-                      <div class="unit-group-label">{{ group.label }}</div>
-                      @for (unit of group.units; track unit) {
-                        <div class="unit-option" [class.selected]="isUnitSelected(unit)" (click)="toggleUnit(unit, $event)">
-                          <span class="unit-check">
-                            @if (isUnitSelected(unit)) {
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                                <polyline points="20 6 9 17 4 12"/>
-                              </svg>
+                      @if (showDatePicker) {
+                        <div class="calendar-popup">
+                          <div class="cal-nav">
+                            <button type="button" class="cal-nav-btn" (click)="prevMonth($event)">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                            </button>
+                            <span class="cal-month">{{ calendarMonthLabel }}</span>
+                            <button type="button" class="cal-nav-btn" (click)="nextMonth($event)">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                          </div>
+                          <div class="cal-grid">
+                            @for (dn of dayNames; track dn) { <div class="cal-dn">{{ dn }}</div> }
+                            @for (day of calendarDays; track $index) {
+                              @if (day) {
+                                <button type="button" class="cal-day"
+                                  [class.today]="isToday(day)" [class.selected]="isSelectedDate(day)"
+                                  [class.past]="isPastDate(day)" [disabled]="isPastDate(day)"
+                                  (click)="selectDate(day, $event)">{{ day.getDate() }}</button>
+                              } @else { <span></span> }
                             }
-                          </span>
-                          {{ unit }}
+                          </div>
                         </div>
                       }
-                    }
-                    <div class="unit-custom-row">
-                      <input
-                        class="unit-custom-input"
-                        type="text"
-                        placeholder="Nhập đơn vị khác..."
-                        [value]="customUnitInput"
-                        (input)="customUnitInput = $any($event.target).value"
-                        (keydown)="onCustomUnitKeydown($event)"
-                        (click)="$event.stopPropagation()"
-                      />
-                      <button type="button" class="unit-custom-add" (click)="addCustomUnit($event)" [disabled]="!customUnitInput.trim()">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Thêm
-                      </button>
                     </div>
+
+                    <button type="button" class="picker-chip all-day-chip" [class.active]="isAllDay"
+                      [disabled]="approverOnly" (click)="toggleAllDay()">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="4"/>
+                        <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                      </svg>
+                      Cả ngày
+                    </button>
+
+                    @if (!isAllDay) {
+                      <div class="time-range">
+                        <div class="picker-wrap" data-picker="start">
+                          <input type="text" class="time-input" [class.open]="showStartTimePicker"
+                            [value]="startTimeInput" placeholder="--:--" [disabled]="approverOnly"
+                            (focus)="onStartTimeFocus($event)" (blur)="onStartTimeBlur()"
+                            (input)="startTimeInput = $any($event.target).value" (click)="$event.stopPropagation()" />
+                          @if (showStartTimePicker) {
+                            <div class="time-dropdown">
+                              @for (slot of timeSlots; track slot) {
+                                <button type="button" class="time-opt"
+                                  [class.active]="slot === form.get('startTime')?.value"
+                                  (click)="selectStartTime(slot, $event)">{{ formatTime(slot) }}</button>
+                              }
+                            </div>
+                          }
+                        </div>
+                        <span class="time-sep">—</span>
+                        <div class="picker-wrap" data-picker="end">
+                          <input type="text" class="time-input" [class.open]="showEndTimePicker"
+                            [value]="endTimeInput" placeholder="--:--" [disabled]="approverOnly"
+                            (focus)="onEndTimeFocus($event)" (blur)="onEndTimeBlur()"
+                            (input)="endTimeInput = $any($event.target).value" (click)="$event.stopPropagation()" />
+                          @if (showEndTimePicker) {
+                            <div class="time-dropdown end-dropdown">
+                              @for (slot of timeSlots; track slot) {
+                                <button type="button" class="time-opt"
+                                  [class.active]="slot === form.get('endTime')?.value"
+                                  [class.slot-disabled]="!isValidEndSlot(slot)" [disabled]="!isValidEndSlot(slot)"
+                                  (click)="selectEndTime(slot, $event)">
+                                  <span>{{ formatTime(slot) }}</span>
+                                  @if (getSlotDuration(slot)) { <span class="slot-dur">{{ getSlotDuration(slot) }}</span> }
+                                </button>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+
                   </div>
-                }
+                  @if (endTimeError) {
+                    <div class="time-error">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                      Giờ kết thúc phải sau giờ bắt đầu
+                    </div>
+                  }
+                </div>
               </div>
             </div>
 
-            <div class="field full">
-              <label>Thành phần tham dự</label>
-              @if (!approverOnly) {
-                <app-participant-selector
-                  [disabled]="approverOnly"
-                  [initialParticipants]="structuredParticipants"
-                  (participantsChange)="onParticipantsChange($event)">
-                </app-participant-selector>
-              } @else {
-                @if (structuredParticipants.length > 0) {
-                  <div class="participants-chips-ro">
-                    @for (p of structuredParticipants; track $index) {
-                      <span class="participant-chip-ro" [attr.data-type]="p.type">
-                        @if (p.type === 'department') {
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                        } @else if (p.type === 'user') {
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        } @else {
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <!-- Section: ĐỊA ĐIỂM & PHƯƠNG TIỆN -->
+            <div class="form-section">
+              <div class="section-header">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span>Địa điểm & Phương tiện</span>
+              </div>
+              <div class="section-body section-grid">
+                <div class="field full">
+                  <label>Địa điểm</label>
+                  <app-autocomplete-input formControlName="location" placeholder="Phòng họp số 1"
+                    [suggestions]="suggestions.location"></app-autocomplete-input>
+                </div>
+                <div class="field">
+                  <label>Điều xe</label>
+                  <app-autocomplete-input formControlName="vehicleArrangement" placeholder="Xe 00715"
+                    [suggestions]="suggestions.vehicleArrangement"></app-autocomplete-input>
+                </div>
+                <div class="field">
+                  <label>Truyền thông</label>
+                  <app-autocomplete-input formControlName="mediaUnit" placeholder="Trung tâm TTTS"
+                    [suggestions]="suggestions.mediaUnit"></app-autocomplete-input>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /panel-left -->
+
+          <!-- RIGHT: Nhân sự & Văn bản -->
+          <div class="panel-col">
+
+            <!-- Section: NHÂN SỰ & TỔ CHỨC -->
+            <div class="form-section">
+              <div class="section-header">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>Nhân sự & Tổ chức</span>
+              </div>
+              <div class="section-body section-grid">
+
+                <div class="field">
+                  <label>Mã cuộc họp</label>
+                  <input type="text" formControlName="meetingCode" placeholder="VD: 26.21.01" />
+                </div>
+
+                <div class="field">
+                  <label>Đơn vị chủ trì</label>
+                  <div class="unit-picker" data-picker="unit">
+                    <div class="unit-chips-wrap" [class.open]="unitDropdownOpen" [class.disabled]="approverOnly"
+                      (click)="toggleUnitDropdown($event)">
+                      @if (selectedUnits.length === 0) {
+                        <span class="unit-placeholder">Chọn đơn vị...</span>
+                      }
+                      @for (unit of selectedUnits; track unit) {
+                        <span class="unit-chip">
+                          {{ unit }}
+                          <button type="button" class="chip-remove" (click)="removeUnit(unit, $event)">
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </span>
+                      }
+                      <svg class="unit-chevron" [class.rotated]="unitDropdownOpen" width="12" height="12"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </div>
+                    @if (unitDropdownOpen) {
+                      <div class="unit-dropdown" (click)="$event.stopPropagation()">
+                        @for (group of unitGroups; track group.label) {
+                          <div class="unit-group-label">{{ group.label }}</div>
+                          @for (unit of group.units; track unit) {
+                            <div class="unit-option" [class.selected]="isUnitSelected(unit)" (click)="toggleUnit(unit, $event)">
+                              <span class="unit-check">
+                                @if (isUnitSelected(unit)) {
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                  </svg>
+                                }
+                              </span>
+                              {{ unit }}
+                            </div>
+                          }
                         }
-                        {{ p.displayName }}
-                      </span>
+                        <div class="unit-custom-row">
+                          <input class="unit-custom-input" type="text" placeholder="Nhập đơn vị khác..."
+                            [value]="customUnitInput"
+                            (input)="customUnitInput = $any($event.target).value"
+                            (keydown)="onCustomUnitKeydown($event)"
+                            (click)="$event.stopPropagation()" />
+                          <button type="button" class="unit-custom-add" (click)="addCustomUnit($event)" [disabled]="!customUnitInput.trim()">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Thêm
+                          </button>
+                        </div>
+                      </div>
                     }
                   </div>
-                } @else {
-                  <p class="participants-readonly">{{ form.get('participants')?.value || '—' }}</p>
-                }
-              }
+                </div>
+
+                <div class="field full">
+                  <label>Thành phần tham dự</label>
+                  @if (!approverOnly) {
+                    <app-participant-selector [disabled]="approverOnly"
+                      [initialParticipants]="structuredParticipants"
+                      (participantsChange)="onParticipantsChange($event)">
+                    </app-participant-selector>
+                  } @else {
+                    @if (structuredParticipants.length > 0) {
+                      <div class="participants-chips-ro">
+                        @for (p of structuredParticipants; track $index) {
+                          <span class="participant-chip-ro" [attr.data-type]="p.type">
+                            @if (p.type === 'department') {
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                            } @else if (p.type === 'user') {
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            } @else {
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            }
+                            {{ p.displayName }}
+                          </span>
+                        }
+                      </div>
+                    } @else {
+                      <p class="participants-readonly">{{ form.get('participants')?.value || '—' }}</p>
+                    }
+                  }
+                </div>
+
+                <div class="field full">
+                  <label>ĐU/BGH Chỉ đạo</label>
+                  <app-autocomplete-input formControlName="supervisor" placeholder="PGS.TS. Phùng Trung Nghĩa"
+                    [suggestions]="suggestions.supervisor"></app-autocomplete-input>
+                </div>
+
+                <div class="field full">
+                  <label>Ghi chú</label>
+                  <textarea formControlName="notes" placeholder="Ghi chú thêm..."></textarea>
+                </div>
+
+              </div>
             </div>
 
-            <div class="field">
-              <label>Điều xe</label>
-              <app-autocomplete-input
-                formControlName="vehicleArrangement"
-                placeholder="Xe 00715"
-                [suggestions]="suggestions.vehicleArrangement">
-              </app-autocomplete-input>
-            </div>
-
-            <div class="field">
-              <label>Truyền thông</label>
-              <app-autocomplete-input
-                formControlName="mediaUnit"
-                placeholder="Trung tâm TTTS"
-                [suggestions]="suggestions.mediaUnit">
-              </app-autocomplete-input>
-            </div>
-
-            <div class="field">
-              <label>ĐU/BGH Chỉ đạo</label>
-              <app-autocomplete-input
-                formControlName="supervisor"
-                placeholder="PGS.TS. Phùng Trung Nghĩa"
-                [suggestions]="suggestions.supervisor">
-              </app-autocomplete-input>
-            </div>
-
-            <div class="field full">
-              <label>Ghi chú</label>
-              <textarea formControlName="notes" placeholder="Ghi chú thêm..."></textarea>
-            </div>
-
-            <!-- Đính kèm văn bản -->
+            <!-- Section: VĂN BẢN ĐÍNH KÈM -->
             @if (canEditContent || (approverOnly && attachments.length > 0)) {
-              <div class="field full">
-                <label>Văn bản đính kèm</label>
-
-                <!-- Danh sách file đã đính kèm (khi edit) -->
-                @if (isEdit && attachments.length > 0) {
-                  <div class="att-list">
-                    @for (att of attachments; track att.id) {
-                      <div class="att-item">
-                        <span class="att-icon" [attr.data-type]="getFileIcon(att.mimeType)"></span>
-                        <a class="att-name" [href]="getDownloadUrl(att.filename)" target="_blank" rel="noopener">
-                          {{ att.originalName }}
-                        </a>
-                        <span class="att-size">{{ formatFileSize(att.size) }}</span>
-                        @if (canEditContent) {
-                          <button type="button" class="att-remove" (click)="removeAttachment(att)" [disabled]="loading">
+              <div class="form-section">
+                <div class="section-header">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                  <span>Văn bản đính kèm</span>
+                </div>
+                <div class="section-body">
+                  @if (isEdit && attachments.length > 0) {
+                    <div class="att-list">
+                      @for (att of attachments; track att.id) {
+                        <div class="att-item">
+                          <span class="att-icon" [attr.data-type]="getFileIcon(att.mimeType)"></span>
+                          <a class="att-name" [href]="getDownloadUrl(att.filename)" target="_blank" rel="noopener">{{ att.originalName }}</a>
+                          <span class="att-size">{{ formatFileSize(att.size) }}</span>
+                          @if (canEditContent) {
+                            <button type="button" class="att-remove" (click)="removeAttachment(att)" [disabled]="loading">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                              </svg>
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (!isEdit && pendingFiles.length > 0) {
+                    <div class="att-list">
+                      @for (f of pendingFiles; track f.name) {
+                        <div class="att-item">
+                          <span class="att-icon" [attr.data-type]="getFileIcon(f.type)"></span>
+                          <span class="att-name">{{ f.name }}</span>
+                          <span class="att-size">{{ formatFileSize(f.size) }}</span>
+                          <button type="button" class="att-remove" (click)="removePendingFile(f)">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                             </svg>
                           </button>
-                        }
-                      </div>
-                    }
-                  </div>
-                }
-
-                <!-- File chờ upload (khi create) -->
-                @if (!isEdit && pendingFiles.length > 0) {
-                  <div class="att-list">
-                    @for (f of pendingFiles; track f.name) {
-                      <div class="att-item">
-                        <span class="att-icon" [attr.data-type]="getFileIcon(f.type)"></span>
-                        <span class="att-name">{{ f.name }}</span>
-                        <span class="att-size">{{ formatFileSize(f.size) }}</span>
-                        <button type="button" class="att-remove" (click)="removePendingFile(f)">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                          </svg>
-                        </button>
-                      </div>
-                    }
-                  </div>
-                }
-
-                <!-- Upload zone: chỉ editor mới được upload -->
-                @if (canEditContent && totalAttachments < 5) {
-                  <div class="att-dropzone" [class.dragging]="isDragging"
-                    (dragover)="onDragOver($event)" (dragleave)="isDragging = false"
-                    (drop)="onDrop($event)" (click)="fileInput.click()">
-                    <input #fileInput type="file" hidden multiple
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
-                      (change)="onFilesSelected($event)" />
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="17 8 12 3 7 8"/>
-                      <line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                    <span>Kéo thả hoặc <strong>chọn file</strong></span>
-                    <span class="att-hint">PDF, Word, Excel, PowerPoint, JPG, PNG · Tối đa 10 MB/file · {{ 5 - totalAttachments }} file còn lại</span>
-                  </div>
-                }
-
-                @if (attachError) {
-                  <p class="att-error">{{ attachError }}</p>
-                }
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (canEditContent && totalAttachments < 5) {
+                    <div class="att-dropzone" [class.dragging]="isDragging"
+                      (dragover)="onDragOver($event)" (dragleave)="isDragging = false"
+                      (drop)="onDrop($event)" (click)="fileInput.click()">
+                      <input #fileInput type="file" hidden multiple
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+                        (change)="onFilesSelected($event)" />
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                      <span>Kéo thả hoặc <strong>chọn file</strong></span>
+                      <span class="att-hint">PDF, Word, Excel, PPT, JPG · Tối đa 10 MB · {{ 5 - totalAttachments }} file còn lại</span>
+                    </div>
+                  }
+                  @if (attachError) { <p class="att-error">{{ attachError }}</p> }
+                </div>
               </div>
             }
 
-          </div>
+          </div><!-- /panel-right -->
 
-        <!-- Hiển thị lý do từ chối cho editor khi sự kiện bị từ chối -->
+        </div><!-- /form-panels -->
+
+        <!-- Full-width: rejection notice, approval, error -->
         @if (canEditContent && event?.status === 'rejected' && event?.rejectionReason) {
           <div class="rejection-notice">
             <div class="rejection-notice-header">
@@ -388,7 +372,6 @@
           </div>
         }
 
-        <!-- Approval section: chỉ hiện cho approver / admin khi đang edit -->
         @if (canApprove) {
           <div class="approval-section">
             @if (event?.createdByName || event?.user?.fullName) {
@@ -406,42 +389,33 @@
                 </svg>
                 Phê duyệt
               </span>
-              <span class="status-badge" [attr.data-status]="form.get('status')?.value">
-                {{ statusLabel }}
-              </span>
+              <span class="status-badge" [attr.data-status]="form.get('status')?.value">{{ statusLabel }}</span>
             </div>
-
             @if (event?.rejectionReason && form.get('status')?.value === 'rejected') {
               <div class="prev-rejection-reason">
                 <span class="prev-label">Lý do từ chối trước:</span>
                 <span>{{ event?.rejectionReason }}</span>
               </div>
             }
-
             @if (showRejectInput) {
               <div class="reject-reason-input">
                 <label>Lý do từ chối *</label>
-                <textarea
-                  [value]="rejectReason"
-                  (input)="rejectReason = $any($event.target).value"
-                  placeholder="Nhập lý do từ chối sự kiện này..."
-                  rows="3">
-                </textarea>
+                <textarea [value]="rejectReason" (input)="rejectReason = $any($event.target).value"
+                  placeholder="Nhập lý do từ chối sự kiện này..." rows="3"></textarea>
               </div>
             }
-
           </div>
         }
 
         @if (error || approveError) {
           <div class="error-msg">{{ error || approveError }}</div>
         }
+
       </form>
     </div>
 
     <div class="modal-footer">
       <button type="button" class="btn-cancel" (click)="cancel()">Hủy</button>
-
       @if (canApprove) {
         @if (showRejectInput) {
           <button type="button" class="btn-cancel" (click)="cancelReject()">Hủy từ chối</button>
@@ -466,7 +440,6 @@
           </button>
         }
       }
-
       @if (canEditContent) {
         <button type="button" class="btn-save" [disabled]="loading || form.invalid" (click)="onSubmit()">
           {{ loading ? 'Đang lưu...' : (isEdit ? 'Cập nhật' : 'Thêm mới') }}

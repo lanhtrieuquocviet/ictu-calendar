@@ -81,7 +81,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
     if (!this.event?.id) return;
     this.calendarService.getAttachments(this.event.id).subscribe({
       next: list => { this.attachments = list; },
-      error: () => {},
+      error: () => { this.attachError = 'Không thể tải danh sách file đính kèm'; },
     });
   }
 
@@ -142,7 +142,8 @@ export class EventFormComponent implements OnInit, OnDestroy {
   private uploadPendingFiles(eventId: string, files: File[]): void {
     files.forEach(f => {
       this.calendarService.uploadAttachment(eventId, f).subscribe({
-        error: (err) => { this.attachError = err.error?.message || `Upload "${f.name}" thất bại`; },
+        next: att => { this.attachments = [...this.attachments, att]; },
+        error: (err) => { this.toast.error(err.error?.message || `Upload "${f.name}" thất bại`); },
       });
     });
   }
@@ -311,7 +312,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
           approvedBy: ['Đồng ý', 'Từ chối'],
         };
       },
-      error: () => {},
+      error: () => { /* gợi ý vẫn trống, không cần báo lỗi cho người dùng */ },
     });
   }
 
@@ -577,6 +578,10 @@ export class EventFormComponent implements OnInit, OnDestroy {
 
   onSubmit(): void {
     if (this.form.invalid) return;
+    if (!this.isAllDay && !this.form.get('startTime')?.value) {
+      this.error = 'Vui lòng chọn giờ bắt đầu';
+      return;
+    }
     this.loading = true;
     this.error = '';
     const raw = this.form.getRawValue();
@@ -598,7 +603,11 @@ export class EventFormComponent implements OnInit, OnDestroy {
         this.loading = false;
         if (!this.isEdit && this.pendingFiles.length > 0) {
           const newId = res?.data?.id;
-          if (newId) this.uploadPendingFiles(newId, this.pendingFiles);
+          if (newId) {
+            const filesToUpload = [...this.pendingFiles];
+            this.pendingFiles = [];
+            this.uploadPendingFiles(newId, filesToUpload);
+          }
         }
         const successMsg = this.isEdit
           ? 'Cập nhật sự kiện thành công!'
