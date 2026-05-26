@@ -57,7 +57,16 @@ export class CalendarService {
       await this.saveParticipants(saved.id, structuredParticipants);
     }
 
-    return this.findOne(saved.id);
+    const created = await this.findOne(saved.id);
+
+    if (isAdmin && created.eventParticipants?.length) {
+      await this.eventRepository.update(saved.id, { lastNotifiedAt: new Date() });
+      const attachments = await this.attachmentRepository.find({ where: { eventId: saved.id } });
+      const recipients = await this.resolveRecipients(created.eventParticipants as any);
+      this.notificationService.sendEventApproved(created, recipients, attachments).catch(() => null);
+    }
+
+    return created;
   }
 
   async findAll(from?: string, to?: string, status?: EventStatus, q?: string, excludeHidden = false): Promise<Event[]> {

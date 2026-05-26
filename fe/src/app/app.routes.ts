@@ -20,6 +20,11 @@ export const routes: Routes = [
     loadChildren: () => import('./features/admin/admin.routes').then((m) => m.adminRoutes),
   },
   {
+    path: 'notifications',
+    loadChildren: () =>
+      import('./features/notifications/notifications.routes').then((m) => m.notificationsRoutes),
+  },
+  {
     path: '**',
     redirectTo: 'calendar',
   },

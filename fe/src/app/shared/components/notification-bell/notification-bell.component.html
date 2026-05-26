@@ -31,7 +31,7 @@
           </div>
         }
 
-        @for (n of notifService.notifications(); track n.id) {
+        @for (n of previewNotifs(); track n.id) {
           <div class="notif-item" [class.unread]="!n.read" [class.clickable]="!!n.eventId" (click)="onItemClick(n)">
             <div class="notif-icon" [class]="iconForType(n.type)">
               @switch (n.type) {
@@ -89,6 +89,16 @@
             </button>
           </div>
         }
+      </div>
+
+      <div class="panel-footer" (click)="navigateToAll()">
+        <span>Xem tất cả thông báo</span>
+        @if (totalCount() > 5) {
+          <span class="footer-count">{{ totalCount() }}</span>
+        }
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        </svg>
       </div>
     </div>
   }

@@ -1,5 +1,6 @@
-import { Component, inject, HostListener, ElementRef, signal, output } from '@angular/core';
+import { Component, inject, HostListener, ElementRef, signal, computed, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { NotificationService, AppNotification, NotificationType } from '../../services/notification.service';
 
 @Component({
@@ -12,9 +13,13 @@ import { NotificationService, AppNotification, NotificationType } from '../../se
 export class NotificationBellComponent {
   readonly notifService = inject(NotificationService);
   private readonly el = inject(ElementRef);
+  private readonly router = inject(Router);
 
   isOpen = signal(false);
   viewDetail = output<string>();
+
+  previewNotifs = computed(() => this.notifService.notifications().slice(0, 5));
+  totalCount = computed(() => this.notifService.notifications().length);
 
   @HostListener('document:click', ['$event.target'])
   onDocumentClick(target: HTMLElement): void {
@@ -47,6 +52,11 @@ export class NotificationBellComponent {
       this.isOpen.set(false);
       this.viewDetail.emit(n.eventId);
     }
+  }
+
+  navigateToAll(): void {
+    this.isOpen.set(false);
+    this.router.navigate(['/notifications']);
   }
 
   timeAgo(isoDate: string): string {
