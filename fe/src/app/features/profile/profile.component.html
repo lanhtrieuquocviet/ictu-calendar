@@ -1,0 +1,195 @@
+<div class="profile-page">
+
+  @if (loading() && !user()) {
+    <!-- Skeleton chỉ hiện khi chưa có dữ liệu gì -->
+    <div class="skeleton-wrap">
+      <div class="skeleton-hero"></div>
+      <div class="skeleton-cards">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+    </div>
+
+  } @else if (loadError() && !user()) {
+    <!-- Lỗi chỉ hiện khi không có dữ liệu fallback -->
+    <div class="load-error">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <p>Không thể tải thông tin hồ sơ.</p>
+      <button class="btn-retry" (click)="ngOnInit()">Thử lại</button>
+      <a class="back-link-plain" routerLink="/calendar">← Về trang lịch</a>
+    </div>
+
+  } @else {
+
+    <!-- Hero card — chứa luôn nút back -->
+    <div class="hero-card">
+      <div class="hero-top-bar">
+        <a class="hero-back" routerLink="/calendar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Về trang lịch
+        </a>
+      </div>
+
+      <div class="hero-body">
+        <div class="hero-avatar">{{ initials }}</div>
+        <div class="hero-info">
+          <h1 class="hero-name">{{ user()!.fullName || '—' }}</h1>
+          <p class="hero-email">{{ user()!.email || '—' }}</p>
+          <span class="role-badge" [attr.data-role]="user()!.role">{{ roleLabel || '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards grid -->
+    <div class="cards-grid">
+
+      <!-- Thông tin cá nhân -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Thông tin cá nhân</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Họ và tên</span>
+            <span class="info-value">{{ user()!.fullName || '—' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email</span>
+            <span class="info-value">{{ user()!.email || '—' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Vai trò</span>
+            <span class="info-value">
+              @if (user()!.role) {
+                <span class="role-badge role-badge--sm" [attr.data-role]="user()!.role">{{ roleLabel }}</span>
+              } @else { <span>—</span> }
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Phòng/Ban</span>
+            <span class="info-value dept-value">{{ user()!.department?.name ?? '— Chưa phân công —' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Trạng thái</span>
+            <span class="info-value">
+              <span class="status-dot" [class.active]="user()!.isActive"></span>
+              {{ user()!.isActive ? 'Hoạt động' : 'Chưa xác nhận' }}
+            </span>
+          </div>
+          @if (user()!.createdAt) {
+            <div class="info-row">
+              <span class="info-label">Ngày tạo</span>
+              <span class="info-value">{{ user()!.createdAt | date:'dd/MM/yyyy' }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Đổi mật khẩu -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span>Đổi mật khẩu</span>
+        </div>
+        <div class="card-body">
+
+          @if (pwSuccess()) {
+            <div class="alert alert--success">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              {{ pwSuccess() }}
+            </div>
+          }
+          @if (pwError()) {
+            <div class="alert alert--error">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {{ pwError() }}
+            </div>
+          }
+
+          <div class="form-group">
+            <label>Mật khẩu hiện tại <span class="req">*</span></label>
+            <div class="pw-wrap">
+              <input [type]="showCurrent() ? 'text' : 'password'" class="form-input"
+                placeholder="Nhập mật khẩu hiện tại"
+                [value]="pwForm().current"
+                (input)="updatePwForm('current', $any($event.target).value)"
+                autocomplete="current-password" />
+              <button type="button" class="pw-toggle" (click)="showCurrent.set(!showCurrent())">
+                @if (showCurrent()) {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Mật khẩu mới <span class="req">*</span></label>
+            <div class="pw-wrap">
+              <input [type]="showNext() ? 'text' : 'password'" class="form-input"
+                placeholder="Ít nhất 6 ký tự"
+                [value]="pwForm().next"
+                (input)="updatePwForm('next', $any($event.target).value)"
+                autocomplete="new-password" />
+              <button type="button" class="pw-toggle" (click)="showNext.set(!showNext())">
+                @if (showNext()) {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Xác nhận mật khẩu mới <span class="req">*</span></label>
+            <div class="pw-wrap">
+              <input [type]="showConfirm() ? 'text' : 'password'" class="form-input"
+                placeholder="Nhập lại mật khẩu mới"
+                [value]="pwForm().confirm"
+                (input)="updatePwForm('confirm', $any($event.target).value)"
+                autocomplete="new-password" />
+              <button type="button" class="pw-toggle" (click)="showConfirm.set(!showConfirm())">
+                @if (showConfirm()) {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+          </div>
+
+          <button class="btn-submit" (click)="submitChangePassword()" [disabled]="pwSaving()">
+            @if (pwSaving()) {
+              <span class="spinner"></span> Đang lưu...
+            } @else {
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Lưu mật khẩu
+            }
+          </button>
+
+        </div>
+      </div>
+
+    </div>
+  }
+
+</div>

@@ -1,16 +1,21 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { UsersService } from '../users/users.service';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post('register')
   @Throttle({ default: { ttl: 60000, limit: 5 } })
@@ -42,5 +47,25 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout — thu hồi refresh token' })
   logout(@Req() req: any) {
     return this.authService.logout(req.user.sub);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lấy thông tin profile của user hiện tại' })
+  async getMe(@Req() req: any) {
+    const user = await this.usersService.findOneWithDepartment(req.user.sub);
+    const { password, ...result } = user as any;
+    return { data: result };
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Đổi mật khẩu của user hiện tại' })
+  async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
+    await this.usersService.changePassword(req.user.sub, dto.currentPassword, dto.newPassword);
+    return { message: 'Đổi mật khẩu thành công' };
   }
 }

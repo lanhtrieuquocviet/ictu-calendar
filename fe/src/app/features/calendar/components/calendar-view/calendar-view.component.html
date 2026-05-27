@@ -42,20 +42,70 @@
           </div>
         }
       }
-      @if (authService.isAdmin()) {
-        <a class="btn-admin" routerLink="/admin">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="7" height="7" rx="1"/>
-            <rect x="14" y="3" width="7" height="7" rx="1"/>
-            <rect x="3" y="14" width="7" height="7" rx="1"/>
-            <rect x="14" y="14" width="7" height="7" rx="1"/>
-          </svg>
-          Quản lý
-        </a>
-      }
       @if (authService.isLoggedIn()) {
         <app-notification-bell (viewDetail)="openDetailById($event)" />
-        <button class="btn-auth" (click)="logout()">Đăng xuất</button>
+
+        <!-- User dropdown -->
+        <div class="user-menu" (click)="$event.stopPropagation()">
+          <button class="user-trigger" (click)="userMenuOpen.set(!userMenuOpen())" [class.open]="userMenuOpen()">
+            <div class="user-avatar-sm">
+              {{ (authService.getCurrentUserSnapshot()?.fullName ?? '') | slice:0:1 }}
+            </div>
+            <span class="user-trigger-name">{{ authService.getCurrentUserSnapshot()?.fullName?.split(' ')?.at(-1) ?? '' }}</span>
+            <svg class="trigger-chevron" [class.open]="userMenuOpen()" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          @if (userMenuOpen()) {
+            <div class="user-dropdown">
+              <!-- Header info -->
+              <div class="dropdown-user-info">
+                <div class="dui-avatar">
+                  {{ (authService.getCurrentUserSnapshot()?.fullName ?? '') | slice:0:1 }}
+                </div>
+                <div class="dui-text">
+                  <span class="dui-name">{{ authService.getCurrentUserSnapshot()?.fullName }}</span>
+                  <span class="dui-email">{{ authService.getCurrentUserSnapshot()?.email }}</span>
+                </div>
+              </div>
+
+              <div class="dropdown-divider"></div>
+
+              <a class="dropdown-item" routerLink="/profile" (click)="userMenuOpen.set(false)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Hồ sơ cá nhân
+              </a>
+
+              @if (authService.isAdmin()) {
+                <a class="dropdown-item" routerLink="/admin" (click)="userMenuOpen.set(false)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                  </svg>
+                  Trang quản trị
+                </a>
+              }
+
+              <div class="dropdown-divider"></div>
+
+              <button class="dropdown-item dropdown-item--danger" (click)="logout(); userMenuOpen.set(false)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Đăng xuất
+              </button>
+            </div>
+          }
+        </div>
+
       } @else {
         <a class="btn-auth" href="/auth/login">Đăng nhập</a>
       }

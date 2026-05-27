@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -54,6 +54,12 @@ export class UsersService {
     return user;
   }
 
+  async findOneWithDepartment(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id }, relations: ['department'] });
+    if (!user) throw new NotFoundException(`User #${id} not found`);
+    return user;
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository
       .createQueryBuilder('user')
@@ -72,6 +78,19 @@ export class UsersService {
   }
 
   async resetPassword(id: string, newPassword: string): Promise<void> {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersRepository.update(id, { password: hashedPassword });
+  }
+
+  async changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id = :id', { id })
+      .getOne();
+    if (!user) throw new NotFoundException(`User #${id} not found`);
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) throw new UnauthorizedException('Mật khẩu hiện tại không chính xác');
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.usersRepository.update(id, { password: hashedPassword });
   }

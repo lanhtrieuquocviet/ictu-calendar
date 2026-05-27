@@ -7,7 +7,7 @@ import { AuthService } from '@core/services/auth.service';
 import { User, UserRole, ROLE_LABELS } from '@models/user.model';
 import { Department } from '@models/department.model';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
-import { CalendarService, AdminStats } from '@features/calendar/services/calendar.service';
+
 
 @Component({
   selector: 'app-user-management',
@@ -20,12 +20,9 @@ export class UserManagementComponent implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly departmentService = inject(DepartmentService);
   private readonly confirmDialog = inject(ConfirmDialogService);
-  private readonly calendarService = inject(CalendarService);
   readonly authService = inject(AuthService);
 
   users = signal<User[]>([]);
-  stats = signal<AdminStats>({ total: 0, pending: 0, approved: 0, rejected: 0, thisMonth: 0 });
-  statsLoading = signal(true);
   loading = signal(true);
   saving = signal<string | null>(null);
   toast = signal<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -145,7 +142,6 @@ export class UserManagementComponent implements OnInit {
       this.currentUserId = u?.id ?? '';
     });
     this.loadUsers();
-    this.loadStats();
     this.loadDepartments();
   }
 
@@ -173,14 +169,6 @@ export class UserManagementComponent implements OnInit {
         this.saving.set(null);
         this.showToast('Cập nhật thất bại', 'error');
       },
-    });
-  }
-
-  loadStats(): void {
-    this.statsLoading.set(true);
-    this.calendarService.getAdminStats().subscribe({
-      next: (res) => { this.stats.set(res.data); this.statsLoading.set(false); },
-      error: () => this.statsLoading.set(false),
     });
   }
 
