@@ -6,81 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../../modules/users/users.service';
 import { UserRole } from '../../modules/users/entities/user.entity';
 import { Department, DepartmentGroup } from '../../modules/departments/entities/department.entity';
-
-const USER_NAME_FIX: Record<string, string> = {
-  'luong.thi.hien@ictu.edu.vn': 'Lương Thị Hiện',
-  'vo.van.cuong@ictu.edu.vn': 'Võ Văn Cường',
-  'tran.thi.bich@ictu.edu.vn': 'Trần Thị Bạch',
-  'nguyen.van.hung2@ictu.edu.vn': 'Nguyễn Văn Hùng',
-  'phan.thi.mau@ictu.edu.vn': 'Phan Thị Mậu',
-  'ly.van.binh@ictu.edu.vn': 'Lý Văn Bình',
-  'hoang.van.tuan@ictu.edu.vn': 'Hoàng Văn Tuấn',
-  'vu.thi.thanh@ictu.edu.vn': 'Vũ Thị Thanh',
-  'dao.van.manh@ictu.edu.vn': 'Đào Văn Mạnh',
-  'nguyen.thi.kimanh@ictu.edu.vn': 'Nguyễn Thị Kim Anh',
-  'truong.thi.hoa@ictu.edu.vn': 'Trương Thị Hoa',
-  'chu.thi.ly@ictu.edu.vn': 'Chu Thị Lý',
-  'mai.thi.loan@ictu.edu.vn': 'Mai Thị Loan',
-};
-
-interface UserSeed {
-  fullName: string;
-  email: string;
-  role: UserRole;
-  departmentCode: string;
-}
-
-const DEFAULT_USER_PASSWORD = 'Ictu@123';
-
-const USERS_SEED: UserSeed[] = [
-  // Ban Giám Hiệu
-  { fullName: 'Nguyễn Văn An', email: 'nguyen.van.an@ictu.edu.vn', role: UserRole.APPROVER, departmentCode: 'BGH' },
-  { fullName: 'Trần Thị Bích', email: 'tran.thi.bich@ictu.edu.vn', role: UserRole.APPROVER, departmentCode: 'BGH' },
-
-  // Phòng Hành Chính Tổ Chức
-  { fullName: 'Lê Văn Cường', email: 'le.van.cuong@ictu.edu.vn', role: UserRole.EDITOR, departmentCode: 'P.HCTC' },
-  { fullName: 'Phạm Thị Dung', email: 'pham.thi.dung@ictu.edu.vn', role: UserRole.USER, departmentCode: 'P.HCTC' },
-
-  // Phòng Kế Hoạch Đầu Tư và Tài Chính
-  { fullName: 'Nguyễn Thị Hương', email: 'nguyen.thi.huong@ictu.edu.vn', role: UserRole.EDITOR, departmentCode: 'P.KHTC' },
-  { fullName: 'Hoàng Văn Minh', email: 'hoang.van.minh@ictu.edu.vn', role: UserRole.USER, departmentCode: 'P.KHTC' },
-
-  // Phòng Đào Tạo
-  { fullName: 'Vũ Thị Lan', email: 'vu.thi.lan@ictu.edu.vn', role: UserRole.EDITOR, departmentCode: 'P.DT' },
-  { fullName: 'Đào Văn Hải', email: 'dao.van.hai@ictu.edu.vn', role: UserRole.USER, departmentCode: 'P.DT' },
-
-  // Phòng Khoa Học Công Nghệ và HTQT
-  { fullName: 'Bùi Văn Nam', email: 'bui.van.nam@ictu.edu.vn', role: UserRole.EDITOR, departmentCode: 'P.KHCN' },
-
-  // Phòng Công Tác Người Học
-  { fullName: 'Lý Thị Kiều', email: 'ly.thi.kieu@ictu.edu.vn', role: UserRole.USER, departmentCode: 'P.CTNH' },
-
-  // Khoa Công Nghệ Thông Tin
-  { fullName: 'Ngô Văn Phúc', email: 'ngo.van.phuc@ictu.edu.vn', role: UserRole.EDITOR, departmentCode: 'K.CNTT' },
-  { fullName: 'Mai Thị Quỳnh', email: 'mai.thi.quynh@ictu.edu.vn', role: UserRole.USER, departmentCode: 'K.CNTT' },
-
-  // Khoa Kinh Tế và Quản Trị
-  { fullName: 'Cao Văn Thành', email: 'cao.van.thanh@ictu.edu.vn', role: UserRole.EDITOR, departmentCode: 'K.KTQT' },
-  { fullName: 'Đinh Thị Uyên', email: 'dinh.thi.uyen@ictu.edu.vn', role: UserRole.USER, departmentCode: 'K.KTQT' },
-
-  // Khoa Kỹ Thuật và Công Nghệ
-  { fullName: 'Lưu Văn Việt', email: 'luu.van.viet@ictu.edu.vn', role: UserRole.USER, departmentCode: 'K.KTCN' },
-
-  // Trung Tâm Phát Triển Phần Mềm
-  { fullName: 'Phan Văn Xuân', email: 'phan.van.xuan@ictu.edu.vn', role: UserRole.EDITOR, departmentCode: 'TT.PTPM' },
-
-  // Trung Tâm Tin Học NN và ĐTTNC
-  { fullName: 'Tô Thị Yến', email: 'to.thi.yen@ictu.edu.vn', role: UserRole.USER, departmentCode: 'TT.THNN' },
-
-  // Viện Đào Tạo Quốc Tế
-  { fullName: 'Dương Văn Bảo', email: 'duong.van.bao@ictu.edu.vn', role: UserRole.USER, departmentCode: 'V.DTQT' },
-
-  // Viện Trí Tuệ Nhân Tạo
-  { fullName: 'Hồ Thị Ánh', email: 'ho.thi.anh@ictu.edu.vn', role: UserRole.EDITOR, departmentCode: 'V.TTNT' },
-
-  // Công Đoàn
-  { fullName: 'Vương Văn Khải', email: 'vuong.van.khai@ictu.edu.vn', role: UserRole.USER, departmentCode: 'CĐ' },
-];
+import { Category, CategoryType } from '../../modules/categories/entities/category.entity';
 
 const DEPARTMENTS_SEED: Omit<Department, 'id' | 'isActive' | 'createdAt' | 'updatedAt'>[] = [
   // Ban Giám Hiệu
@@ -120,6 +46,35 @@ const DEPARTMENTS_SEED: Omit<Department, 'id' | 'isActive' | 'createdAt' | 'upda
   { name: 'Hội Cựu Giáo Chức', code: 'HCG', groupType: DepartmentGroup.DOAN_THE, sortOrder: 54 },
 ];
 
+const CATEGORIES_SEED: Pick<Category, 'type' | 'value' | 'sortOrder'>[] = [
+  // Địa điểm tổ chức
+  { type: CategoryType.LOCATION, value: 'Hội trường A', sortOrder: 1 },
+  { type: CategoryType.LOCATION, value: 'Hội trường B', sortOrder: 2 },
+  { type: CategoryType.LOCATION, value: 'Phòng họp Ban Giám Hiệu', sortOrder: 3 },
+  { type: CategoryType.LOCATION, value: 'Phòng họp tầng 2', sortOrder: 4 },
+  { type: CategoryType.LOCATION, value: 'Phòng họp tầng 3', sortOrder: 5 },
+  { type: CategoryType.LOCATION, value: 'Sân trường', sortOrder: 6 },
+  { type: CategoryType.LOCATION, value: 'Ngoài trường', sortOrder: 7 },
+
+  // Phương tiện
+  { type: CategoryType.VEHICLE, value: 'Xe 4 chỗ', sortOrder: 1 },
+  { type: CategoryType.VEHICLE, value: 'Xe 7 chỗ', sortOrder: 2 },
+  { type: CategoryType.VEHICLE, value: 'Xe 16 chỗ', sortOrder: 3 },
+  { type: CategoryType.VEHICLE, value: 'Xe 29 chỗ', sortOrder: 4 },
+  { type: CategoryType.VEHICLE, value: 'Tự túc', sortOrder: 5 },
+
+  // Đơn vị truyền thông
+  { type: CategoryType.MEDIA_UNIT, value: 'Trung tâm Truyền thông Tuyển sinh', sortOrder: 1 },
+  { type: CategoryType.MEDIA_UNIT, value: 'Báo điện tử ICTU', sortOrder: 2 },
+  { type: CategoryType.MEDIA_UNIT, value: 'Đài Phát thanh - Truyền hình Thái Nguyên', sortOrder: 3 },
+  { type: CategoryType.MEDIA_UNIT, value: 'VTV', sortOrder: 4 },
+
+  // Người chủ trì / giám sát
+  { type: CategoryType.SUPERVISOR, value: 'Hiệu trưởng', sortOrder: 1 },
+  { type: CategoryType.SUPERVISOR, value: 'Phó Hiệu trưởng', sortOrder: 2 },
+  { type: CategoryType.SUPERVISOR, value: 'Trưởng phòng Hành chính Tổ chức', sortOrder: 3 },
+];
+
 @Injectable()
 export class SeederService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SeederService.name);
@@ -129,13 +84,14 @@ export class SeederService implements OnApplicationBootstrap {
     private readonly configService: ConfigService,
     @InjectRepository(Department)
     private readonly departmentRepository: Repository<Department>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     await this.seedAdmin();
     await this.seedDepartments();
-    await this.seedUsers();
-    await this.fixCorruptedUserNames();
+    await this.seedCategories();
   }
 
   private async seedAdmin(): Promise<void> {
@@ -160,45 +116,6 @@ export class SeederService implements OnApplicationBootstrap {
     this.logger.log(`✅ Admin seeded — email: ${email}`);
   }
 
-  private async fixCorruptedUserNames(): Promise<void> {
-    const needsFix = await this.usersService.hasCorruptedNames();
-    if (!needsFix) return;
-
-    let fixed = 0;
-    for (const [email, correctName] of Object.entries(USER_NAME_FIX)) {
-      const user = await this.usersService.findByEmail(email);
-      if (user && user.fullName.includes('?')) {
-        await this.usersService.update(user.id, { fullName: correctName });
-        fixed++;
-      }
-    }
-    if (fixed > 0) this.logger.log(`✅ Fixed ${fixed} corrupted user name(s)`);
-  }
-
-  private async seedUsers(): Promise<void> {
-    const hashedPassword = await bcrypt.hash(DEFAULT_USER_PASSWORD, 10);
-    let created = 0;
-
-    for (const seed of USERS_SEED) {
-      const existing = await this.usersService.findByEmail(seed.email);
-      if (existing) continue;
-
-      const dept = await this.departmentRepository.findOne({ where: { code: seed.departmentCode } });
-      await this.usersService.create({
-        fullName: seed.fullName,
-        email: seed.email,
-        password: hashedPassword,
-        role: seed.role,
-        departmentId: dept?.id ?? undefined,
-        isActive: true,
-      });
-      created++;
-    }
-
-    if (created > 0) this.logger.log(`✅ Seeded ${created} user(s) — default password: ${DEFAULT_USER_PASSWORD}`);
-    else this.logger.log('Users already seeded, skipping');
-  }
-
   private async seedDepartments(): Promise<void> {
     const count = await this.departmentRepository.count();
     if (count > 0) {
@@ -213,5 +130,21 @@ export class SeederService implements OnApplicationBootstrap {
     }
 
     this.logger.log(`✅ Seeded ${DEPARTMENTS_SEED.length} departments`);
+  }
+
+  private async seedCategories(): Promise<void> {
+    const count = await this.categoryRepository.count();
+    if (count > 0) {
+      this.logger.log(`Categories already seeded (${count} records)`);
+      return;
+    }
+
+    for (const cat of CATEGORIES_SEED) {
+      await this.categoryRepository.save(
+        this.categoryRepository.create({ ...cat, isActive: true }),
+      );
+    }
+
+    this.logger.log(`✅ Seeded ${CATEGORIES_SEED.length} categories`);
   }
 }
