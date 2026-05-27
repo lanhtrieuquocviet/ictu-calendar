@@ -1772,3 +1772,370 @@ tbody {
   color: #64748b;
   white-space: nowrap;
 }
+
+/* ── Bookmark button trong detail panel ─────────────────── */
+.sp-bookmark-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: all 0.15s;
+  margin-top: 2px;
+
+  &:hover {
+    background: #fef9c3;
+    border-color: #fbbf24;
+    color: #d97706;
+  }
+
+  &--active {
+    background: #fef9c3;
+    border-color: #fbbf24;
+    color: #d97706;
+
+    svg {
+      fill: #fbbf24;
+      stroke: #d97706;
+    }
+
+    &:hover {
+      background: #fde68a;
+      border-color: #f59e0b;
+    }
+  }
+}
+
+/* ── Tab bookmark ─────────────────────────────────────────── */
+.tab-special--bookmark {
+  &.active {
+    background: #d97706;
+    border-color: #d97706;
+    box-shadow: 0 2px 8px rgba(217,119,6,0.25);
+  }
+}
+
+/* ── Bookmark view list ───────────────────────────────────── */
+.bookmark-list {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 900px;
+}
+
+.bookmark-item {
+  display: flex;
+  align-items: stretch;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border-color: var(--evt-accent, #4f46e5);
+  }
+
+  &--cancelled {
+    opacity: 0.65;
+  }
+}
+
+.bookmark-accent-bar {
+  width: 4px;
+  background: var(--evt-accent, #4f46e5);
+  flex-shrink: 0;
+}
+
+.bookmark-content {
+  flex: 1;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bookmark-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+
+  svg { flex-shrink: 0; }
+}
+
+.bookmark-time {
+  color: var(--evt-accent, #4f46e5);
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.bookmark-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.bookmark-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #64748b;
+
+  svg { flex-shrink: 0; }
+}
+
+.bookmark-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 10px 12px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.bookmark-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &[data-status="approved"]  { background: #dcfce7; color: #15803d; }
+  &[data-status="rejected"]  { background: #fee2e2; color: #dc2626; }
+  &[data-status="pending"]   { background: #fef3c7; color: #b45309; }
+  &[data-status="cancelled"] { background: #ffedd5; color: #c2410c; }
+}
+
+.bookmark-remove-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef9c3;
+  border: 1px solid #fde68a;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #d97706;
+  transition: all 0.15s;
+
+  &:hover {
+    background: #fde68a;
+    color: #b45309;
+  }
+}
+
+.state-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* ── Bookmark button inline trong title-row ────────────── */
+.row-bm-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 0;
+  margin-left: 4px;
+  opacity: 0.6;
+  transition: opacity 0.15s, color 0.15s, background 0.15s, border-color 0.15s;
+
+  &--active {
+    opacity: 1 !important;
+    color: #d97706;
+    background: #fef9c3;
+    border-color: #fde68a;
+  }
+
+  &:hover {
+    opacity: 1;
+    color: #d97706;
+    background: #fef9c3;
+    border-color: #fde68a;
+  }
+}
+
+/* ── Nút Xuất PDF ───────────────────────────────────────── */
+.btn-export-pdf {
+  display: flex; align-items: center; gap: 5px;
+  background: #fff; color: #374151;
+  border: 1.5px solid #d1d5db;
+  padding: 6px 13px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; font-family: inherit;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+
+  &:hover {
+    background: #eff6ff; border-color: #93c5fd; color: #1d4ed8;
+  }
+  &:active { transform: scale(0.97); }
+}
+
+/* ── Print / Xuất PDF ───────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm 10mm;
+  }
+
+  /* Ẩn toàn bộ UI không cần thiết khi in */
+  .header,
+  .toolbar,
+  app-toast,
+  .day-popup-backdrop,
+  app-event-form,
+  .sp-backdrop,
+  .kebab-wrap,
+  .row-bm-btn,
+  .badge-new,
+  .btn-export-pdf {
+    display: none !important;
+  }
+
+  body, .page {
+    background: #fff !important;
+    min-height: unset;
+  }
+
+  .content-wrapper {
+    padding: 0 !important;
+  }
+
+  /* Tiêu đề in */
+  .page::before {
+    content: 'TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN VÀ TRUYỀN THÔNG — LỊCH CÔNG TÁC';
+    display: block;
+    font-size: 11pt;
+    font-weight: 700;
+    text-align: center;
+    color: #004d8a;
+    border-bottom: 2px solid #004d8a;
+    padding-bottom: 6pt;
+    margin-bottom: 10pt;
+    letter-spacing: 0.5px;
+  }
+
+  /* Bảng */
+  .table-wrapper {
+    overflow: visible !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8pt !important;
+    table-layout: fixed;
+  }
+
+  thead tr {
+    background: #004d8a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  th {
+    background: #004d8a !important;
+    color: #fff !important;
+    padding: 5pt 4pt !important;
+    border: 0.5pt solid #0057a0 !important;
+    font-size: 7.5pt !important;
+    font-weight: 600;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  td {
+    padding: 4pt !important;
+    border: 0.5pt solid #d1d5db !important;
+    vertical-align: top !important;
+    word-break: break-word !important;
+    color: #111 !important;
+  }
+
+  tr.group-start td { border-top: 1.5pt solid #94a3b8 !important; }
+
+  .td-day .day-cell {
+    font-weight: 700 !important;
+    font-size: 8pt !important;
+    white-space: pre-line;
+    color: #004d8a !important;
+  }
+
+  .time-pill {
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+    padding: 1pt 3pt !important;
+    border-radius: 3pt !important;
+    font-size: 7.5pt !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .time-pill--allday {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .time-pill--cancelled {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .title-text { font-weight: 600 !important; font-size: 8pt !important; }
+  .text-cancelled { text-decoration: line-through !important; color: #9ca3af !important; }
+
+  .badge-cancelled {
+    font-size: 6pt !important; background: #fee2e2 !important; color: #b91c1c !important;
+    padding: 1pt 3pt !important; border-radius: 2pt !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .evt-dot { display: none !important; }
+
+  .cell-truncate, .clamp-text { overflow: visible !important; text-overflow: unset !important; white-space: normal !important; }
+
+  .td-actions, .th-actions { display: none !important; }
+
+  tr { page-break-inside: avoid; }
+
+  /* Month view — ẩn khi in (quá phức tạp để in dạng grid) */
+  .month-view {
+    display: none !important;
+  }
+
+  /* Khi đang ở month view thì hiển thị thông báo */
+  .month-view + * { display: none !important; }
+}

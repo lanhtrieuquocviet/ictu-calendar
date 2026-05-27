@@ -14,7 +14,7 @@ import { NotificationService } from '@shared/services/notification.service';
 import { NotificationBellComponent } from '@shared/components/notification-bell/notification-bell.component';
 import { ICTU_UNIT_GROUPS } from '@core/constants/ictu-units';
 
-export type ViewMode = 'week' | 'month' | 'list' | 'pending' | 'mine';
+export type ViewMode = 'week' | 'month' | 'list' | 'pending' | 'mine' | 'bookmarks';
 
 export interface DayGroup {
   dateLabel: string;
@@ -74,6 +74,9 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   readonly MY_PAGE_SIZE = 10;
   myCurrentPage = signal(1);
+
+  bookmarkedIds = signal<Set<string>>(new Set());
+  bookmarkedItems = signal<CalendarEvent[]>([]);
 
   constructor() {
     effect(() => {
@@ -396,6 +399,8 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       this.loadPendingEvents();
     } else if (mode === 'mine') {
       this.loadMyEvents();
+    } else if (mode === 'bookmarks') {
+      // bookmarkedItems đã được load từ localStorage, không cần fetch thêm
     } else {
       this.loadEvents();
     }
@@ -408,6 +413,51 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   }
 
   private get draftKey(): string { return this.userKey('event_draft'); }
+  private get bookmarkKey(): string { return this.userKey('bookmarks'); }
+
+  private loadBookmarksFromStorage(): void {
+    try {
+      const raw = localStorage.getItem(this.bookmarkKey);
+      const items: CalendarEvent[] = raw ? JSON.parse(raw) : [];
+      this.bookmarkedItems.set(items);
+      this.bookmarkedIds.set(new Set(items.map(e => e.id)));
+    } catch {
+      this.bookmarkedItems.set([]);
+      this.bookmarkedIds.set(new Set());
+    }
+  }
+
+  private saveBookmarksToStorage(): void {
+    localStorage.setItem(this.bookmarkKey, JSON.stringify(this.bookmarkedItems()));
+  }
+
+  isBookmarked(eventId: string): boolean {
+    return this.bookmarkedIds().has(eventId);
+  }
+
+  toggleBookmark(event: CalendarEvent): void {
+    const ids = new Set(this.bookmarkedIds());
+    if (ids.has(event.id)) {
+      ids.delete(event.id);
+      this.bookmarkedItems.set(this.bookmarkedItems().filter(e => e.id !== event.id));
+      this.toast.success('Đã bỏ ghim sự kiện.');
+    } else {
+      ids.add(event.id);
+      this.bookmarkedItems.set([event, ...this.bookmarkedItems()]);
+      this.toast.success('Đã ghim sự kiện.');
+    }
+    this.bookmarkedIds.set(ids);
+    this.saveBookmarksToStorage();
+  }
+
+  removeBookmark(eventId: string): void {
+    const ids = new Set(this.bookmarkedIds());
+    ids.delete(eventId);
+    this.bookmarkedIds.set(ids);
+    this.bookmarkedItems.set(this.bookmarkedItems().filter(e => e.id !== eventId));
+    this.saveBookmarksToStorage();
+    this.toast.success('Đã bỏ ghim sự kiện.');
+  }
 
   private loadDraftFromStorage(): Record<string, any> | null {
     try {
@@ -431,6 +481,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.hasDraft.set(!!this.loadDraftFromStorage());
+    this.loadBookmarksFromStorage();
     this.notifService.loadForCurrentUser();
     this.loadEvents();
 
@@ -966,6 +1017,151 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     const date = this.datePipe.transform(d, 'dd/MM/yyyy') ?? '';
     const time = this.datePipe.transform(d, 'HH:mm') ?? '';
     return `${date} ${time}`;
+  }
+
+  // ── Export PDF ──────────────────────────────────────
+
+  exportPDF(): void {
+    const mode = this.viewMode();
+    let title: string;
+    let events: CalendarEvent[];
+
+    if (mode === 'month') {
+      title = `Lịch công tác ${this.periodLabel}`;
+      events = this.filteredEvents;
+    } else if (mode === 'list') {
+      title = 'Lịch công tác (Danh sách)';
+      events = this.filteredEvents;
+    } else {
+      title = `Lịch công tác ${this.periodLabel}`;
+      events = this.filteredEvents;
+    }
+
+    events = events.filter(e => e.status !== 'cancelled');
+
+    const sorted = [...events].sort((a, b) => {
+      const d = a.eventDate.localeCompare(b.eventDate);
+      if (d !== 0) return d;
+      return (a.startTime ?? '00:00').localeCompare(b.startTime ?? '00:00');
+    });
+
+    const empty = (v?: string | null) => v ? v : '<span class="td-empty">—</span>';
+
+    // Nhóm theo ngày để dùng rowspan
+    const grouped = new Map<string, CalendarEvent[]>();
+    for (const e of sorted) {
+      const key = e.eventDate.slice(0, 10);
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(e);
+    }
+
+    const rows = Array.from(grouped.values()).map(group => {
+      return group.map((e, i) => {
+        const time = this.formatEventTime(e);
+        const dateCell = i === 0
+          ? `<td class="col-date td-date" rowspan="${group.length}">${this.formatEventDate(e.eventDate)}</td>`
+          : '';
+        return `<tr class="${i === 0 ? 'group-first' : ''}">
+          ${dateCell}
+          <td class="col-time td-time">${time}</td>
+          <td class="col-title td-title"><strong>${e.title}</strong></td>
+          <td class="col-participants">${empty(e.participants)}</td>
+          <td class="col-unit">${empty(e.organizingUnit)}</td>
+          <td class="col-location">${empty(e.location)}</td>
+          <td class="col-supervisor">${empty(e.supervisor)}</td>
+        </tr>`;
+      }).join('');
+    }).join('');
+
+    const exportDate = new Date().toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' });
+    const periodDisplay = title.replace('Lịch công tác ', '');
+
+    const html = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, 'Helvetica Neue', sans-serif; font-size: 10pt; color: #1a1a1a; margin: 0; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead { display: table-header-group; }
+
+  /* Hàng header tài liệu — lặp lại trên mỗi trang cùng với tên cột */
+  .thead-doc { background: #fff !important; }
+  .thead-doc td {
+    padding: 6pt 0 5pt;
+    border: none !important;
+    border-bottom: 2pt solid #004d8a !important;
+    text-align: center;
+    background: #fff;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .doc-school { font-size: 9pt; color: #555; margin-bottom: 1pt; }
+  .doc-title { font-size: 13pt; font-weight: 800; color: #004d8a; text-transform: uppercase; letter-spacing: 0.8px; }
+  .doc-period { font-size: 9pt; color: #444; margin-top: 2pt; }
+  .doc-count { display: inline-block; margin-left: 6pt; background: #dbeafe; color: #1d4ed8; padding: 0 6pt; border-radius: 10pt; font-size: 8.5pt; font-weight: 600; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Hàng tên cột */
+  .thead-cols th { background: #004d8a; color: #fff; padding: 6pt 5pt; border: 0.5pt solid #0057a0; font-size: 9pt; font-weight: 700; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  td { padding: 5.5pt 5pt; border: 0.5pt solid #cbd5e1; vertical-align: top; word-break: break-word; font-size: 10pt; line-height: 1.4; }
+  tr:nth-child(even) td { background: #f8fafc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tr { page-break-inside: avoid; }
+
+  .col-date { width: 12%; white-space: nowrap; }
+  .col-time { width: 7%; white-space: nowrap; text-align: center; }
+  .col-title { width: 24%; }
+  .col-participants { width: 17%; }
+  .col-unit { width: 14%; }
+  .col-location { width: 13%; }
+  .col-supervisor { width: 13%; }
+
+  .td-date { font-weight: 700; color: #004d8a; vertical-align: middle !important; background: #f0f6ff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .group-first td { border-top: 1.5pt solid #94a3b8 !important; }
+  .td-time { font-weight: 700; color: #1d4ed8; text-align: center; }
+  .td-title strong { font-weight: 700; color: #111; }
+  .td-empty { color: #aaa; }
+
+  tfoot td { border: none; padding: 5pt 0 0; font-size: 8pt; color: #999; }
+  .footer-inner { display: flex; justify-content: space-between; border-top: 0.5pt solid #e2e8f0; padding-top: 4pt; }
+</style>
+</head>
+<body>
+<table>
+  <thead>
+    <tr class="thead-doc">
+      <td colspan="7">
+        <div class="doc-school">Trường Đại học Công nghệ thông tin và Truyền thông — ĐHTN</div>
+        <div class="doc-title">Lịch công tác</div>
+        <div class="doc-period">${periodDisplay} <span class="doc-count">${sorted.length} sự kiện</span></div>
+      </td>
+    </tr>
+    <tr class="thead-cols">
+      <th class="col-date">Ngày</th>
+      <th class="col-time">Giờ</th>
+      <th class="col-title">Nội dung</th>
+      <th class="col-participants">Thành phần tham dự</th>
+      <th class="col-unit">Đơn vị chủ trì</th>
+      <th class="col-location">Địa điểm</th>
+      <th class="col-supervisor">ĐU/BGH Chỉ đạo</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+  <tfoot>
+    <tr><td colspan="7"><div class="footer-inner"><span>ICTU Calendar — ictu.edu.vn</span><span>Xuất ngày ${exportDate}</span></div></td></tr>
+  </tfoot>
+</table>
+<script>window.onload = function() { window.print(); };<\/script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'width=1100,height=750');
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
   // ── Helpers ─────────────────────────────────────────
