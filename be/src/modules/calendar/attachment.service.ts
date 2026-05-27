@@ -83,7 +83,12 @@ export class AttachmentService {
   }
 
   getFilePath(filename: string): string {
-    const p = path.join(process.cwd(), 'uploads', filename);
+    const safeFilename = path.basename(filename);
+    const uploadsDir = path.resolve(process.cwd(), 'uploads');
+    const p = path.join(uploadsDir, safeFilename);
+    if (!p.startsWith(uploadsDir + path.sep) && p !== uploadsDir) {
+      throw new NotFoundException('File không tìm thấy');
+    }
     if (!fs.existsSync(p)) throw new NotFoundException('File không tìm thấy');
     return p;
   }

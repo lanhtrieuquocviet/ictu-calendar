@@ -40,7 +40,7 @@ export class NotificationService {
       port: this.configService.get<number>('MAIL_PORT', 587),
       secure: false,
       auth: { user, pass },
-      tls: { rejectUnauthorized: false },
+      tls: { rejectUnauthorized: true },
     } as any);
   }
 

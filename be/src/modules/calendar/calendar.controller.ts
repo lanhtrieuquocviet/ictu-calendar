@@ -198,6 +198,8 @@ export class CalendarController {
   }
 
   @Get('attachments/:filename')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Tải xuống file đính kèm' })
   downloadAttachment(@Param('filename') filename: string, @Res() res: Response) {
     const filePath = this.attachmentService.getFilePath(filename);
