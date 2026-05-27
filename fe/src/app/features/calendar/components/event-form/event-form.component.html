@@ -8,17 +8,11 @@
     <div class="modal-body">
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
 
-        <!-- Title + Important -->
+        <!-- Title -->
         <div class="title-section">
           <label>Nội dung *</label>
           <div class="title-input-row">
             <input class="title-input" type="text" formControlName="title" placeholder="Tên cuộc họp / sự kiện" />
-            <button type="button" class="important-btn" [class.active]="form.get('isImportant')?.value"
-              (click)="toggleImportant()" title="Đánh dấu sự kiện quan trọng">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-            </button>
           </div>
         </div>
 

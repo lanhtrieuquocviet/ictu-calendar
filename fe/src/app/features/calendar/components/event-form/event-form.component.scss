@@ -105,34 +105,6 @@
   &::placeholder { color: #94a3b8; font-size: 13.5px; }
 }
 
-.important-btn {
-  flex-shrink: 0;
-  width: 42px;
-  height: 42px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  background: #f8fafc;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #d1d5db;
-  transition: all 0.15s;
-
-  &:hover {
-    border-color: #f59e0b;
-    color: #f59e0b;
-    background: #fffbeb;
-  }
-
-  &.active {
-    border-color: #f59e0b;
-    background: #fffbeb;
-    color: #f59e0b;
-    svg { filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5)); }
-  }
-}
-
 // ── Form sections ────────────────────────────────────────────────
 
 .form-section {

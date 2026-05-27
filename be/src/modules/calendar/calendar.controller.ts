@@ -45,7 +45,7 @@ export class CalendarController {
   @ApiQuery({ name: 'to', required: false, example: '2026-05-31' })
   @ApiQuery({ name: 'q', required: false, description: 'Từ khóa tìm kiếm' })
   findAll(@Query('from') from?: string, @Query('to') to?: string, @Query('q') q?: string) {
-    return this.calendarService.findAll(from, to, EventStatus.APPROVED, q, true);
+    return this.calendarService.findAll(from, to, undefined, q, true);
   }
 
   // ── Quản lý: editor / approver / admin thấy tất cả ─
@@ -127,6 +127,17 @@ export class CalendarController {
   @ApiOperation({ summary: 'Xóa sự kiện (admin / editor)' })
   remove(@Param('id') id: string, @Req() req: any) {
     return this.calendarService.remove(id, req.user.sub, req.user.role === 'admin');
+  }
+
+  // ── Hủy sự kiện: admin hoặc approver ────────────
+
+  @Patch('events/:id/cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'approver')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Hủy sự kiện (admin / approver)' })
+  cancel(@Param('id') id: string, @Req() req: any, @Body() body: { cancelReason?: string }) {
+    return this.calendarService.cancel(id, req.user.sub, body?.cancelReason);
   }
 
   // ── Ẩn / hiện sự kiện: admin hoặc approver ───────

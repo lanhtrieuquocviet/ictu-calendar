@@ -30,19 +30,17 @@ import { SeederModule } from './database/seeder/seeder.module';
           new Logger('TypeOrm').warn('synchronize: true — schema auto-sync đang bật, KHÔNG dùng trên DB dùng chung');
         }
         return {
-          type: 'postgres',
+          type: 'mysql',
           host: configService.get('DB_HOST', 'localhost'),
-          port: configService.get<number>('DB_PORT', 5432),
-          username: configService.get('DB_USERNAME', 'postgres'),
-          password: configService.get('DB_PASSWORD', 'postgres'),
+          port: configService.get<number>('DB_PORT', 3306),
+          username: configService.get('DB_USERNAME', 'root'),
+          password: configService.get('DB_PASSWORD', 'root'),
           database: configService.get('DB_NAME', 'ictu_calendar'),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
           synchronize: isDev,
           logging: isDev,
-          extra: {
-            options: '-c client_encoding=UTF8',
-          },
+          charset: 'utf8mb4',
         };
       },
     }),

@@ -29,9 +29,16 @@
     <h3 class="cd-title">{{ title }}</h3>
     <p class="cd-message">{{ message }}</p>
 
+    @if (inputLabel) {
+      <div class="cd-input-group">
+        <label class="cd-input-label">{{ inputLabel }}</label>
+        <textarea class="cd-textarea" [(ngModel)]="inputValue" [placeholder]="inputPlaceholder" rows="3"></textarea>
+      </div>
+    }
+
     <div class="cd-actions">
       <button class="cd-btn cd-btn-cancel" (click)="cancelled.emit()">{{ cancelText }}</button>
-      <button class="cd-btn cd-btn-confirm" [attr.data-type]="type" (click)="confirmed.emit()">{{ confirmText }}</button>
+      <button class="cd-btn cd-btn-confirm" [attr.data-type]="type" (click)="confirmed.emit(inputValue)">{{ confirmText }}</button>
     </div>
 
   </div>

@@ -1,4 +1,4 @@
-export type EventStatus = 'pending' | 'approved' | 'rejected';
+export type EventStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
 export interface EventParticipant {
   id: string;
@@ -37,9 +37,11 @@ export interface CalendarEvent {
   meetingCode?: string;
   status: EventStatus;
   color?: string;
-  isImportant?: boolean;
   notes?: string;
   rejectionReason?: string;
+  cancelReason?: string;
+  cancelledByName?: string;
+  cancelledAt?: string;
   isHidden?: boolean;
   createdByName?: string;
   approvedByName?: string;
@@ -68,7 +70,6 @@ export interface CreateEventRequest {
   meetingCode?: string;
   status?: EventStatus;
   color?: string;
-  isImportant?: boolean;
   notes?: string;
   structuredParticipants?: import('./department.model').StructuredParticipant[];
 }

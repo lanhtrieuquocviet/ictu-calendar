@@ -1,17 +1,16 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15-alpine
+  mysql:
+    image: mysql:8.0
     container_name: ictu_calendar_db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ictu_calendar
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ictu_calendar
     ports:
-      - '5432:5432'
+      - '3306:3306'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
 
   backend:
     build:
@@ -21,16 +20,16 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
       DB_NAME: ictu_calendar
       JWT_SECRET: your-secret-key
     ports:
       - '3000:3000'
     depends_on:
-      - postgres
+      - mysql
     volumes:
       - ./be:/app
       - /app/node_modules
@@ -49,4 +48,4 @@ services:
       - /app/node_modules
 
 volumes:
-  postgres_data:
+  mysql_data:

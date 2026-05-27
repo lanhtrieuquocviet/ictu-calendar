@@ -72,7 +72,39 @@
   font-size: 14px;
   color: #6b7280;
   line-height: 1.6;
-  margin: 0 0 28px;
+  margin: 0 0 16px;
+}
+
+.cd-input-group {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.cd-input-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.cd-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #111827;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
 }
 
 .cd-actions {

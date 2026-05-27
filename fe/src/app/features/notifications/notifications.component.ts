@@ -9,6 +9,7 @@ const TAB_LABELS: Record<FilterTab, string> = {
   all:              'Tất cả',
   approved:         'Đã duyệt',
   rejected:         'Bị từ chối',
+  cancelled:        'Đã hủy',
   pending_approval: 'Chờ duyệt',
   today_summary:    'Lịch hôm nay',
   reminder:         'Nhắc nhở',
@@ -28,7 +29,7 @@ export class NotificationsComponent {
 
   activeTab = signal<FilterTab>('all');
 
-  tabs: FilterTab[] = ['all', 'pending_approval', 'approved', 'rejected', 'today_summary', 'reminder', 'participant'];
+  tabs: FilterTab[] = ['all', 'pending_approval', 'approved', 'rejected', 'cancelled', 'today_summary', 'reminder', 'participant'];
 
   tabLabel(tab: FilterTab): string {
     return TAB_LABELS[tab];

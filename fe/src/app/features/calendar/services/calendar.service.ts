@@ -60,6 +60,10 @@ export class CalendarService {
     return this.api.patch<{ data: CalendarEvent }>(`calendar/events/${id}/approve`, payload);
   }
 
+  cancelEvent(id: string, cancelReason?: string): Observable<{ data: CalendarEvent }> {
+    return this.api.patch<{ data: CalendarEvent }>(`calendar/events/${id}/cancel`, { cancelReason });
+  }
+
   toggleHidden(id: string): Observable<{ data: CalendarEvent }> {
     return this.api.patch<{ data: CalendarEvent }>(`calendar/events/${id}/toggle-hidden`, {});
   }

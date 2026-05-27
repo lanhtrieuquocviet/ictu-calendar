@@ -213,9 +213,8 @@ export class EventFormComponent implements OnInit, OnDestroy {
     if (!this.event?.id) return;
     this.approving = true;
     this.approveError = '';
-    const payload: { status: string; rejectionReason?: string; isImportant?: boolean } = { status };
+    const payload: { status: string; rejectionReason?: string } = { status };
     if (status === 'rejected') payload.rejectionReason = rejectionReason;
-    payload.isImportant = !!this.form.get('isImportant')?.value;
     this.calendarService.approveEvent(this.event.id, payload).subscribe({
       next: () => {
         this.approving = false;
@@ -349,7 +348,6 @@ export class EventFormComponent implements OnInit, OnDestroy {
     status: ['pending'],
     color: ['#4f46e5'],
     notes: [''],
-    isImportant: [false],
   });
 
   get isEdit(): boolean { return !!this.event; }
@@ -392,7 +390,6 @@ export class EventFormComponent implements OnInit, OnDestroy {
     }
     if (this.approverOnly) {
       this.form.disable();
-      this.form.get('isImportant')?.enable();
     }
     this.startTimeInput = this.form.get('startTime')?.value || '';
     this.endTimeInput   = this.form.get('endTime')?.value   || '';
@@ -569,11 +566,6 @@ export class EventFormComponent implements OnInit, OnDestroy {
   private scrollSelected(picker: 'start' | 'end'): void {
     document.querySelector(`[data-picker="${picker}"] .time-opt.active`)
       ?.scrollIntoView({ block: 'center', behavior: 'instant' });
-  }
-
-  toggleImportant(): void {
-    const current = this.form.get('isImportant')?.value;
-    this.form.patchValue({ isImportant: !current });
   }
 
   onSubmit(): void {

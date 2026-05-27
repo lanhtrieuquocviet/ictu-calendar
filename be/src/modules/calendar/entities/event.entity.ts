@@ -15,6 +15,7 @@ export enum EventStatus {
   PENDING = 'pending',     // Chờ duyệt
   APPROVED = 'approved',   // Đồng ý
   REJECTED = 'rejected',   // Từ chối
+  CANCELLED = 'cancelled', // Đã hủy
 }
 
 @Entity('events')
@@ -82,9 +83,6 @@ export class Event {
   color: string;               // Màu hiển thị trên calendar
 
   @Column({ default: false })
-  isImportant: boolean;        // Sự kiện quan trọng
-
-  @Column({ default: false })
   isHidden: boolean;           // Ẩn khỏi lịch công khai
 
   @Column({ nullable: true, type: 'text' })
@@ -104,6 +102,15 @@ export class Event {
 
   @Column({ type: 'timestamp', nullable: true })
   lastNotifiedAt: Date;        // Thời điểm gửi mail gần nhất (chống gửi trùng)
+
+  @Column({ nullable: true })
+  cancelledByName: string;     // Họ tên người hủy lịch
+
+  @Column({ type: 'timestamp', nullable: true })
+  cancelledAt: Date;           // Thời điểm hủy lịch
+
+  @Column({ nullable: true, type: 'text' })
+  cancelReason: string;        // Lý do hủy lịch
 
   // ── Quan hệ ───────────────────────────────────────
 

@@ -127,7 +127,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   statusFilterLabel(f = this.statusFilter()): string {
     const map: Record<string, string> = {
       all: 'Tất cả', pending: 'Chờ duyệt', approved: 'Đã duyệt',
-      rejected: 'Từ chối', hidden: 'Đang ẩn',
+      rejected: 'Từ chối', cancelled: 'Đã hủy', hidden: 'Đang ẩn',
     };
     return map[f] ?? 'Tất cả';
   }
@@ -147,7 +147,12 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     if (this.authService.isApprover() && !this.authService.isEditor() && event.status === 'pending') return true;
     if (this.authService.isEditor() && this.canEditEvent(event)) return true;
     if (this.authService.isApprover() && event.status === 'approved') return true;
+    if (this.authService.isApprover() && (event.status === 'approved' || event.status === 'pending')) return true;
     return false;
+  }
+
+  canCancelEvent(event: CalendarEvent): boolean {
+    return this.authService.isApprover() && (event.status === 'approved' || event.status === 'pending');
   }
 
   get filteredEvents(): CalendarEvent[] {
@@ -159,6 +164,13 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       events = this.allEvents;
     } else if (f === 'hidden') {
       events = this.allEvents.filter(e => e.isHidden);
+    } else if (f === 'approved') {
+      // Hiển thị đã duyệt + vừa bị hủy trong 24h để người dùng biết lịch bị hủy
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+      events = this.allEvents.filter(e =>
+        e.status === 'approved' ||
+        (e.status === 'cancelled' && !!e.cancelledAt && new Date(e.cancelledAt).getTime() > cutoff)
+      );
     } else {
       events = this.allEvents.filter(e => e.status === f);
     }
@@ -236,7 +248,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   }
 
   statusLabel(status: string): string {
-    const map: Record<string, string> = { pending: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối' };
+    const map: Record<string, string> = { pending: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối', cancelled: 'Đã hủy' };
     return map[status] ?? 'Chờ duyệt';
   }
 
@@ -503,6 +515,12 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
             this.notifService.add({ type: 'rejected', title: 'Sự kiện bị từ chối', message: msg, eventId: event.id });
             setTimeout(() => this.toast.warning(msg), delay);
             delay += 800;
+          } else if ((prev === 'approved' || prev === 'pending') && event.status === 'cancelled') {
+            const reason = event.cancelReason ? ` Lý do: ${event.cancelReason}` : '';
+            const msg = `Sự kiện "${event.title}" đã bị hủy.${reason}`;
+            this.notifService.add({ type: 'cancelled', title: 'Sự kiện bị hủy', message: msg, eventId: event.id });
+            setTimeout(() => this.toast.warning(msg), delay);
+            delay += 800;
           }
         }
 
@@ -612,6 +630,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
         const batch: { meta: ReminderMeta; eventId: string; msg: string }[] = [];
 
         for (const event of res.data) {
+          if (event.status !== 'approved') continue;
           if (event.allDay || !event.startTime || reminded.has(event.id)) continue;
 
           const [h, m] = event.startTime.split(':').map(Number);
@@ -769,6 +788,33 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     });
   }
 
+  async cancelEvent(event: CalendarEvent): Promise<void> {
+    const reason = await this.confirmDialog.confirmWithInput({
+      title: 'Hủy sự kiện',
+      message: `Bạn có chắc muốn hủy sự kiện "${event.title}"? Thông báo sẽ được gửi tới người tạo và các thành viên tham dự.`,
+      confirmText: 'Xác nhận hủy',
+      cancelText: 'Không',
+      type: 'warning',
+      inputLabel: 'Lý do hủy (không bắt buộc)',
+      inputPlaceholder: 'Nhập lý do hủy lịch...',
+    });
+    if (reason === null) return;
+    this.calendarService.cancelEvent(event.id, reason || undefined).subscribe({
+      next: () => {
+        this.toast.warning(`Đã hủy sự kiện "${event.title}".`);
+        this.closeDetail();
+        const mode = this.viewMode();
+        if (mode === 'mine') this.loadMyEvents();
+        else if (mode === 'pending') this.loadPendingEvents();
+        else this.loadEvents();
+        if (this.authService.isApprover()) this.loadPendingCount();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || 'Có lỗi xảy ra khi hủy sự kiện');
+      },
+    });
+  }
+
   async deleteEvent(id: string): Promise<void> {
     const ok = await this.confirmDialog.confirm({
       title: 'Xóa sự kiện',
@@ -808,6 +854,16 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     if (!dateStr) return '—';
     const d = new Date(dateStr + 'T00:00:00');
     return d.toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric', year: 'numeric' });
+  }
+
+  isNew(event: CalendarEvent): boolean {
+    if (!event.createdAt) return false;
+    return Date.now() - new Date(event.createdAt).getTime() < 24 * 60 * 60 * 1000;
+  }
+
+  isRecentlyCancelled(event: CalendarEvent): boolean {
+    if (event.status !== 'cancelled' || !event.cancelledAt) return false;
+    return Date.now() - new Date(event.cancelledAt).getTime() < 24 * 60 * 60 * 1000;
   }
 
   totalEvents(): number { return this.filteredEvents.length; }

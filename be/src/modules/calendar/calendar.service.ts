@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, Repository } from 'typeorm';
+import { Between, Repository, MoreThan } from 'typeorm';
 import { Event, EventStatus } from './entities/event.entity';
 import { EventParticipant, ParticipantType } from './entities/event-participant.entity';
 import { EventAttachment } from './entities/event-attachment.entity';
@@ -77,12 +77,23 @@ export class CalendarService {
       .addOrderBy('event.startTime', 'ASC');
 
     if (from && to) qb.andWhere('event.eventDate BETWEEN :from AND :to', { from, to });
-    if (status) qb.andWhere('event.status = :status', { status });
+
+    if (status) {
+      qb.andWhere('event.status = :status', { status });
+    } else if (excludeHidden) {
+      // Public view: chỉ hiển thị đã duyệt + vừa bị hủy trong 24h để thông báo
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      qb.andWhere(
+        `(event.status = :approvedStatus OR (event.status = :cancelledStatus AND event.cancelledAt > :cutoff))`,
+        { approvedStatus: EventStatus.APPROVED, cancelledStatus: EventStatus.CANCELLED, cutoff },
+      );
+    }
+
     if (excludeHidden) qb.andWhere('event.isHidden = false');
     if (q) {
       qb.andWhere(
-        `(event.title ILIKE :q OR event.location ILIKE :q OR event.organizingUnit ILIKE :q
-          OR event.participants ILIKE :q OR event.createdByName ILIKE :q OR event.meetingCode ILIKE :q)`,
+        `(event.title LIKE :q OR event.location LIKE :q OR event.organizingUnit LIKE :q
+          OR event.participants LIKE :q OR event.createdByName LIKE :q OR event.meetingCode LIKE :q)`,
         { q: `%${q}%` },
       );
     }
@@ -154,7 +165,6 @@ export class CalendarService {
         ? (dto.rejectionReason ?? null)
         : null;
     }
-    if (dto.isImportant !== undefined) updateData.isImportant = dto.isImportant;
     await this.eventRepository.update(id, updateData);
 
     if (dto.status === EventStatus.REJECTED) {
@@ -186,6 +196,57 @@ export class CalendarService {
     }
 
     return this.findOne(id);
+  }
+
+  async cancel(id: string, cancellerId: string, cancelReason?: string): Promise<Event> {
+    const event = await this.findOne(id);
+    if (event.status === EventStatus.CANCELLED) return event;
+    if (event.status === EventStatus.REJECTED) {
+      throw new BadRequestException('Không thể hủy sự kiện đã bị từ chối');
+    }
+
+    const canceller = await this.usersService.findOne(cancellerId);
+    await this.eventRepository.update(id, {
+      status: EventStatus.CANCELLED,
+      cancelledByName: canceller.fullName,
+      cancelledAt: new Date(),
+      cancelReason: cancelReason ?? null,
+    });
+
+    const cancelled = await this.findOne(id);
+
+    // Gửi thông báo cho người tạo + participants
+    const recipientEmails = new Set<string>();
+    const recipients: import('../notification/notification.service').MailRecipient[] = [];
+
+    try {
+      const creator = await this.usersService.findOne(event.userId);
+      if (creator?.email && !recipientEmails.has(creator.email)) {
+        recipients.push({ name: creator.fullName, email: creator.email });
+        recipientEmails.add(creator.email);
+      }
+    } catch { /* creator đã bị xóa */ }
+
+    if (event.eventParticipants?.length) {
+      const partRecipients = await this.resolveRecipients(event.eventParticipants as any);
+      for (const r of partRecipients) {
+        if (!recipientEmails.has(r.email)) {
+          recipients.push(r);
+          recipientEmails.add(r.email);
+        }
+      }
+    }
+
+    if (recipients.length > 0) {
+      this.notificationService.sendEventCancelled(
+        cancelled,
+        recipients,
+        canceller.fullName,
+        cancelReason,
+      ).catch(() => null);
+    }
+
+    return cancelled;
   }
 
   async toggleHidden(id: string): Promise<Event> {

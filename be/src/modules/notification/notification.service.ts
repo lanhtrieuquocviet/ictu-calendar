@@ -70,6 +70,28 @@ export class NotificationService {
     );
   }
 
+  async sendEventCancelled(event: Event, recipients: MailRecipient[], cancelledBy: string, cancelReason?: string): Promise<void> {
+    if (!this.isEnabled() || recipients.length === 0) return;
+    const esc = (s: string) => s
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const extraHtml = cancelReason
+      ? `<div style="margin-top:10px;padding:10px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px">
+           <div style="font-size:11px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Lý do hủy</div>
+           <div style="font-size:13px;color:#7c2d12;line-height:1.5">${esc(cancelReason)}</div>
+         </div>`
+      : '';
+    await this.sendBulk(
+      recipients,
+      `[ICTU Calendar] Sự kiện đã bị hủy: ${event.title}`,
+      (r) => this.buildEventHtml(event, {
+        recipient: r,
+        badge: { text: 'Đã hủy', bg: '#fff7ed', color: '#c2410c', borderColor: '#fed7aa' },
+        intro: `Sự kiện dưới đây đã bị hủy bởi <strong>${esc(cancelledBy)}</strong>. Vui lòng cập nhật lịch làm việc của bạn.`,
+        extraHtml,
+      }),
+    );
+  }
+
   async sendEventApproved(event: Event, recipients: MailRecipient[], attachments: EventAttachment[] = []): Promise<void> {
     if (!this.isEnabled() || recipients.length === 0) return;
     await this.sendBulk(
@@ -193,12 +215,6 @@ export class NotificationService {
          </table>`
       : '';
 
-    const importantBanner = event.isImportant
-      ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:8px 14px;margin-bottom:10px">
-           <span style="font-size:12px;font-weight:600;color:#c2410c">&#9888; Sự kiện quan trọng — Vui lòng ưu tiên sắp xếp tham dự đúng giờ.</span>
-         </div>`
-      : '';
-
     const notesBlock = event.notes
       ? `<div style="background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:8px 14px;margin-top:10px">
            <span style="font-size:13px;color:#713f12;line-height:1.5"><strong>Ghi chú:</strong> ${esc(event.notes)}</span>
@@ -260,7 +276,6 @@ export class NotificationService {
       <!-- Info -->
       <tr>
         <td style="background:#ffffff;padding:0 22px 18px">
-          ${importantBanner}
           ${highlightBlock}
           ${detailTable}
           ${notesBlock}
