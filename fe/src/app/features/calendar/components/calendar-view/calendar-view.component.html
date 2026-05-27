@@ -20,12 +20,27 @@
     </div>
     <div class="header-actions">
       @if (authService.isEditor()) {
-        <button class="btn-add" (click)="openAdd()">
+        <button class="btn-add" (click)="openAdd()" title="Thêm sự kiện mới">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
           Thêm sự kiện
         </button>
+        @if (hasDraft()) {
+          <div class="btn-draft-group">
+            <button class="btn-continue-draft" (click)="openAdd()" title="Mở bản nháp đang lưu">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+              </svg>
+              Tiếp tục nháp
+            </button>
+            <button class="btn-clear-draft" (click)="clearDraft()" title="Xóa bản nháp">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        }
       }
       @if (authService.isAdmin()) {
         <a class="btn-admin" routerLink="/admin">
@@ -411,7 +426,7 @@
                       } @else { — }
                     </td>
                     <td class="td-actions">
-                      @if (canEditEvent(event)) {
+                      @if (canEditEvent(event) || authService.isEditor()) {
                         <div class="kebab-wrap" (click)="$event.stopPropagation()">
                           <button class="kebab-btn" (click)="openKebabMenu($event, event.id)" title="Thao tác">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -420,14 +435,22 @@
                           </button>
                           @if (openMenuId() === event.id && menuPosition()) {
                             <div class="kebab-menu" [style.top.px]="menuPosition()!.top" [style.left.px]="menuPosition()!.left">
-                              <button class="kebab-item" (click)="openEdit(event); openMenuId.set(null)">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                Sửa
+                              @if (canEditEvent(event)) {
+                                <button class="kebab-item" (click)="openEdit(event); openMenuId.set(null)">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                  Sửa
+                                </button>
+                              }
+                              <button class="kebab-item" (click)="duplicateEvent(event); openMenuId.set(null)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                Sao chép
                               </button>
-                              <button class="kebab-item kebab-item--danger" (click)="deleteEvent(event.id); openMenuId.set(null)">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                                Xóa
-                              </button>
+                              @if (canEditEvent(event)) {
+                                <button class="kebab-item kebab-item--danger" (click)="deleteEvent(event.id); openMenuId.set(null)">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                  Xóa
+                                </button>
+                              }
                             </div>
                           }
                         </div>
@@ -668,6 +691,12 @@
                                 Xóa
                               </button>
                             }
+                            @if (authService.isEditor()) {
+                              <button class="kebab-item" (click)="duplicateEvent(event); openMenuId.set(null)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                Sao chép
+                              </button>
+                            }
                             @if (authService.isApprover() && event.status === 'approved') {
                               @if (event.isHidden) {
                                 <button class="kebab-item" (click)="toggleHidden(event); openMenuId.set(null)">
@@ -731,8 +760,10 @@
 @if (showForm()) {
   <app-event-form
     [event]="editingEvent()"
-    [draft]="editingEvent() ? null : createDraft()"
+    [duplicateFrom]="duplicatingEvent()"
+    [draft]="(!editingEvent() && !duplicatingEvent()) ? createDraft() : null"
     (saved)="onFormSaved()"
+    (savedAsDraft)="onDraftSaved($event)"
     (closed)="onFormClosed($event)"
     (discarded)="onFormDiscarded()"
   />
@@ -959,7 +990,7 @@
       </div>
 
       <!-- Footer -->
-      @if ((authService.isEditor() && canEditEvent(detailEvent()!)) || canCancelEvent(detailEvent()!)) {
+      @if ((authService.isEditor() && canEditEvent(detailEvent()!)) || canCancelEvent(detailEvent()!) || authService.isEditor()) {
         <div class="sp-footer">
           @if (authService.isEditor() && canEditEvent(detailEvent()!)) {
             <button class="sp-btn-edit" (click)="openEditFromDetail()">
@@ -968,6 +999,15 @@
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
               Chỉnh sửa sự kiện
+            </button>
+          }
+          @if (authService.isEditor()) {
+            <button class="sp-btn-duplicate" (click)="openDuplicateFromDetail()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              Sao chép lịch
             </button>
           }
           @if (canCancelEvent(detailEvent()!)) {

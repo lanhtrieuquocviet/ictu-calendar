@@ -825,6 +825,24 @@
     &:hover { background: #e2e8f0; }
   }
 
+  .btn-draft {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: background 0.15s, border-color 0.15s;
+    &:hover:not(:disabled) { background: #dcfce7; border-color: #86efac; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
   .btn-save {
     padding: 9px 24px;
     background: #006cb5;

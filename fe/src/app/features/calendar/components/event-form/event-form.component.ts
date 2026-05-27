@@ -20,8 +20,10 @@ import { CategoryService } from '@features/admin/services/category.service';
 })
 export class EventFormComponent implements OnInit, OnDestroy {
   @Input() event: CalendarEvent | null = null;
+  @Input() duplicateFrom: CalendarEvent | null = null;
   @Input() draft: Record<string, any> | null = null;
   @Output() saved = new EventEmitter<void>();
+  @Output() savedAsDraft = new EventEmitter<Record<string, any>>();
   @Output() closed = new EventEmitter<Record<string, any>>();
   @Output() discarded = new EventEmitter<void>();
 
@@ -178,6 +180,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
   }
 
   get modalTitle(): string {
+    if (this.duplicateFrom) return 'Sao chép sự kiện';
     if (!this.isEdit) return 'Thêm sự kiện mới';
     if (this.approverOnly) return 'Phê duyệt sự kiện';
     return 'Chỉnh sửa sự kiện';
@@ -360,6 +363,11 @@ export class EventFormComponent implements OnInit, OnDestroy {
     this.closed.emit(this.form.value as Record<string, any>);
   }
 
+  saveAsDraft(): void {
+    const data = { ...this.form.value, _structuredParticipants: this.structuredParticipants };
+    this.savedAsDraft.emit(data as Record<string, any>);
+  }
+
   onBackdropClose(): void {
     if (!this._backdropMouseDownOnSelf) return;
     this._backdropMouseDownOnSelf = false;
@@ -385,8 +393,35 @@ export class EventFormComponent implements OnInit, OnDestroy {
         } as StructuredParticipant));
       }
       this.loadAttachments();
+    } else if (this.duplicateFrom) {
+      this.form.patchValue({
+        title: this.duplicateFrom.title,
+        allDay: this.duplicateFrom.allDay,
+        participants: this.duplicateFrom.participants || '',
+        organizingUnit: this.duplicateFrom.organizingUnit || '',
+        location: this.duplicateFrom.location || '',
+        vehicleArrangement: this.duplicateFrom.vehicleArrangement || '',
+        mediaUnit: this.duplicateFrom.mediaUnit || '',
+        supervisor: this.duplicateFrom.supervisor || '',
+        approvedBy: this.duplicateFrom.approvedBy || '',
+        meetingCode: this.duplicateFrom.meetingCode || '',
+        color: this.duplicateFrom.color || '#4f46e5',
+        notes: this.duplicateFrom.notes || '',
+      });
+      if (this.duplicateFrom.eventParticipants?.length) {
+        this.structuredParticipants = this.duplicateFrom.eventParticipants.map((ep: any) => ({
+          type: ep.type,
+          userId: ep.userId,
+          departmentId: ep.departmentId,
+          displayName: ep.displayName,
+          email: ep.email,
+        } as StructuredParticipant));
+      }
     } else if (this.draft) {
       this.form.patchValue(this.draft);
+      if (Array.isArray(this.draft['_structuredParticipants']) && this.draft['_structuredParticipants'].length) {
+        this.structuredParticipants = this.draft['_structuredParticipants'];
+      }
     }
     if (this.approverOnly) {
       this.form.disable();

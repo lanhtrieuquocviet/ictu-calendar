@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, signal, HostListener, effect, untracked } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { skip } from 'rxjs/operators';
 import { CalendarService } from '../../services/calendar.service';
@@ -38,10 +38,13 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly toast = inject(ToastService);
   private readonly notifService = inject(NotificationService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly authService = inject(AuthService);
 
   private reminderInterval?: ReturnType<typeof setInterval>;
   private approvalCheckInterval?: ReturnType<typeof setInterval>;
+  private participantCancelCheckInterval?: ReturnType<typeof setInterval>;
 
   viewMode = signal<ViewMode>('week');
   anchorDate = signal<Date>(new Date());
@@ -56,8 +59,10 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   loading = false;
   showForm = signal(false);
   editingEvent = signal<CalendarEvent | null>(null);
+  duplicatingEvent = signal<CalendarEvent | null>(null);
   detailEvent = signal<CalendarEvent | null>(null);
   createDraft = signal<Record<string, any> | null>(null);
+  hasDraft = signal(false);
   statusFilter = signal<string>('approved');
   myStatusFilter = signal<string>('all');
   searchKeyword = signal<string>('');
@@ -148,6 +153,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     if (this.authService.isEditor() && this.canEditEvent(event)) return true;
     if (this.authService.isApprover() && event.status === 'approved') return true;
     if (this.authService.isApprover() && (event.status === 'approved' || event.status === 'pending')) return true;
+    if (this.authService.isEditor()) return true;
     return false;
   }
 
@@ -401,15 +407,46 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     return `ictu_${this.authService.getCurrentUserId() ?? 'guest'}_${suffix}`;
   }
 
+  private get draftKey(): string { return this.userKey('event_draft'); }
+
+  private loadDraftFromStorage(): Record<string, any> | null {
+    try {
+      const raw = localStorage.getItem(this.draftKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  onDraftSaved(draft: Record<string, any>): void {
+    localStorage.setItem(this.draftKey, JSON.stringify(draft));
+    this.hasDraft.set(true);
+    this.showForm.set(false);
+    this.toast.success('Đã lưu bản nháp. Bạn có thể tiếp tục sau.');
+  }
+
+  clearDraft(): void {
+    localStorage.removeItem(this.draftKey);
+    this.hasDraft.set(false);
+    this.createDraft.set(null);
+  }
+
   ngOnInit(): void {
+    this.hasDraft.set(!!this.loadDraftFromStorage());
     this.notifService.loadForCurrentUser();
     this.loadEvents();
+
+    const openId = this.route.snapshot.queryParamMap.get('open');
+    if (openId) {
+      this.router.navigate([], { replaceUrl: true, queryParams: {} });
+      this.openDetailById(openId);
+    }
 
     if (this.authService.isLoggedIn()) {
       this.checkTodaySummary();
       this.checkEventReminders();
       this.checkParticipantNotifications();
+      this.checkParticipantCancellationNotifications();
       this.reminderInterval = setInterval(() => this.checkEventReminders(), 5 * 60 * 1000);
+      this.participantCancelCheckInterval = setInterval(() => this.checkParticipantCancellationNotifications(), 5 * 60 * 1000);
     }
 
     if (this.authService.isEditor()) {
@@ -435,6 +472,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     this.authSub?.unsubscribe();
     clearInterval(this.reminderInterval);
     clearInterval(this.approvalCheckInterval);
+    clearInterval(this.participantCancelCheckInterval);
   }
 
   loadEvents(): void {
@@ -569,6 +607,51 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     });
   }
 
+  private checkParticipantCancellationNotifications(): void {
+    const user = this.authService.getCurrentUserSnapshot();
+    if (!user) return;
+
+    const past = new Date();
+    past.setDate(past.getDate() - 7);
+    const future = new Date();
+    future.setDate(future.getDate() + 14);
+
+    this.calendarService.getEvents(this.toISODate(past), this.toISODate(future)).subscribe({
+      next: (res) => {
+        const CACHE_KEY = this.userKey('participant_status_cache');
+        let cached: Record<string, string>;
+        try {
+          cached = JSON.parse(localStorage.getItem(CACHE_KEY) ?? '{}');
+        } catch {
+          cached = {};
+        }
+
+        let delay = 0;
+        for (const event of res.data) {
+          const isParticipant = event.eventParticipants?.some(p =>
+            (p.type === 'user' && p.userId === user.id) ||
+            (p.type === 'department' && !!user.departmentId && p.departmentId === user.departmentId),
+          );
+          if (!isParticipant) continue;
+
+          const prev = cached[event.id];
+          if (prev === 'approved' && event.status === 'cancelled') {
+            const reason = event.cancelReason ? ` Lý do: ${event.cancelReason}` : '';
+            const msg = `Sự kiện "${event.title}" đã bị hủy.${reason}`;
+            this.notifService.add({ type: 'cancelled', title: 'Sự kiện bị hủy', message: msg, eventId: event.id });
+            setTimeout(() => this.toast.warning(msg), delay);
+            delay += 800;
+          }
+
+          cached[event.id] = event.status;
+        }
+
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
+      },
+      error: () => {},
+    });
+  }
+
   private checkParticipantNotifications(): void {
     const PART_KEY = this.userKey('participant_notif_date');
     const today = new Date().toDateString();
@@ -682,8 +765,16 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   // ── Form ────────────────────────────────────────────
 
-  openAdd(): void { this.editingEvent.set(null); this.showForm.set(true); }
-  openEdit(event: CalendarEvent): void { this.editingEvent.set(event); this.showForm.set(true); }
+  openAdd(): void {
+    this.editingEvent.set(null);
+    this.duplicatingEvent.set(null);
+    const saved = this.loadDraftFromStorage();
+    this.createDraft.set(saved);
+    this.showForm.set(true);
+  }
+  openEdit(event: CalendarEvent): void { this.editingEvent.set(event); this.duplicatingEvent.set(null); this.showForm.set(true); }
+  duplicateEvent(event: CalendarEvent): void { this.editingEvent.set(null); this.duplicatingEvent.set(event); this.showForm.set(true); }
+  openDuplicateFromDetail(): void { const e = this.detailEvent(); this.detailEvent.set(null); this.detailAttachments.set([]); if (e) this.duplicateEvent(e); }
 
   dayPopup: { day: Date; events: CalendarEvent[] } | null = null;
 
@@ -757,6 +848,8 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   onFormSaved(): void {
     this.createDraft.set(null);
+    this.duplicatingEvent.set(null);
+    this.clearDraft();
     this.showForm.set(false);
     const mode = this.viewMode();
     if (mode === 'pending') {
@@ -769,8 +862,8 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     if (this.authService.isApprover()) this.loadPendingCount();
   }
 
-  onFormClosed(draft: Record<string, any>): void { if (!this.editingEvent()) this.createDraft.set(draft); this.showForm.set(false); }
-  onFormDiscarded(): void { this.createDraft.set(null); this.showForm.set(false); }
+  onFormClosed(draft: Record<string, any>): void { if (!this.editingEvent() && !this.duplicatingEvent()) this.createDraft.set(draft); this.duplicatingEvent.set(null); this.showForm.set(false); }
+  onFormDiscarded(): void { this.createDraft.set(null); this.duplicatingEvent.set(null); this.showForm.set(false); }
 
   toggleHidden(event: CalendarEvent): void {
     this.calendarService.toggleHidden(event.id).subscribe({

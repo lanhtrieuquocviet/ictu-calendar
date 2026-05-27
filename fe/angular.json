@@ -24,7 +24,8 @@
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": [
-              { "glob": "**/*", "input": "src/assets", "output": "assets" }
+              { "glob": "**/*", "input": "src/assets", "output": "assets" },
+              { "glob": "favicon.svg", "input": "src", "output": "/" }
             ],
             "styles": ["src/styles.scss"],
             "scripts": []

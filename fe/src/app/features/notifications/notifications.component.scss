@@ -278,6 +278,36 @@
 
 .card-time { font-weight: 500; }
 
+/* ── View event button ────────────────────────────────── */
+.btn-view-event {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 99px;
+  border: 1px solid #c7d7fc;
+  background: #eef2ff;
+  color: #3b5bdb;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+
+  svg {
+    transition: transform 0.15s;
+  }
+
+  &:hover {
+    background: #3b5bdb;
+    border-color: #3b5bdb;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59, 91, 219, 0.3);
+
+    svg { transform: translateX(2px); }
+  }
+}
+
 /* ── Dismiss ──────────────────────────────────────────── */
 .card-dismiss {
   flex-shrink: 0;
