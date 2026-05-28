@@ -56,7 +56,7 @@ export class AuthController {
   async getMe(@Req() req: any) {
     const user = await this.usersService.findOneWithDepartment(req.user.sub);
     const { password, ...result } = user as any;
-    return { data: result };
+    return result;
   }
 
   @Post('change-password')
@@ -66,6 +66,5 @@ export class AuthController {
   @ApiOperation({ summary: 'Đổi mật khẩu của user hiện tại' })
   async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
     await this.usersService.changePassword(req.user.sub, dto.currentPassword, dto.newPassword);
-    return { message: 'Đổi mật khẩu thành công' };
   }
 }

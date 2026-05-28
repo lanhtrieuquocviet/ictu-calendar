@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Process -Id 428)",
+      "PowerShell(Get-WmiObject Win32_Process -Filter \"ProcessId = 428\")",
+      "PowerShell(Stop-Process -Id 428 -Force)"
+    ]
+  }
+}

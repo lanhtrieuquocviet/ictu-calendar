@@ -44,7 +44,7 @@ export class ProfileComponent implements OnInit {
       this.loading.set(false);
     }
 
-    this.http.get<{ data: ProfileUser }>(`${environment.apiUrl}/auth/me`).subscribe({
+    this.http.get<{ statusCode: number; data: ProfileUser }>(`${environment.apiUrl}/auth/me`).subscribe({
       next: (res) => {
         if (res?.data) {
           this.user.set(res.data);
