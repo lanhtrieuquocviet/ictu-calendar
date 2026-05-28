@@ -14,7 +14,7 @@ Hệ thống quản lý lịch sự kiện trường ICTU.
 | Node.js | >= 20 |
 | npm | >= 9 |
 | MySQL | 8.0 |
-| Docker + Docker Compose | (tùy chọn, để deploy) |
+| Docker + Docker Compose | Bắt buộc để chạy MinIO |
 
 ---
 
@@ -35,6 +35,20 @@ Mở file `be/.env` và điền đúng các giá trị:
   ```
 - `ADMIN_EMAIL` / `ADMIN_PASSWORD` — tài khoản admin đầu tiên
 - `MAIL_USER` / `MAIL_PASS` — Gmail App Password (bỏ trống nếu không dùng email)
+- `MINIO_ENDPOINT=localhost` — **đổi thành `localhost`** khi chạy local (mặc định trong `.env.example` là `minio` dùng cho Docker)
+- `MINIO_SECRET_KEY` — mật khẩu MinIO tự đặt
+
+### 2. Khởi động MinIO (bắt buộc để upload file đính kèm)
+
+```bash
+docker run -d --name ictu_minio \
+  -p 9000:9000 -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=your_minio_secret \
+  minio/minio server /data --console-address ":9001"
+```
+
+> MinIO Console (giao diện quản lý file): http://localhost:9001
 
 ### 2. Tạo database rỗng trong MySQL
 
@@ -92,20 +106,32 @@ npm run build:prod      # build production vào fe/dist/
 ### 1. Chuẩn bị file `.env`
 
 ```bash
-cd be
+# File cấu hình cho docker-compose (database + MinIO)
 cp .env.example .env
+
+# File cấu hình cho backend
+cp be/.env.example be/.env
+```
+
+Chỉnh sửa `.env` (thư mục gốc):
+```
+DB_PASSWORD=<mật_khẩu_mạnh>
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=<mật_khẩu_minio_mạnh>
 ```
 
 Chỉnh sửa `be/.env`:
 ```
 NODE_ENV=production
-DB_PASSWORD=<mật_khẩu_mạnh>
+DB_PASSWORD=<giống DB_PASSWORD ở .env>
 JWT_SECRET=<64_byte_random_base64>
 JWT_REFRESH_SECRET=<64_byte_random_base64>
 ADMIN_PASSWORD=<mật_khẩu_admin>
 FRONTEND_URL=http://<IP_SERVER>:4200
 MAIL_USER=your@gmail.com
 MAIL_PASS=xxxx xxxx xxxx xxxx
+MINIO_SECRET_KEY=<giống MINIO_SECRET_KEY ở .env>
+# Giữ nguyên MINIO_ENDPOINT=minio khi dùng Docker Compose
 ```
 
 ### 2. Cấu hình URL API cho frontend
@@ -126,6 +152,8 @@ docker compose up --build -d
 |---------|---------|
 | Frontend | http://localhost:4200 |
 | Backend API | http://localhost:3000/api/v1 |
+| Swagger Docs | http://localhost:3000/api/docs |
+| MinIO Console | http://localhost:9001 |
 | MySQL | localhost:3306 |
 
 ### 4. Xem log
@@ -167,6 +195,7 @@ ictu-calendar/
 │   │   └── environments/
 │   ├── nginx.conf
 │   └── Dockerfile
+├── .env.example            # Biến môi trường cho docker-compose
 └── docker-compose.yml
 ```
 

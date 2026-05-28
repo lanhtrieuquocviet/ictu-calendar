@@ -9,6 +9,7 @@ import { EventParticipant } from './entities/event-participant.entity';
 import { UsersModule } from '../users/users.module';
 import { DepartmentsModule } from '../departments/departments.module';
 import { NotificationModule } from '../notification/notification.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { NotificationModule } from '../notification/notification.module';
     UsersModule,
     DepartmentsModule,
     NotificationModule,
+    StorageModule,
   ],
   controllers: [CalendarController],
   providers: [CalendarService, AttachmentService],

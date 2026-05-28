@@ -5,8 +5,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventAttachment } from './entities/event-attachment.entity';
 import { UsersService } from '../users/users.service';
+import { StorageService } from '../storage/storage.service';
+import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
-import * as fs from 'fs';
+import { Readable } from 'stream';
 
 const ALLOWED_MIME = new Set([
   'application/pdf',
@@ -29,6 +31,7 @@ export class AttachmentService {
     @InjectRepository(EventAttachment)
     private repo: Repository<EventAttachment>,
     private usersService: UsersService,
+    private storageService: StorageService,
   ) {}
 
   async upload(
@@ -37,23 +40,25 @@ export class AttachmentService {
     uploaderId: string,
   ): Promise<EventAttachment> {
     if (!ALLOWED_MIME.has(file.mimetype)) {
-      fs.unlinkSync(file.path);
       throw new BadRequestException('Loại file không được hỗ trợ (PDF, Word, Excel, PowerPoint, JPG, PNG)');
     }
     if (file.size > MAX_SIZE) {
-      fs.unlinkSync(file.path);
       throw new BadRequestException('File quá lớn, tối đa 10 MB');
     }
     const count = await this.repo.count({ where: { eventId } });
     if (count >= MAX_PER_EVENT) {
-      fs.unlinkSync(file.path);
       throw new BadRequestException(`Mỗi sự kiện tối đa ${MAX_PER_EVENT} file đính kèm`);
     }
+
+    const ext = path.extname(file.originalname);
+    const objectName = `${uuidv4()}${ext}`;
+
+    await this.storageService.upload(objectName, file.buffer, file.mimetype);
 
     const uploader = await this.usersService.findOne(uploaderId);
     const attachment = this.repo.create({
       eventId,
-      filename: file.filename,
+      filename: objectName,
       originalName: Buffer.from(file.originalname, 'latin1').toString('utf8'),
       mimeType: file.mimetype,
       size: file.size,
@@ -77,19 +82,15 @@ export class AttachmentService {
     if (!isAdmin && att.event.userId !== requesterId) {
       throw new ForbiddenException('Bạn không có quyền xóa file này');
     }
-    const filePath = path.join(process.cwd(), 'uploads', att.filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    await this.storageService.delete(att.filename);
     await this.repo.delete(attachmentId);
   }
 
-  getFilePath(filename: string): string {
+  async getDownloadInfo(filename: string): Promise<{ stream: Readable; originalName: string; mimeType: string }> {
     const safeFilename = path.basename(filename);
-    const uploadsDir = path.resolve(process.cwd(), 'uploads');
-    const p = path.join(uploadsDir, safeFilename);
-    if (!p.startsWith(uploadsDir + path.sep) && p !== uploadsDir) {
-      throw new NotFoundException('File không tìm thấy');
-    }
-    if (!fs.existsSync(p)) throw new NotFoundException('File không tìm thấy');
-    return p;
+    const att = await this.repo.findOne({ where: { filename: safeFilename } });
+    if (!att) throw new NotFoundException('File không tìm thấy');
+    const stream = await this.storageService.getStream(safeFilename);
+    return { stream, originalName: att.originalName, mimeType: att.mimeType };
   }
 }

@@ -4,9 +4,7 @@ import {
   UseInterceptors, UploadedFile, Res, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { memoryStorage } from 'multer';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CalendarService } from './calendar.service';
@@ -18,16 +16,6 @@ import { EventStatus } from './entities/event.entity';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import * as fs from 'fs';
-import * as path from 'path';
-
-const uploadsDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-const multerStorage = diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => cb(null, `${uuidv4()}${extname(file.originalname)}`),
-});
 
 @ApiTags('Calendar')
 @Controller('calendar')
@@ -175,7 +163,7 @@ export class CalendarController {
   @Roles('admin', 'editor')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Upload file đính kèm (admin / editor)' })
-  @UseInterceptors(FileInterceptor('file', { storage: multerStorage }))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   uploadAttachment(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
@@ -201,8 +189,10 @@ export class CalendarController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Tải xuống file đính kèm' })
-  downloadAttachment(@Param('filename') filename: string, @Res() res: Response) {
-    const filePath = this.attachmentService.getFilePath(filename);
-    res.download(filePath);
+  async downloadAttachment(@Param('filename') filename: string, @Res() res: Response) {
+    const { stream, originalName, mimeType } = await this.attachmentService.getDownloadInfo(filename);
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(originalName)}`);
+    stream.pipe(res);
   }
 }

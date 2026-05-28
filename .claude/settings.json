@@ -3,7 +3,9 @@
     "allow": [
       "PowerShell(Get-Process -Id 428)",
       "PowerShell(Get-WmiObject Win32_Process -Filter \"ProcessId = 428\")",
-      "PowerShell(Stop-Process -Id 428 -Force)"
+      "PowerShell(Stop-Process -Id 428 -Force)",
+      "PowerShell(docker run -d --name ictu_calendar_minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin123 -v minio_data:/data minio/minio server /data --console-address \":9001\" 2>&1)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:9000/minio/health/live\" -UseBasicParsing -TimeoutSec 5)"
     ]
   }
 }
