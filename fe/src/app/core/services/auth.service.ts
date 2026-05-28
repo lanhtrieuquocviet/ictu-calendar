@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { environment } from '@env/environment';
 import { LoginRequest, AuthResponse } from '@models/auth.model';
 import { User, UserRole } from '@models/user.model';
@@ -19,6 +19,26 @@ export class AuthService {
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(
       tap((res) => this.storeSession(res)),
+    );
+  }
+
+  loginWithGoogle(): void {
+    window.location.href = `${environment.apiUrl}/auth/google`;
+  }
+
+  handleGoogleCallback(accessToken: string, refreshToken: string, user: User): void {
+    const fakeResponse: AuthResponse = {
+      data: { access_token: accessToken, refresh_token: refreshToken, user },
+    } as any;
+    this.storeSession(fakeResponse);
+  }
+
+  syncGoogleCalendar(from?: string, to?: string): Observable<{ synced: number; skipped: number; duplicates: number; errors: string[] }> {
+    const params: Record<string, string> = {};
+    if (from) params['from'] = from;
+    if (to) params['to'] = to;
+    return this.http.post<any>(`${environment.apiUrl}/calendar/sync-google`, {}, { params }).pipe(
+      map((res: any) => res?.data ?? res),
     );
   }
 

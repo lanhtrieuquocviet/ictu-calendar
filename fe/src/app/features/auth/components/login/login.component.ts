@@ -48,6 +48,10 @@ export class LoginComponent {
     this.showPassword.update(v => !v);
   }
 
+  loginWithGoogle(): void {
+    this.authService.loginWithGoogle();
+  }
+
   onSubmit(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;

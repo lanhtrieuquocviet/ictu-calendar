@@ -112,6 +112,9 @@ export class Event {
   @Column({ nullable: true, type: 'text' })
   cancelReason: string;        // Lý do hủy lịch
 
+  @Column({ nullable: true })
+  googleEventId: string;       // Google Calendar event ID sau khi sync (chống trùng lặp)
+
   // ── Quan hệ ───────────────────────────────────────
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })

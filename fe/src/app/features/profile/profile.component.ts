@@ -34,6 +34,10 @@ export class ProfileComponent implements OnInit {
   showNext = signal(false);
   showConfirm = signal(false);
 
+  syncing = signal(false);
+  syncResult = signal<{ synced: number; skipped: number; duplicates: number; errors: string[] } | null>(null);
+  syncError = signal('');
+
   readonly roleLabels = ROLE_LABELS;
 
   ngOnInit(): void {
@@ -76,6 +80,22 @@ export class ProfileComponent implements OnInit {
     this.pwForm.update(f => ({ ...f, [field]: value }));
     this.pwError.set('');
     this.pwSuccess.set('');
+  }
+
+  syncGoogleCalendar(): void {
+    this.syncing.set(true);
+    this.syncResult.set(null);
+    this.syncError.set('');
+    this.authService.syncGoogleCalendar().subscribe({
+      next: (res) => {
+        this.syncing.set(false);
+        this.syncResult.set(res);
+      },
+      error: (err) => {
+        this.syncing.set(false);
+        this.syncError.set(err?.error?.message ?? 'Đồng bộ thất bại. Vui lòng đăng nhập lại bằng Google.');
+      },
+    });
   }
 
   submitChangePassword(): void {

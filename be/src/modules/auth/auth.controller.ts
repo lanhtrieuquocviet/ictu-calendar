@@ -1,12 +1,15 @@
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Req, Res } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { ConfigService } from '@nestjs/config';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { GoogleOAuthGuard } from '../../common/guards/google-oauth.guard';
 import { UsersService } from '../users/users.service';
 
 @ApiTags('Auth')
@@ -15,6 +18,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Post('register')
@@ -57,6 +61,27 @@ export class AuthController {
     const user = await this.usersService.findOneWithDepartment(req.user.sub);
     const { password, ...result } = user as any;
     return result;
+  }
+
+  @Get('google')
+  @UseGuards(GoogleOAuthGuard)
+  @ApiExcludeEndpoint()
+  googleAuth() {
+    // Passport redirect sang Google — không cần body
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleOAuthGuard)
+  @ApiExcludeEndpoint()
+  async googleCallback(@Req() req: any, @Res() res: Response) {
+    const tokens = await this.authService.googleLogin(req.user);
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:4200');
+    const params = new URLSearchParams({
+      token: tokens.access_token,
+      refresh: tokens.refresh_token,
+      user: JSON.stringify(tokens.user),
+    });
+    res.redirect(`${frontendUrl}/auth/google-callback?${params}`);
   }
 
   @Post('change-password')

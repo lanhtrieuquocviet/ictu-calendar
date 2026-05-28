@@ -11,4 +11,9 @@ export const authRoutes: Routes = [
     loadComponent: () =>
       import('./components/login/login.component').then((m) => m.LoginComponent),
   },
+  {
+    path: 'google-callback',
+    loadComponent: () =>
+      import('./components/google-callback/google-callback.component').then((m) => m.GoogleCallbackComponent),
+  },
 ];

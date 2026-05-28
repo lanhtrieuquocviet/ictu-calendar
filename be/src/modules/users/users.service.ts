@@ -7,6 +7,7 @@ import * as ExcelJS from 'exceljs';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Department } from '../departments/entities/department.entity';
+import { GoogleToken } from '../calendar/entities/google-token.entity';
 
 export interface ImportResult {
   total: number;
@@ -22,6 +23,8 @@ export class UsersService {
     private usersRepository: Repository<User>,
     @InjectRepository(Department)
     private departmentRepository: Repository<Department>,
+    @InjectRepository(GoogleToken)
+    private googleTokenRepository: Repository<GoogleToken>,
   ) {}
 
   async create(data: Partial<User>): Promise<User> {
@@ -70,6 +73,31 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { id }, relations: ['department'] });
     if (!user) throw new NotFoundException(`User #${id} not found`);
     return user;
+  }
+
+  async findByGoogleId(googleId: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { googleId } });
+  }
+
+  async linkGoogleId(userId: string, googleId: string): Promise<User> {
+    await this.usersRepository.update(userId, { googleId });
+    return this.findOne(userId);
+  }
+
+  async saveGoogleTokens(userId: string, accessToken: string, refreshToken: string | null): Promise<void> {
+    const expiry = new Date(Date.now() + 55 * 60 * 1000); // access token hết hạn sau ~1h, lưu 55 phút
+    const existing = await this.googleTokenRepository.findOne({ where: { userId } });
+    if (existing) {
+      const updateData: Partial<GoogleToken> = { accessToken, tokenExpiry: expiry };
+      if (refreshToken) updateData.refreshToken = refreshToken;
+      await this.googleTokenRepository.update(existing.id, updateData);
+    } else {
+      await this.googleTokenRepository.save({ userId, accessToken, refreshToken, tokenExpiry: expiry });
+    }
+  }
+
+  async getGoogleToken(userId: string): Promise<GoogleToken | null> {
+    return this.googleTokenRepository.findOne({ where: { userId } });
   }
 
   async findByEmail(email: string): Promise<User | null> {

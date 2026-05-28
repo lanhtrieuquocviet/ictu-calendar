@@ -9,6 +9,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
+import { GoogleUser } from './strategies/google.strategy';
 
 @Injectable()
 export class AuthService {
@@ -71,8 +72,39 @@ export class AuthService {
   }
 
   async logout(userId: string) {
-    // Thu hồi toàn bộ refresh token của user này
     await this.refreshTokenRepo.delete({ userId });
+  }
+
+  async googleLogin(googleUser: GoogleUser) {
+    let user = await this.usersService.findByGoogleId(googleUser.googleId);
+
+    if (!user) {
+      // Thử tìm theo email (user đã có tài khoản thường, liên kết Google)
+      const byEmail = await this.usersService.findByEmail(googleUser.email);
+      if (byEmail) {
+        user = await this.usersService.linkGoogleId(byEmail.id, googleUser.googleId);
+      } else {
+        // Tạo tài khoản mới qua Google
+        user = await this.usersService.create({
+          email: googleUser.email,
+          fullName: googleUser.fullName,
+          googleId: googleUser.googleId,
+          password: null,
+          isActive: true,
+        });
+      }
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản của bạn đã bị vô hiệu hóa');
+    }
+
+    // Lưu Google OAuth token để dùng cho Calendar sync
+    if (googleUser.accessToken) {
+      await this.usersService.saveGoogleTokens(user.id, googleUser.accessToken, googleUser.refreshToken);
+    }
+
+    return this.generateTokenPair(user);
   }
 
   private async generateTokenPair(user: User) {

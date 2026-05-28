@@ -385,3 +385,40 @@
   0%   { background-position: 100% 0; }
   100% { background-position: -100% 0; }
 }
+
+.sync-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.sync-note {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.sync-errors {
+  margin: 6px 0 0 16px;
+  font-size: 12px;
+  li { margin-top: 2px; }
+}
+
+.btn-google-sync {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #fff;
+  color: #1e293b;
+  border: 1.5px solid #e2e8f0;
+
+  &:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}

@@ -9,6 +9,7 @@ import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CalendarService } from './calendar.service';
 import { AttachmentService } from './attachment.service';
+import { GoogleCalendarService } from './google-calendar.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { ApproveEventDto } from './dto/approve-event.dto';
@@ -23,6 +24,7 @@ export class CalendarController {
   constructor(
     private readonly calendarService: CalendarService,
     private readonly attachmentService: AttachmentService,
+    private readonly googleCalendarService: GoogleCalendarService,
   ) {}
 
   // ── Public: chỉ sự kiện đã được duyệt ──────────────
@@ -194,5 +196,32 @@ export class CalendarController {
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(originalName)}`);
     stream.pipe(res);
+  }
+
+  // ── Google Calendar Sync ──────────────────────────
+
+  @Post('sync-google')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Đồng bộ sự kiện đã duyệt sang Google Calendar (mặc định tháng hiện tại)' })
+  @ApiQuery({ name: 'from', required: false, example: '2026-05-01' })
+  @ApiQuery({ name: 'to', required: false, example: '2026-05-31' })
+  async syncToGoogleCalendar(
+    @Req() req: any,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    // Mặc định lọc tháng hiện tại nếu không có tham số ngày
+    if (!from && !to) {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+      from = `${y}-${m}-01`;
+      to = `${y}-${m}-${lastDay}`;
+    }
+
+    const events = await this.calendarService.findAll(from, to, undefined, undefined, true);
+    return this.googleCalendarService.syncEventsToGoogle(req.user.sub, events);
   }
 }
