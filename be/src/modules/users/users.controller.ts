@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Param, Delete, Patch, Body, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Param, Delete, Patch, Body, Query, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Res } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { Response } from 'express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -43,6 +45,28 @@ export class UsersController {
   ) {
     const users = await this.usersService.search(q, departmentId);
     return users.map(({ password, ...u }) => u);
+  }
+
+  @Get('import-template')
+  @ApiOperation({ summary: 'Tải file Excel mẫu để import users (admin)' })
+  async downloadTemplate(@Res() res: Response) {
+    const buffer = await this.usersService.generateImportTemplate();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="template-import-users.xlsx"');
+    res.send(buffer);
+  }
+
+  @Post('import')
+  @ApiOperation({ summary: 'Import users từ file Excel (admin)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  async importUsers(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Vui lòng chọn file');
+    const ext = file.originalname.split('.').pop()?.toLowerCase();
+    if (!['xlsx', 'xls'].includes(ext ?? '')) {
+      throw new BadRequestException('Chỉ hỗ trợ file .xlsx hoặc .xls');
+    }
+    return this.usersService.importFromExcel(file.buffer);
   }
 
   @Get(':id')

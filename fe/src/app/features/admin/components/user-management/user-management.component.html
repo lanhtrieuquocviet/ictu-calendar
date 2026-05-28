@@ -13,12 +13,54 @@
       <span>Quản lý người dùng</span>
       <span class="user-count">{{ filteredUsers().length }}{{ filteredUsers().length !== users().length ? ' / ' + users().length : '' }} tài khoản</span>
     </div>
-    <button class="btn-create" (click)="openCreateModal()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      Thêm người dùng
-    </button>
+    <div class="title-bar-actions">
+      <div class="import-menu-wrap" (click)="$event.stopPropagation()">
+        <button class="btn-import-trigger" (click)="toggleImportMenu($event)" [class.active]="showImportMenu()" [disabled]="importing()">
+          @if (importing()) {
+            <span class="import-spinner"></span>
+            Đang import...
+          } @else {
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Import Excel
+            <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          }
+        </button>
+        @if (showImportMenu()) {
+          <div class="import-dropdown">
+            <button class="import-dropdown__item" (click)="downloadTemplate(); showImportMenu.set(false)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Tải file mẫu (.xlsx)
+            </button>
+            <div class="import-dropdown__divider"></div>
+            <button class="import-dropdown__item import-dropdown__item--primary" (click)="triggerImportFile()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Import từ file Excel
+            </button>
+          </div>
+        }
+      </div>
+      <input #fileInput type="file" accept=".xlsx,.xls" style="display:none" (change)="onFileSelected($event)">
+      <button class="btn-create" (click)="openCreateModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Thêm người dùng
+      </button>
+    </div>
   </div>
 
   <!-- Toolbar: Search & Filter -->
@@ -226,6 +268,74 @@
   }
 
 </div>
+
+<!-- ===== Modal: Kết quả Import Excel ===== -->
+@if (showImportResult() && importResult()) {
+  <div class="modal-backdrop" (click)="closeImportResult()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Kết quả Import Excel</h2>
+        <button class="modal-close" (click)="closeImportResult()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="import-summary">
+          <div class="import-stat import-stat--success">
+            <span class="import-stat__num">{{ importResult()!.success }}</span>
+            <span class="import-stat__label">Tạo thành công</span>
+          </div>
+          <div class="import-stat import-stat--fail">
+            <span class="import-stat__num">{{ importResult()!.failed.length }}</span>
+            <span class="import-stat__label">Thất bại</span>
+          </div>
+          <div class="import-stat import-stat--total">
+            <span class="import-stat__num">{{ importResult()!.total }}</span>
+            <span class="import-stat__label">Tổng dòng</span>
+          </div>
+        </div>
+
+        @if (importResult()!.usedDefaultPassword && importResult()!.success > 0) {
+          <div class="pwd-notice">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Mật khẩu mặc định cho các tài khoản không có mật khẩu:&nbsp;<strong>Ictu&#64;2024</strong>
+          </div>
+        }
+
+        @if (importResult()!.failed.length > 0) {
+          <div class="import-failed-section">
+            <p class="import-failed-title">Danh sách lỗi ({{ importResult()!.failed.length }} dòng):</p>
+            <div class="import-failed-scroll">
+              <table class="import-failed-table">
+                <thead>
+                  <tr><th>Dòng</th><th>Email</th><th>Lý do</th></tr>
+                </thead>
+                <tbody>
+                  @for (item of importResult()!.failed; track item.row) {
+                    <tr>
+                      <td>{{ item.row }}</td>
+                      <td>{{ item.email }}</td>
+                      <td>{{ item.reason }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-submit" (click)="closeImportResult()">Đóng</button>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- ===== Modal: Tạo user mới ===== -->
 @if (showCreateModal()) {

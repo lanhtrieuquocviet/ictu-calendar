@@ -1,7 +1,7 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminService, CreateUserPayload } from '../../services/admin.service';
+import { AdminService, CreateUserPayload, ImportResult } from '../../services/admin.service';
 import { DepartmentService } from '../../services/department.service';
 import { AuthService } from '@core/services/auth.service';
 import { User, UserRole, ROLE_LABELS } from '@models/user.model';
@@ -120,6 +120,68 @@ export class UserManagementComponent implements OnInit {
         this.showToast(msg, 'error');
       },
     });
+  }
+
+  // Import Excel
+  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
+  importing = signal(false);
+  importResult = signal<ImportResult | null>(null);
+  showImportResult = signal(false);
+  showImportMenu = signal(false);
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.showImportMenu.set(false);
+  }
+
+  toggleImportMenu(event: Event): void {
+    event.stopPropagation();
+    this.showImportMenu.update(v => !v);
+  }
+
+  triggerImportFile(): void {
+    this.showImportMenu.set(false);
+    this.fileInputRef.nativeElement.click();
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    input.value = '';
+    this.importing.set(true);
+    this.adminService.importUsers(file).subscribe({
+      next: (result) => {
+        this.importing.set(false);
+        this.importResult.set(result);
+        this.showImportResult.set(true);
+        if (result.success > 0) this.loadUsers();
+      },
+      error: (err) => {
+        this.importing.set(false);
+        const msg = err?.error?.message ?? 'Import thất bại';
+        this.showToast(msg, 'error');
+      },
+    });
+  }
+
+  downloadTemplate(): void {
+    this.adminService.downloadTemplate().subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'template-import-users.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.showToast('Tải file mẫu thất bại', 'error'),
+    });
+  }
+
+  closeImportResult(): void {
+    this.showImportResult.set(false);
+    this.importResult.set(null);
   }
 
   // Reset password modal

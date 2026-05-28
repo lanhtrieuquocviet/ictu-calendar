@@ -11,6 +11,13 @@ export interface CreateUserPayload {
   role: UserRole;
 }
 
+export interface ImportResult {
+  total: number;
+  success: number;
+  failed: { row: number; email: string; reason: string }[];
+  usedDefaultPassword: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly http = inject(HttpClient);
@@ -34,5 +41,15 @@ export class AdminService {
 
   deleteUser(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  importUsers(file: File): Observable<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ImportResult>(`${this.base}/import`, formData);
+  }
+
+  downloadTemplate(): Observable<Blob> {
+    return this.http.get(`${this.base}/import-template`, { responseType: 'blob' });
   }
 }
