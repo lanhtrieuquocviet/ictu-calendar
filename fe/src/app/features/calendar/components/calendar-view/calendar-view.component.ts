@@ -5,7 +5,7 @@ import { Subscription } from 'rxjs';
 import { skip } from 'rxjs/operators';
 import { CalendarService } from '../../services/calendar.service';
 import { AuthService } from '@core/services/auth.service';
-import { CalendarEvent, EventAttachment } from '@models/event.model';
+import { CalendarEvent, EventAttachment, PersonalEvent, ImportFromGoogleResult } from '@models/event.model';
 import { EventFormComponent } from '../event-form/event-form.component';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { ToastService, ReminderMeta } from '@shared/services/toast.service';
@@ -14,7 +14,7 @@ import { NotificationService } from '@shared/services/notification.service';
 import { NotificationBellComponent } from '@shared/components/notification-bell/notification-bell.component';
 import { ICTU_UNIT_GROUPS } from '@core/constants/ictu-units';
 
-export type ViewMode = 'week' | 'month' | 'list' | 'pending' | 'mine' | 'bookmarks';
+export type ViewMode = 'week' | 'month' | 'list' | 'pending' | 'mine' | 'bookmarks' | 'personal';
 
 export interface DayGroup {
   dateLabel: string;
@@ -78,6 +78,16 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   bookmarkedIds = signal<Set<string>>(new Set());
   bookmarkedItems = signal<CalendarEvent[]>([]);
+
+  // Lịch cá nhân (tab riêng)
+  personalAnchorDate = signal<Date>(new Date());
+  personalGoogleEvents = signal<PersonalEvent[]>([]);
+  personalOrgEvents = signal<CalendarEvent[]>([]);
+  personalSyncing = signal(false);
+  personalSyncResult = signal<ImportFromGoogleResult | null>(null);
+
+  // Lịch cá nhân trên grid chính (luôn hiện ở month view)
+  personalEventsOnGrid = signal<PersonalEvent[]>([]);
 
   constructor() {
     effect(() => {
@@ -403,6 +413,8 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       this.loadMyEvents();
     } else if (mode === 'bookmarks') {
       // bookmarkedItems đã được load từ localStorage, không cần fetch thêm
+    } else if (mode === 'personal') {
+      this.loadPersonalEvents();
     } else {
       this.loadEvents();
     }
@@ -539,6 +551,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       next: (res) => { this.allEvents = res.data; this.loading = false; },
       error: () => (this.loading = false),
     });
+    if (this.authService.isLoggedIn() && this.viewMode() === 'month') this.loadPersonalEventsForGrid();
   }
 
   loadPendingEvents(): void {
@@ -582,6 +595,116 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       next: (res) => { this.myEvents.set(res.data); this.loading = false; },
       error: () => (this.loading = false),
     });
+  }
+
+  get personalMonthLabel(): string {
+    return this.personalAnchorDate().toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+  }
+
+  get isPersonalCurrentMonth(): boolean {
+    const now = new Date();
+    const d = this.personalAnchorDate();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+
+  private personalMonthRange(): { from: string; to: string } {
+    const d = this.personalAnchorDate();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(y, d.getMonth() + 1, 0).getDate();
+    return { from: `${y}-${m}-01`, to: `${y}-${m}-${String(lastDay).padStart(2, '0')}` };
+  }
+
+  personalPrev(): void {
+    const d = new Date(this.personalAnchorDate());
+    d.setMonth(d.getMonth() - 1);
+    this.personalAnchorDate.set(d);
+    this.loadPersonalEvents();
+  }
+
+  personalNext(): void {
+    const d = new Date(this.personalAnchorDate());
+    d.setMonth(d.getMonth() + 1);
+    this.personalAnchorDate.set(d);
+    this.loadPersonalEvents();
+  }
+
+  personalGoToToday(): void {
+    this.personalAnchorDate.set(new Date());
+    this.loadPersonalEvents();
+  }
+
+  loadPersonalEvents(): void {
+    this.loading = true;
+    const { from, to } = this.personalMonthRange();
+
+    this.calendarService.getPersonalEvents(from, to).subscribe({
+      next: (res) => {
+        this.personalGoogleEvents.set(res.googleEvents ?? []);
+        this.personalOrgEvents.set(res.orgEvents ?? []);
+        this.loading = false;
+      },
+      error: () => (this.loading = false),
+    });
+  }
+
+  syncFromGoogle(): void {
+    this.personalSyncing.set(true);
+    this.personalSyncResult.set(null);
+    const { from, to } = this.personalMonthRange();
+
+    this.calendarService.syncFromGoogle(from, to).subscribe({
+      next: (result) => {
+        this.personalSyncing.set(false);
+        this.personalSyncResult.set(result);
+        this.loadPersonalEvents();
+      },
+      error: (err) => {
+        this.personalSyncing.set(false);
+        const msg = err?.error?.message ?? 'Không thể đồng bộ. Vui lòng thử lại.';
+        this.toast.error(msg);
+      },
+    });
+  }
+
+  deletePersonalEvent(id: string): void {
+    this.calendarService.deletePersonalEvent(id).subscribe({
+      next: () => {
+        this.personalGoogleEvents.set(this.personalGoogleEvents().filter(e => e.id !== id));
+        this.toast.success('Đã xóa sự kiện cá nhân.');
+      },
+    });
+  }
+
+  // ── Lịch cá nhân trên grid chính ───────────────────────────
+
+  private loadPersonalEventsForGrid(): void {
+    const from = this.toISODate(this.rangeStart);
+    const to = this.toISODate(this.rangeEnd);
+    this.calendarService.getPersonalEvents(from, to).subscribe({
+      next: (res) => this.personalEventsOnGrid.set(res.googleEvents ?? []),
+      error: () => {},
+    });
+  }
+
+  getPersonalEventsForDay(day: Date | null): PersonalEvent[] {
+    if (!day) return [];
+    const key = this.toISODate(day);
+    return this.personalEventsOnGrid().filter(e => String(e.eventDate).slice(0, 10) === key);
+  }
+
+  getCombinedEventsForDay(day: Date | null): Array<{ kind: 'org'; event: CalendarEvent } | { kind: 'google'; event: PersonalEvent }> {
+    const org = this.getEventsForDay(day).map(e => ({ kind: 'org' as const, event: e }));
+    const google = this.getPersonalEventsForDay(day).map(e => ({ kind: 'google' as const, event: e }));
+    return [...org, ...google];
+  }
+
+  formatPersonalTime(event: PersonalEvent): string {
+    if (event.allDay) return 'Cả ngày';
+    if (!event.startTime) return '—';
+    const start = event.startTime.slice(0, 5);
+    const end = event.endTime ? ' – ' + event.endTime.slice(0, 5) : '';
+    return start + end;
   }
 
 
@@ -829,11 +952,15 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   duplicateEvent(event: CalendarEvent): void { this.editingEvent.set(null); this.duplicatingEvent.set(event); this.showForm.set(true); }
   openDuplicateFromDetail(): void { const e = this.detailEvent(); this.detailEvent.set(null); this.detailAttachments.set([]); if (e) this.duplicateEvent(e); }
 
-  dayPopup: { day: Date; events: CalendarEvent[] } | null = null;
+  dayPopup: { day: Date; events: CalendarEvent[]; personalEvents: PersonalEvent[] } | null = null;
 
   openDayPopup(day: Date, e: MouseEvent): void {
     e.stopPropagation();
-    this.dayPopup = { day, events: this.getEventsForDay(day) };
+    this.dayPopup = {
+      day,
+      events: this.getEventsForDay(day),
+      personalEvents: this.getPersonalEventsForDay(day),
+    };
   }
 
   closeDayPopup(): void { this.dayPopup = null; }

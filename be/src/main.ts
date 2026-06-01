@@ -52,8 +52,20 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  const port = configService.get('PORT', 3000);
-  await app.listen(port);
+  const port = parseInt(configService.get('PORT', '3000'), 10);
+
+  try {
+    await app.listen(port);
+  } catch (err: any) {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${port} is already in use.`);
+      console.error(
+        `Run this to free it:  npx kill-port ${port}  or  netstat -ano | findstr :${port}  then  taskkill /PID <pid> /F`,
+      );
+      process.exit(1);
+    }
+    throw err;
+  }
 
   console.log(`Application running on port ${port} [${configService.get('NODE_ENV', 'development')}]`);
   if (isDev) {

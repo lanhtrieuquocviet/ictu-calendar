@@ -79,3 +79,32 @@ export interface ApiListResponse<T> {
   message: string;
   data: T[];
 }
+
+export interface PersonalEvent {
+  id: string;
+  userId: string;
+  googleEventId: string;
+  title: string;
+  eventDate: string;
+  startTime?: string;
+  endTime?: string;
+  allDay: boolean;
+  location?: string;
+  description?: string;
+  color?: string;
+  syncedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PersonalCalendarResponse {
+  googleEvents: PersonalEvent[];
+  orgEvents: CalendarEvent[];
+}
+
+export interface ImportFromGoogleResult {
+  imported: number;
+  updated: number;
+  deleted: number;
+  errors: string[];
+}

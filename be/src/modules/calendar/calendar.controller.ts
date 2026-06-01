@@ -198,7 +198,7 @@ export class CalendarController {
     stream.pipe(res);
   }
 
-  // ── Google Calendar Sync ──────────────────────────
+  // ── Google Calendar Sync (Hệ thống → Google) ─────
 
   @Post('sync-google')
   @UseGuards(JwtAuthGuard)
@@ -211,7 +211,6 @@ export class CalendarController {
     @Query('from') from?: string,
     @Query('to') to?: string,
   ) {
-    // Mặc định lọc tháng hiện tại nếu không có tham số ngày
     if (!from && !to) {
       const now = new Date();
       const y = now.getFullYear();
@@ -223,5 +222,54 @@ export class CalendarController {
 
     const events = await this.calendarService.findAll(from, to, undefined, undefined, true);
     return this.googleCalendarService.syncEventsToGoogle(req.user.sub, events);
+  }
+
+  // ── Lịch cá nhân (Google → Hệ thống) ────────────
+
+  @Get('personal-events')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lấy lịch cá nhân (sự kiện Google + sự kiện tổ chức có tham gia)' })
+  @ApiQuery({ name: 'from', required: false, example: '2026-06-01' })
+  @ApiQuery({ name: 'to', required: false, example: '2026-06-30' })
+  async getPersonalEvents(
+    @Req() req: any,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    if (!from || !to) {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+      from = `${y}-${m}-01`;
+      to = `${y}-${m}-${lastDay}`;
+    }
+    const { orgEvents } = await this.calendarService.getPersonalCalendar(req.user.sub, from, to);
+    const googleEvents = await this.googleCalendarService.getPersonalEvents(req.user.sub, from, to);
+    return { googleEvents, orgEvents };
+  }
+
+  @Post('personal-events/sync')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Đồng bộ lịch từ Google Calendar về hệ thống (mặc định tháng hiện tại)' })
+  @ApiQuery({ name: 'from', required: false, example: '2026-06-01' })
+  @ApiQuery({ name: 'to', required: false, example: '2026-06-30' })
+  async importFromGoogle(
+    @Req() req: any,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.googleCalendarService.importFromGoogle(req.user.sub, from, to);
+  }
+
+  @Delete('personal-events/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xóa sự kiện cá nhân đã import' })
+  async deletePersonalEvent(@Param('id') id: string, @Req() req: any) {
+    await this.googleCalendarService.deletePersonalEvent(id, req.user.sub);
+    return { message: 'Đã xóa sự kiện cá nhân' };
   }
 }

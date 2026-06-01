@@ -271,6 +271,28 @@ export class CalendarService {
     });
   }
 
+  async getPersonalCalendar(userId: string, from: string, to: string): Promise<{
+    googleEvents: any[];
+    orgEvents: any[];
+  }> {
+    // Sự kiện tổ chức đã APPROVED mà user là participant (type = USER)
+    const orgEvents = await this.eventRepository
+      .createQueryBuilder('event')
+      .innerJoin('event.eventParticipants', 'ep', 'ep.userId = :userId AND ep.type = :type', {
+        userId,
+        type: ParticipantType.USER,
+      })
+      .leftJoinAndSelect('event.eventParticipants', 'allEp')
+      .where('event.status = :status', { status: EventStatus.APPROVED })
+      .andWhere('event.eventDate BETWEEN :from AND :to', { from, to })
+      .andWhere('event.isHidden = false')
+      .orderBy('event.eventDate', 'ASC')
+      .addOrderBy('event.startTime', 'ASC')
+      .getMany();
+
+    return { googleEvents: [], orgEvents };
+  }
+
   async getStats(): Promise<CalendarStats> {
     const [total, pending, approved, rejected] = await Promise.all([
       this.eventRepository.count(),

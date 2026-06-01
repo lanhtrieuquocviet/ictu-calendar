@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { ApiService } from '@core/services/api.service';
-import { CalendarEvent, CreateEventRequest, ApiListResponse, EventAttachment } from '@models/event.model';
+import { CalendarEvent, CreateEventRequest, ApiListResponse, EventAttachment, PersonalCalendarResponse, ImportFromGoogleResult } from '@models/event.model';
 import { environment } from '@env/environment';
 
 export interface AdminStats {
@@ -97,5 +97,24 @@ export class CalendarService {
 
   getDownloadUrl(filename: string): string {
     return `${this.baseUrl}/calendar/attachments/${filename}`;
+  }
+
+  // ── Lịch cá nhân ────────────────────────────────────────────
+  getPersonalEvents(from: string, to: string): Observable<PersonalCalendarResponse> {
+    return this.api.get<any>('calendar/personal-events', { from, to }).pipe(
+      map((res: any) => res.data ?? res)
+    );
+  }
+
+  syncFromGoogle(from?: string, to?: string): Observable<ImportFromGoogleResult> {
+    const qs = [from ? `from=${from}` : '', to ? `to=${to}` : ''].filter(Boolean).join('&');
+    const path = qs ? `calendar/personal-events/sync?${qs}` : 'calendar/personal-events/sync';
+    return this.api.post<any>(path, {}).pipe(
+      map((res: any) => res.data ?? res)
+    );
+  }
+
+  deletePersonalEvent(id: string): Observable<void> {
+    return this.api.delete<void>(`calendar/personal-events/${id}`);
   }
 }
