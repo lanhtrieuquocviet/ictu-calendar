@@ -298,23 +298,142 @@ export class GoogleCalendarService {
   }
 
   async deletePersonalEvent(id: string, userId: string): Promise<void> {
+    const event = await this.personalEventRepo.findOne({ where: { id, userId } });
+
+    if (event?.googleEventId) {
+      try {
+        const calendar = await this.tryGetCalendarClient(userId);
+        if (calendar) {
+          await calendar.events.delete({ calendarId: 'primary', eventId: event.googleEventId });
+        }
+      } catch {
+        // Bỏ qua lỗi Google — vẫn xóa local
+      }
+    }
+
     await this.personalEventRepo.delete({ id, userId });
   }
 
   async createManualPersonalEvent(userId: string, dto: CreateManualPersonalEventDto): Promise<PersonalEvent> {
-    const event = this.personalEventRepo.create({
-      ...dto,
-      userId,
-      googleEventId: null,
-    });
-    return this.personalEventRepo.save(event);
+    const event = this.personalEventRepo.create({ ...dto, userId, googleEventId: null });
+    const saved = await this.personalEventRepo.save(event);
+
+    try {
+      const calendar = await this.tryGetCalendarClient(userId);
+      if (calendar) {
+        const response = await calendar.events.insert({
+          calendarId: 'primary',
+          requestBody: this.buildGooglePersonalEvent(
+            dto.title, dto.eventDate, dto.allDay,
+            dto.startTime, dto.endTime,
+            dto.location, dto.description,
+          ),
+        });
+        await this.personalEventRepo.update(saved.id, { googleEventId: response.data.id! });
+        saved.googleEventId = response.data.id!;
+      }
+    } catch {
+      // Bỏ qua lỗi Google — sự kiện đã được lưu local
+    }
+
+    return saved;
   }
 
   async updateManualPersonalEvent(id: string, userId: string, dto: UpdatePersonalEventDto): Promise<PersonalEvent> {
     const event = await this.personalEventRepo.findOne({ where: { id, userId } });
     if (!event) throw new Error('Không tìm thấy sự kiện');
     Object.assign(event, dto);
-    return this.personalEventRepo.save(event);
+    const saved = await this.personalEventRepo.save(event);
+
+    try {
+      const calendar = await this.tryGetCalendarClient(userId);
+      if (calendar) {
+        const dateStr = saved.eventDate instanceof Date
+          ? saved.eventDate.toISOString().split('T')[0]
+          : String(saved.eventDate).slice(0, 10);
+        const googleBody = this.buildGooglePersonalEvent(
+          saved.title, dateStr, saved.allDay,
+          saved.startTime, saved.endTime,
+          saved.location, saved.description,
+        );
+
+        if (saved.googleEventId) {
+          await calendar.events.update({
+            calendarId: 'primary',
+            eventId: saved.googleEventId,
+            requestBody: googleBody,
+          });
+        } else {
+          const response = await calendar.events.insert({
+            calendarId: 'primary',
+            requestBody: googleBody,
+          });
+          await this.personalEventRepo.update(saved.id, { googleEventId: response.data.id! });
+          saved.googleEventId = response.data.id!;
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi Google — sự kiện đã được lưu local
+    }
+
+    return saved;
+  }
+
+  private async tryGetCalendarClient(userId: string): Promise<any | null> {
+    try {
+      const tokenRecord = await this.usersService.getGoogleToken(userId);
+      if (!tokenRecord) return null;
+
+      const oauth2Client = this.createOAuth2Client();
+      oauth2Client.setCredentials({
+        access_token: tokenRecord.accessToken,
+        refresh_token: tokenRecord.refreshToken,
+      });
+
+      if (tokenRecord.tokenExpiry && new Date() >= tokenRecord.tokenExpiry) {
+        if (!tokenRecord.refreshToken) return null;
+        const { credentials } = await oauth2Client.refreshAccessToken();
+        await this.usersService.saveGoogleTokens(userId, credentials.access_token!, credentials.refresh_token ?? null);
+        oauth2Client.setCredentials(credentials);
+      }
+
+      return google.calendar({ version: 'v3', auth: oauth2Client });
+    } catch {
+      return null;
+    }
+  }
+
+  private buildGooglePersonalEvent(
+    title: string,
+    dateStr: string,
+    allDay: boolean,
+    startTime?: string | null,
+    endTime?: string | null,
+    location?: string | null,
+    description?: string | null,
+  ): object {
+    const t0 = startTime?.slice(0, 5) ?? null;
+    const t1 = endTime?.slice(0, 5) ?? null;
+
+    const start = !allDay && t0
+      ? { dateTime: `${dateStr}T${t0}:00+07:00`, timeZone: 'Asia/Ho_Chi_Minh' }
+      : { date: dateStr };
+
+    const end = !allDay && t1
+      ? { dateTime: `${dateStr}T${t1}:00+07:00`, timeZone: 'Asia/Ho_Chi_Minh' }
+      : !allDay && t0
+        ? { dateTime: `${dateStr}T${t0}:00+07:00`, timeZone: 'Asia/Ho_Chi_Minh' }
+        : { date: dateStr };
+
+    const googleDesc = [description, 'Nguồn: ICTU Calendar'].filter(Boolean).join('\n');
+
+    return {
+      summary: title,
+      location: location ?? '',
+      description: googleDesc,
+      start,
+      end,
+    };
   }
 
   private parseGoogleEvent(gEvent: any): Partial<PersonalEvent> | null {
