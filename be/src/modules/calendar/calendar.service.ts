@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository, MoreThan } from 'typeorm';
 import { Event, EventStatus } from './entities/event.entity';
@@ -22,6 +22,8 @@ export interface CalendarStats {
 
 @Injectable()
 export class CalendarService {
+  private readonly logger = new Logger(CalendarService.name);
+
   constructor(
     @InjectRepository(Event)
     private eventRepository: Repository<Event>,
@@ -63,7 +65,8 @@ export class CalendarService {
       await this.eventRepository.update(saved.id, { lastNotifiedAt: new Date() });
       const attachments = await this.attachmentRepository.find({ where: { eventId: saved.id } });
       const recipients = await this.resolveRecipients(created.eventParticipants as any);
-      this.notificationService.sendEventApproved(created, recipients, attachments).catch(() => null);
+      this.notificationService.sendEventApproved(created, recipients, attachments)
+        .catch((err) => this.logger.error('sendEventApproved failed', err?.message));
     }
 
     return created;
@@ -176,7 +179,7 @@ export class CalendarService {
             rejected,
             { name: creator.fullName, email: creator.email },
             dto.rejectionReason ?? '',
-          ).catch(() => null);
+          ).catch((err) => this.logger.error('sendEventRejected failed', err?.message));
         }
       } catch { /* creator đã bị xóa */ }
     }
@@ -191,7 +194,8 @@ export class CalendarService {
         const approved = await this.findOne(id);
         const attachments = await this.attachmentRepository.find({ where: { eventId: id } });
         const recipients = await this.resolveRecipients(event.eventParticipants as any);
-        this.notificationService.sendEventApproved(approved, recipients, attachments).catch(() => null);
+        this.notificationService.sendEventApproved(approved, recipients, attachments)
+          .catch((err) => this.logger.error('sendEventApproved failed', err?.message));
       }
     }
 
@@ -243,7 +247,7 @@ export class CalendarService {
         recipients,
         canceller.fullName,
         cancelReason,
-      ).catch(() => null);
+      ).catch((err) => this.logger.error('sendEventCancelled failed', err?.message));
     }
 
     return cancelled;

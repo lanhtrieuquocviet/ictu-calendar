@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import { DataSource } from 'typeorm';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,6 +16,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix(configService.get('API_PREFIX', 'api/v1'));
 
+  app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
   app.useGlobalPipes(
@@ -33,7 +35,8 @@ async function bootstrap() {
     : [frontendUrl];
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Cho phép null origin (Postman, curl) chỉ trong dev
+      if ((isDev && !origin) || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`CORS blocked: ${origin}`));

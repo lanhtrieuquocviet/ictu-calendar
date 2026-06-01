@@ -729,6 +729,13 @@
           @if (personalSyncing()) { Đang đồng bộ... } @else { Đồng bộ từ Google }
         </button>
 
+        <button class="btn-personal-add" (click)="openPersonalCreateForm()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Tạo sự kiện
+        </button>
+
         @if (personalSyncResult()) {
           <span class="personal-sync-result">
             Nhập {{ personalSyncResult()!.imported }}, cập nhật {{ personalSyncResult()!.updated }}, xóa {{ personalSyncResult()!.deleted }}
@@ -737,9 +744,83 @@
             }
           </span>
         }
+
+        <!-- View sub-mode toggle -->
+        <div class="personal-view-toggle">
+          <button [class.pvt-active]="personalViewSubMode() === 'month'" (click)="personalViewSubMode.set('month')" title="Xem theo tháng">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Tháng
+          </button>
+          <button [class.pvt-active]="personalViewSubMode() === 'list'" (click)="personalViewSubMode.set('list')" title="Xem danh sách">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/>
+            </svg>
+            Danh sách
+          </button>
+        </div>
       </div>
 
-      @if (personalGoogleEvents().length === 0 && personalOrgEvents().length === 0) {
+      @if (personalViewSubMode() === 'month') {
+
+        <!-- ── PERSONAL MONTH GRID ─────────────────── -->
+        <div class="month-view personal-month-view">
+          <div class="month-day-headers">
+            @for (d of monthDayLabels; track d) {
+              <div class="month-day-hdr">{{ d }}</div>
+            }
+          </div>
+          <div class="month-grid">
+            @for (day of personalMonthCells; track $index) {
+              <div class="month-cell month-cell--personal"
+                [class.today]="isToday(day)"
+                [class.empty-cell]="!day"
+                [class.has-events]="getPersonalCombinedForDay(day).length > 0"
+                (click)="day && openPersonalCreateForm(toISODatePublic(day))">
+
+                @if (day) {
+                  <span class="cell-num">{{ day.getDate() }}</span>
+                  <div class="cell-events">
+                    @for (item of getPersonalCombinedForDay(day).slice(0, 3); track item.kind + item.event.id) {
+                      @if (item.kind === 'google') {
+                        <div class="cell-chip cell-chip--google"
+                          [style.--g-color]="item.event.color || '#4285f4'"
+                          [title]="item.event.title"
+                          (click)="openPersonalDetail(item.event, $event)">
+                          <span class="chip-g-dot"></span>
+                          @if (!item.event.allDay && item.event.startTime) {
+                            <span class="chip-time">{{ item.event.startTime.slice(0, 5) }}</span>
+                          }
+                          {{ item.event.title }}
+                        </div>
+                      } @else {
+                        <div class="cell-chip"
+                          [style.background]="item.event.color || '#4f46e5'"
+                          [title]="'[Tổ chức] ' + item.event.title"
+                          (click)="openDetail(item.event)">
+                          @if (item.event.startTime) {
+                            <span class="chip-time">{{ item.event.startTime.slice(0, 5) }}</span>
+                          }
+                          {{ item.event.title }}
+                        </div>
+                      }
+                    }
+                    @if (getPersonalCombinedForDay(day).length > 3) {
+                      <div class="cell-more" (click)="openPersonalDayPopup(day, $event)">+{{ getPersonalCombinedForDay(day).length - 3 }} thêm</div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+      } @else if (personalGoogleEvents().length === 0 && personalOrgEvents().length === 0) {
         <div class="state-box">
           <div class="empty-icon">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
@@ -775,7 +856,7 @@
                   </td>
                 </tr>
                 @for (event of personalGoogleEvents(); track event.id) {
-                  <tr [style]="'--evt-clr:' + (event.color || '#4285f4')">
+                  <tr [style]="'--evt-clr:' + (event.color || '#4285f4')" (click)="openPersonalDetail(event, $event)">
                     <td class="td-day-simple">{{ formatEventDate(event.eventDate) }}</td>
                     <td class="td-time">
                       <span class="time-pill">{{ formatPersonalTime(event) }}</span>
@@ -788,12 +869,21 @@
                     </td>
                     <td><span class="cell-truncate">{{ event.location || '—' }}</span></td>
                     <td class="td-status td-center">
-                      <span class="source-badge source-badge--google">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>
-                        Google
-                      </span>
+                      @if (isManualPersonalEvent(event)) {
+                        <span class="source-badge source-badge--manual">Thủ công</span>
+                      } @else {
+                        <span class="source-badge source-badge--google">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>
+                          Google
+                        </span>
+                      }
                     </td>
-                    <td class="td-actions">
+                    <td class="td-actions" (click)="$event.stopPropagation()">
+                      @if (isManualPersonalEvent(event)) {
+                        <button class="kebab-btn" title="Sửa" (click)="openPersonalEditForm(event)">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                      }
                       <button class="kebab-btn" title="Xóa" (click)="deletePersonalEvent(event.id)">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                       </button>
@@ -1085,6 +1175,247 @@
             </div>
           }
         }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Personal Event Detail Popup (Google Calendar style) ── -->
+@if (personalDetailEvent() && personalDetailPos()) {
+  <div class="pe-detail-backdrop" (click)="closePersonalDetail()">
+    <div class="pe-detail-popup"
+      [style.top.px]="personalDetailPos()!.top"
+      [style.left.px]="personalDetailPos()!.left"
+      (click)="$event.stopPropagation()">
+
+      <!-- Color bar + actions -->
+      <div class="pe-detail-topbar" [style.background]="personalDetailEvent()!.color || '#4285f4'">
+        @if (isManualPersonalEvent(personalDetailEvent()!)) {
+          <button class="pe-tb-btn" title="Chỉnh sửa" (click)="openPersonalEditForm(personalDetailEvent()!)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        }
+        <button class="pe-tb-btn pe-tb-btn--danger" title="Xóa" (click)="deletePersonalEvent(personalDetailEvent()!.id)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+        <button class="pe-tb-btn" title="Đóng" (click)="closePersonalDetail()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="pe-detail-body">
+        <h3 class="pe-detail-title">{{ personalDetailEvent()!.title }}</h3>
+
+        <!-- Date + time -->
+        <div class="pe-detail-row">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>
+            {{ formatPersonalDetailDate(personalDetailEvent()!) }}
+            @if (!personalDetailEvent()!.allDay && personalDetailEvent()!.startTime) {
+              · {{ personalDetailEvent()!.startTime!.slice(0, 5) }}{{ personalDetailEvent()!.endTime ? ' – ' + personalDetailEvent()!.endTime!.slice(0, 5) : '' }}
+            } @else if (personalDetailEvent()!.allDay) {
+              · Cả ngày
+            }
+          </span>
+        </div>
+
+        <!-- Location -->
+        @if (personalDetailEvent()!.location) {
+          <div class="pe-detail-row">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>{{ personalDetailEvent()!.location }}</span>
+          </div>
+        }
+
+        <!-- Description -->
+        @if (personalDetailEvent()!.description) {
+          <div class="pe-detail-row pe-detail-row--desc">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            <span class="pe-detail-desc">{{ personalDetailEvent()!.description }}</span>
+          </div>
+        }
+
+        <!-- Source -->
+        <div class="pe-detail-source">
+          @if (isManualPersonalEvent(personalDetailEvent()!)) {
+            <span class="source-badge source-badge--manual">Sự kiện thủ công</span>
+          } @else {
+            <span class="source-badge source-badge--google">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>
+              Google Calendar
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Personal Event Create / Edit Form ─────────────────── -->
+@if (showPersonalForm()) {
+  <div class="pe-form-backdrop" (click)="closePersonalForm()">
+    <div class="pe-form-modal" (click)="$event.stopPropagation()">
+      <div class="pe-form-header">
+        <span>{{ editingPersonalEvent() ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới' }}</span>
+        <button class="pe-form-close" (click)="closePersonalForm()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="pe-form-body">
+
+        <!-- Color + Title -->
+        <div class="pe-form-title-row">
+          <div class="pe-color-picker">
+            @for (c of ['#4285f4','#ea4335','#fbbc04','#34a853','#ff6d00','#46bdc6','#7986cb','#e67c73']; track c) {
+              <button type="button" class="pe-color-dot"
+                [style.background]="c"
+                [class.selected]="(personalFormDraft().color || '#4285f4') === c"
+                (click)="setPersonalFormColor(c)">
+              </button>
+            }
+          </div>
+          <input type="text" class="pe-form-title-input" placeholder="Tiêu đề sự kiện"
+            [value]="personalFormDraft().title || ''"
+            (input)="setPfField('title', $any($event.target).value)"
+            autofocus>
+        </div>
+
+        <!-- Date + AllDay chip -->
+        <div class="pe-form-row pe-form-row--datetime">
+          <div class="pf-picker-wrap" data-pf-picker="date">
+            <button type="button" class="pf-picker-chip pf-date-chip" [class.open]="pfShowDatePicker"
+              (click)="pfToggleDatePicker($event)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              {{ pfDisplayDate }}
+            </button>
+            @if (pfShowDatePicker) {
+              <div class="pf-cal-popup">
+                <div class="pf-cal-nav">
+                  <button type="button" class="pf-cal-nav-btn" (click)="pfPrevMonth($event)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <span class="pf-cal-month">{{ pfCalendarMonthLabel }}</span>
+                  <button type="button" class="pf-cal-nav-btn" (click)="pfNextMonth($event)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+                <div class="pf-cal-grid">
+                  @for (dn of pfDayNames; track dn) { <div class="pf-cal-dn">{{ dn }}</div> }
+                  @for (day of pfCalendarDays; track $index) {
+                    @if (day) {
+                      <button type="button" class="pf-cal-day"
+                        [class.today]="pfIsToday(day)"
+                        [class.selected]="pfIsSelectedDate(day)"
+                        (click)="pfSelectDate(day, $event)">{{ day.getDate() }}</button>
+                    } @else { <span></span> }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <button type="button" class="pf-allday-chip" [class.active]="personalFormDraft().allDay ?? false"
+            (click)="setPersonalFormAllDay(!(personalFormDraft().allDay ?? false))">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            Cả ngày
+          </button>
+        </div>
+
+        <!-- Time pickers (ẩn khi allDay) -->
+        @if (!(personalFormDraft().allDay ?? false)) {
+          <div class="pe-form-row pe-form-row--time">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div class="pf-time-range">
+              <div class="pf-picker-wrap" data-pf-picker="start">
+                <input type="text" class="pf-time-input" [class.open]="pfShowStartTimePicker"
+                  [value]="pfStartTimeInput" placeholder="--:--"
+                  (focus)="pfOnStartTimeFocus($event)" (blur)="pfOnStartTimeBlur()"
+                  (input)="pfStartTimeInput = $any($event.target).value"
+                  (click)="$event.stopPropagation()" />
+                @if (pfShowStartTimePicker) {
+                  <div class="pf-time-dropdown">
+                    @for (slot of pfTimeSlots; track slot) {
+                      <button type="button" class="pf-time-opt"
+                        [class.active]="slot === (personalFormDraft().startTime ?? '')"
+                        (click)="pfSelectStartTime(slot, $event)">{{ pfFormatTime(slot) }}</button>
+                    }
+                  </div>
+                }
+              </div>
+              <span class="pf-time-sep">—</span>
+              <div class="pf-picker-wrap" data-pf-picker="end">
+                <input type="text" class="pf-time-input" [class.open]="pfShowEndTimePicker"
+                  [value]="pfEndTimeInput" placeholder="--:--"
+                  (focus)="pfOnEndTimeFocus($event)" (blur)="pfOnEndTimeBlur()"
+                  (input)="pfEndTimeInput = $any($event.target).value"
+                  (click)="$event.stopPropagation()" />
+                @if (pfShowEndTimePicker) {
+                  <div class="pf-time-dropdown pf-end-dropdown">
+                    @for (slot of pfTimeSlots; track slot) {
+                      <button type="button" class="pf-time-opt"
+                        [class.active]="slot === (personalFormDraft().endTime ?? '')"
+                        [class.pf-slot-disabled]="!pfIsValidEndSlot(slot)"
+                        [disabled]="!pfIsValidEndSlot(slot)"
+                        (click)="pfSelectEndTime(slot, $event)">
+                        <span>{{ pfFormatTime(slot) }}</span>
+                        @if (pfGetSlotDuration(slot)) { <span class="pf-slot-dur">{{ pfGetSlotDuration(slot) }}</span> }
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+            @if (pfEndTimeError) {
+              <span class="pf-time-error">Giờ kết thúc phải sau giờ bắt đầu</span>
+            }
+          </div>
+        }
+
+        <!-- Location -->
+        <div class="pe-form-row">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <input type="text" class="pe-form-field" placeholder="Thêm địa điểm"
+            [value]="personalFormDraft().location || ''"
+            (input)="setPfField('location', $any($event.target).value || null)">
+        </div>
+
+        <!-- Description -->
+        <div class="pe-form-row pe-form-row--desc">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <textarea class="pe-form-field pe-form-textarea" placeholder="Thêm mô tả" rows="3"
+            [value]="personalFormDraft().description || ''"
+            (input)="setPfField('description', $any($event.target).value || null)"></textarea>
+        </div>
+
+        <!-- Footer buttons -->
+        <div class="pe-form-footer">
+          <button type="button" class="pe-form-btn-cancel" (click)="closePersonalForm()">Hủy</button>
+          <button type="button" class="pe-form-btn-save"
+            [style.background]="personalFormDraft().color || '#4285f4'"
+            (click)="submitPersonalForm()">
+            {{ editingPersonalEvent() ? 'Lưu thay đổi' : 'Tạo sự kiện' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

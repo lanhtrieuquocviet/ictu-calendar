@@ -2159,6 +2159,52 @@ tbody {
   align-items: center;
   gap: 14px;
   padding: 12px 24px 0;
+  flex-wrap: wrap;
+}
+
+/* ── Personal view sub-mode toggle ──────────────────────── */
+.personal-view-toggle {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 13px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: #64748b;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+
+    &:hover:not(.pvt-active) {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    &.pvt-active {
+      background: #fff;
+      color: #004d8a;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    }
+  }
+}
+
+/* ── Personal month grid wrapper ────────────────────────── */
+.personal-month-view {
+  padding: 12px 32px 32px;
 }
 
 .btn-sync-google {
@@ -2382,6 +2428,544 @@ tbody {
   &:hover {
     background: #eff6ff; border-color: #93c5fd; color: #1d4ed8;
   }
+  &:active { transform: scale(0.97); }
+}
+
+/* ── Personal event create button ──────────────────────── */
+.btn-personal-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: #fff;
+  color: #1a73e8;
+  border: 1.5px solid #1a73e8;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+
+  &:hover { background: #e8f0fe; box-shadow: 0 1px 4px rgba(26,115,232,0.2); }
+}
+
+/* ── Personal month cell – click to create ──────────────── */
+.month-cell--personal {
+  cursor: pointer;
+  &.empty-cell { cursor: default; }
+  .cell-chip { cursor: pointer; }
+}
+
+/* ── Personal Event Detail Popup ────────────────────────── */
+@keyframes pe-popup-in {
+  from { opacity: 0; transform: scale(0.94) translateY(-6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.pe-detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+}
+
+.pe-detail-popup {
+  position: fixed;
+  width: 320px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+  animation: pe-popup-in 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1101;
+}
+
+.pe-detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 6px 8px;
+  min-height: 40px;
+}
+
+.pe-tb-btn {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.18);
+  border: none; border-radius: 50%;
+  color: #fff; cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: rgba(255,255,255,0.3); }
+
+  &--danger:hover { background: rgba(239,68,68,0.5); }
+}
+
+.pe-detail-body {
+  padding: 14px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pe-detail-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.pe-detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  color: #374151;
+
+  svg { flex-shrink: 0; margin-top: 1px; color: #64748b; }
+
+  &--desc { align-items: flex-start; }
+}
+
+.pe-detail-desc {
+  font-size: 13px;
+  color: #475569;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.pe-detail-source {
+  padding-top: 4px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ── Source badge: manual ────────────────────────────────── */
+.source-badge--manual {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ── Personal Event Form Modal ───────────────────────────── */
+@keyframes pe-form-in {
+  from { opacity: 0; transform: translateY(-16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.pe-form-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pe-form-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 480px;
+  max-width: 95vw;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1);
+  overflow: hidden;
+  animation: pe-form-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pe-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.pe-form-close {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  background: #f1f5f9; border: none; border-radius: 8px;
+  color: #64748b; cursor: pointer; transition: background 0.15s;
+  &:hover { background: #e2e8f0; color: #1e293b; }
+}
+
+.pe-form-body {
+  padding: 16px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Color + Title row */
+.pe-form-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pe-color-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pe-color-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+  outline: none;
+
+  &:hover { transform: scale(1.15); }
+
+  &.selected {
+    border-color: #1e293b;
+    transform: scale(1.2);
+  }
+}
+
+.pe-form-title-input {
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 6px 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e293b;
+  font-family: inherit;
+  outline: none;
+  background: transparent;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+
+  &::placeholder { color: #94a3b8; font-weight: 400; }
+  &:focus { border-bottom-color: #1a73e8; }
+}
+
+/* Form rows */
+.pe-form-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f8fafc;
+
+  svg { flex-shrink: 0; }
+
+  &--datetime { gap: 8px; flex-wrap: wrap; padding: 10px 0; }
+  &--time { gap: 8px; flex-wrap: wrap; }
+  &--desc { align-items: flex-start; padding-top: 10px; svg { margin-top: 3px; } }
+}
+
+.pe-form-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: #1e293b;
+  background: transparent;
+  padding: 2px 0;
+  min-width: 0;
+
+  &::placeholder { color: #94a3b8; }
+}
+
+.pe-form-textarea {
+  resize: none;
+  line-height: 1.5;
+  padding: 4px 0;
+  min-height: 60px;
+  overflow: hidden;
+}
+
+// ── pf date/time picker ────────────────────────────────────────
+
+@keyframes pf-pop-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.pf-picker-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pf-picker-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1e293b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover { background: #e8edf5; border-color: #cbd5e1; }
+
+  &.open {
+    border-color: #1a73e8;
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+
+  svg { flex-shrink: 0; opacity: 0.6; }
+}
+
+.pf-date-chip { min-width: 200px; }
+
+.pf-allday-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+
+  svg { opacity: 0.5; flex-shrink: 0; }
+
+  &:hover:not(.active) { background: #e8edf5; border-color: #cbd5e1; }
+
+  &.active {
+    background: #dbeafe;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+    svg { opacity: 1; }
+  }
+}
+
+.pf-cal-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1300;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.16);
+  padding: 14px;
+  width: 264px;
+  animation: pf-pop-in 0.15s ease;
+}
+
+.pf-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pf-cal-month {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: capitalize;
+}
+
+.pf-cal-nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s;
+  &:hover { background: #f1f5f9; color: #1e293b; }
+}
+
+.pf-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.pf-cal-dn {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  padding: 4px 0 6px;
+}
+
+.pf-cal-day {
+  aspect-ratio: 1;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+
+  &:hover { background: #f1f5f9; }
+  &.today { color: #1a73e8; font-weight: 700; }
+  &.selected { background: #1a73e8; color: #fff; font-weight: 600; }
+}
+
+.pf-time-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pf-time-sep {
+  color: #94a3b8;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.pf-time-input {
+  width: 80px;
+  text-align: center;
+  padding: 7px 10px;
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1e293b;
+  outline: none;
+  cursor: text;
+  transition: background 0.15s, border-color 0.15s;
+
+  &::placeholder { color: #94a3b8; }
+  &:hover { background: #e8edf5; border-color: #cbd5e1; }
+
+  &:focus, &.open {
+    border-color: #1a73e8;
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+}
+
+.pf-time-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1300;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  width: 120px;
+  max-height: 220px;
+  overflow-y: auto;
+  animation: pf-pop-in 0.15s ease;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
+}
+
+.pf-end-dropdown { width: 168px; }
+
+.pf-time-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: #1e293b;
+  cursor: pointer;
+  text-align: left;
+  gap: 4px;
+  transition: background 0.1s;
+
+  &:hover { background: #f8fafc; }
+  &.active { background: #eff6ff; color: #1a73e8; font-weight: 600; }
+}
+
+.pf-slot-dur { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+
+.pf-slot-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.pf-time-error {
+  font-size: 11.5px;
+  color: #dc2626;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* Footer */
+.pe-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 0 8px;
+  margin-top: 4px;
+}
+
+.pe-form-btn-cancel {
+  padding: 8px 18px;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #f8fafc; }
+}
+
+.pe-form-btn-save {
+  padding: 8px 22px;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  &:hover { opacity: 0.88; }
   &:active { transform: scale(0.97); }
 }
 

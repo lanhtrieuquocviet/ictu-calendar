@@ -5,7 +5,7 @@ import { Subscription } from 'rxjs';
 import { skip } from 'rxjs/operators';
 import { CalendarService } from '../../services/calendar.service';
 import { AuthService } from '@core/services/auth.service';
-import { CalendarEvent, EventAttachment, PersonalEvent, ImportFromGoogleResult } from '@models/event.model';
+import { CalendarEvent, EventAttachment, PersonalEvent, ImportFromGoogleResult, CreatePersonalEventDto } from '@models/event.model';
 import { EventFormComponent } from '../event-form/event-form.component';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { ToastService, ReminderMeta } from '@shared/services/toast.service';
@@ -88,6 +88,45 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   // Lịch cá nhân trên grid chính (luôn hiện ở month view)
   personalEventsOnGrid = signal<PersonalEvent[]>([]);
+
+  // Detail popup cho PersonalEvent (Google Calendar style)
+  personalDetailEvent = signal<PersonalEvent | null>(null);
+  personalDetailPos = signal<{ top: number; left: number } | null>(null);
+
+  // Form tạo/sửa lịch cá nhân
+  showPersonalForm = signal(false);
+  editingPersonalEvent = signal<PersonalEvent | null>(null);
+  personalFormDraft = signal<Partial<CreatePersonalEventDto>>({});
+  personalFormDate = signal<string>('');
+
+  // Chế độ xem lịch cá nhân: month grid hoặc danh sách
+  personalViewSubMode = signal<'month' | 'list'>('month');
+
+  // ── Personal form – date/time pickers ─────────────────────────
+  pfShowDatePicker = false;
+  pfShowStartTimePicker = false;
+  pfShowEndTimePicker = false;
+  pfCalendarViewDate = new Date();
+  pfStartTimeInput = '';
+  pfEndTimeInput = '';
+  pfEndTimeError = false;
+
+  readonly pfDayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+  readonly pfTimeSlots: string[] = (() => {
+    const slots: string[] = [];
+    for (let h = 0; h < 24; h++)
+      for (let m = 0; m < 60; m += 15)
+        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    return slots;
+  })();
+
+  private readonly pfDocClickHandler = (e: MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (!t.closest('[data-pf-picker="date"]'))  this.pfShowDatePicker = false;
+    if (!t.closest('[data-pf-picker="start"]')) this.pfShowStartTimePicker = false;
+    if (!t.closest('[data-pf-picker="end"]'))   this.pfShowEndTimePicker = false;
+  };
 
   constructor() {
     effect(() => {
@@ -494,6 +533,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    document.addEventListener('click', this.pfDocClickHandler);
     this.hasDraft.set(!!this.loadDraftFromStorage());
     this.loadBookmarksFromStorage();
     this.notifService.loadForCurrentUser();
@@ -534,6 +574,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    document.removeEventListener('click', this.pfDocClickHandler);
     this.authSub?.unsubscribe();
     clearInterval(this.reminderInterval);
     clearInterval(this.approvalCheckInterval);
@@ -599,6 +640,28 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   get personalMonthLabel(): string {
     return this.personalAnchorDate().toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+  }
+
+  get personalMonthCells(): (Date | null)[] {
+    const d = this.personalAnchorDate();
+    const y = d.getFullYear(), m = d.getMonth();
+    const cells: (Date | null)[] = Array(new Date(y, m, 1).getDay()).fill(null);
+    for (let i = 1, max = new Date(y, m + 1, 0).getDate(); i <= max; i++)
+      cells.push(new Date(y, m, i));
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }
+
+  getPersonalCombinedForDay(day: Date | null): Array<{ kind: 'google'; event: PersonalEvent } | { kind: 'org'; event: CalendarEvent }> {
+    if (!day) return [];
+    const key = this.toISODate(day);
+    const google = this.personalGoogleEvents()
+      .filter(e => String(e.eventDate).slice(0, 10) === key)
+      .map(e => ({ kind: 'google' as const, event: e }));
+    const org = this.personalOrgEvents()
+      .filter(e => String(e.eventDate).slice(0, 10) === key)
+      .map(e => ({ kind: 'org' as const, event: e }));
+    return [...google, ...org];
   }
 
   get isPersonalCurrentMonth(): boolean {
@@ -671,9 +734,106 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     this.calendarService.deletePersonalEvent(id).subscribe({
       next: () => {
         this.personalGoogleEvents.set(this.personalGoogleEvents().filter(e => e.id !== id));
+        this.personalDetailEvent.set(null);
         this.toast.success('Đã xóa sự kiện cá nhân.');
       },
     });
+  }
+
+  // ── Personal event detail popup ─────────────────────────
+
+  openPersonalDetail(event: PersonalEvent, mouseEvent: MouseEvent): void {
+    mouseEvent.stopPropagation();
+    if (this.personalDetailEvent()?.id === event.id) {
+      this.personalDetailEvent.set(null);
+      return;
+    }
+    const el = mouseEvent.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    const popupW = 320, popupH = 280;
+    let left = rect.right + 8;
+    let top = rect.top;
+    if (left + popupW > window.innerWidth) left = rect.left - popupW - 8;
+    if (top + popupH > window.innerHeight) top = window.innerHeight - popupH - 16;
+    this.personalDetailPos.set({ top, left });
+    this.personalDetailEvent.set(event);
+  }
+
+  closePersonalDetail(): void {
+    this.personalDetailEvent.set(null);
+    this.personalDetailPos.set(null);
+  }
+
+  // ── Personal event form ─────────────────────────────────
+
+  openPersonalCreateForm(date?: string): void {
+    this.editingPersonalEvent.set(null);
+    const d = date ?? this.toISODate(new Date());
+    this.personalFormDraft.set({ allDay: false, color: '#4285f4', eventDate: d });
+    this.personalFormDate.set(d);
+    this.pfCalendarViewDate = new Date(d + 'T00:00:00');
+    this.pfStartTimeInput = '';
+    this.pfEndTimeInput = '';
+    this.pfEndTimeError = false;
+    this.pfShowDatePicker = false;
+    this.pfShowStartTimePicker = false;
+    this.pfShowEndTimePicker = false;
+    this.showPersonalForm.set(true);
+  }
+
+  openPersonalEditForm(event: PersonalEvent): void {
+    this.closePersonalDetail();
+    this.editingPersonalEvent.set(event);
+    const date = String(event.eventDate).slice(0, 10);
+    this.personalFormDate.set(date);
+    this.pfCalendarViewDate = new Date(date + 'T00:00:00');
+    this.pfStartTimeInput = event.startTime?.slice(0, 5) ?? '';
+    this.pfEndTimeInput = event.endTime?.slice(0, 5) ?? '';
+    this.pfEndTimeError = false;
+    this.pfShowDatePicker = false;
+    this.pfShowStartTimePicker = false;
+    this.pfShowEndTimePicker = false;
+    this.personalFormDraft.set({
+      title: event.title,
+      eventDate: date,
+      allDay: event.allDay,
+      startTime: event.startTime ?? null,
+      endTime: event.endTime ?? null,
+      location: event.location ?? null,
+      description: event.description ?? null,
+      color: event.color ?? '#4285f4',
+    });
+    this.showPersonalForm.set(true);
+  }
+
+  savePersonalEvent(dto: CreatePersonalEventDto): void {
+    const editing = this.editingPersonalEvent();
+    const obs$ = editing
+      ? this.calendarService.updatePersonalEvent(editing.id, dto)
+      : this.calendarService.createPersonalEvent(dto);
+
+    obs$.subscribe({
+      next: () => {
+        this.showPersonalForm.set(false);
+        this.editingPersonalEvent.set(null);
+        this.loadPersonalEvents();
+        if (this.viewMode() === 'month') this.loadPersonalEventsForGrid();
+        this.toast.success(editing ? 'Đã cập nhật sự kiện cá nhân.' : 'Đã tạo sự kiện cá nhân.');
+      },
+      error: () => this.toast.error('Không thể lưu sự kiện. Vui lòng thử lại.'),
+    });
+  }
+
+  closePersonalForm(): void {
+    this.showPersonalForm.set(false);
+    this.editingPersonalEvent.set(null);
+    this.pfShowDatePicker = false;
+    this.pfShowStartTimePicker = false;
+    this.pfShowEndTimePicker = false;
+  }
+
+  isManualPersonalEvent(event: PersonalEvent): boolean {
+    return event.googleEventId === null;
   }
 
   // ── Lịch cá nhân trên grid chính ───────────────────────────
@@ -960,6 +1120,16 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       day,
       events: this.getEventsForDay(day),
       personalEvents: this.getPersonalEventsForDay(day),
+    };
+  }
+
+  openPersonalDayPopup(day: Date, e: MouseEvent): void {
+    e.stopPropagation();
+    const key = this.toISODate(day);
+    this.dayPopup = {
+      day,
+      events: this.personalOrgEvents().filter(ev => String(ev.eventDate).slice(0, 10) === key),
+      personalEvents: this.personalGoogleEvents().filter(ev => String(ev.eventDate).slice(0, 10) === key),
     };
   }
 
@@ -1305,5 +1475,215 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   private toISODate(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  toISODatePublic(d: Date): string { return this.toISODate(d); }
+
+  formatPersonalDetailDate(event: PersonalEvent): string {
+    return this.formatDetailDate({ eventDate: event.eventDate } as any);
+  }
+
+  setPersonalFormColor(color: string): void {
+    this.personalFormDraft.set({ ...this.personalFormDraft(), color });
+  }
+
+  setPersonalFormAllDay(checked: boolean): void {
+    this.personalFormDraft.set({ ...this.personalFormDraft(), allDay: checked });
+    if (checked) {
+      this.pfStartTimeInput = '';
+      this.pfEndTimeInput = '';
+      this.pfShowStartTimePicker = false;
+      this.pfShowEndTimePicker = false;
+    }
+  }
+
+  setPfField(field: keyof CreatePersonalEventDto, value: any): void {
+    this.personalFormDraft.set({ ...this.personalFormDraft(), [field]: value });
+  }
+
+  // ── Personal form – date picker ────────────────────────────────
+
+  get pfDisplayDate(): string {
+    const val = this.personalFormDraft().eventDate;
+    if (!val) return 'Chọn ngày';
+    return new Date(val + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  get pfCalendarDays(): (Date | null)[] {
+    const y = this.pfCalendarViewDate.getFullYear();
+    const m = this.pfCalendarViewDate.getMonth();
+    const days: (Date | null)[] = Array(new Date(y, m, 1).getDay()).fill(null);
+    for (let d = 1, total = new Date(y, m + 1, 0).getDate(); d <= total; d++)
+      days.push(new Date(y, m, d));
+    return days;
+  }
+
+  get pfCalendarMonthLabel(): string {
+    return this.pfCalendarViewDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+  }
+
+  pfToggleDatePicker(e: MouseEvent): void {
+    e.stopPropagation();
+    const val = this.personalFormDraft().eventDate;
+    if (val) this.pfCalendarViewDate = new Date(val + 'T00:00:00');
+    this.pfShowDatePicker = !this.pfShowDatePicker;
+    this.pfShowStartTimePicker = false;
+    this.pfShowEndTimePicker = false;
+  }
+
+  pfPrevMonth(e: MouseEvent): void {
+    e.stopPropagation();
+    this.pfCalendarViewDate = new Date(this.pfCalendarViewDate.getFullYear(), this.pfCalendarViewDate.getMonth() - 1, 1);
+  }
+
+  pfNextMonth(e: MouseEvent): void {
+    e.stopPropagation();
+    this.pfCalendarViewDate = new Date(this.pfCalendarViewDate.getFullYear(), this.pfCalendarViewDate.getMonth() + 1, 1);
+  }
+
+  pfSelectDate(day: Date, e: MouseEvent): void {
+    e.stopPropagation();
+    const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+    this.setPfField('eventDate', iso);
+    this.pfShowDatePicker = false;
+  }
+
+  pfIsSelectedDate(day: Date): boolean {
+    const val = this.personalFormDraft().eventDate;
+    return !!val && new Date(val + 'T00:00:00').toDateString() === day.toDateString();
+  }
+
+  pfIsToday(day: Date): boolean { return new Date().toDateString() === day.toDateString(); }
+
+  // ── Personal form – time pickers ───────────────────────────────
+
+  pfOnStartTimeFocus(e: FocusEvent): void {
+    this.pfShowStartTimePicker = true;
+    this.pfShowDatePicker = false;
+    this.pfShowEndTimePicker = false;
+    (e.target as HTMLInputElement).select();
+  }
+
+  pfOnStartTimeBlur(): void {
+    setTimeout(() => {
+      const normalized = this.pfParseTimeInput(this.pfStartTimeInput);
+      if (normalized) { this.pfStartTimeInput = normalized; this.setPfField('startTime', normalized); }
+      else if (!this.pfStartTimeInput.trim()) { this.setPfField('startTime', null); }
+      else { this.pfStartTimeInput = this.personalFormDraft().startTime ?? ''; }
+      this.pfShowStartTimePicker = false;
+    }, 200);
+  }
+
+  pfOnEndTimeFocus(e: FocusEvent): void {
+    this.pfShowEndTimePicker = true;
+    this.pfShowDatePicker = false;
+    this.pfShowStartTimePicker = false;
+    (e.target as HTMLInputElement).select();
+  }
+
+  pfOnEndTimeBlur(): void {
+    setTimeout(() => {
+      const normalized = this.pfParseTimeInput(this.pfEndTimeInput);
+      if (normalized) {
+        const start = this.personalFormDraft().startTime;
+        if (start && this.pfTimeToMinutes(normalized) <= this.pfTimeToMinutes(start)) {
+          this.setPfField('endTime', null);
+          this.pfEndTimeInput = '';
+          this.pfEndTimeError = true;
+        } else {
+          this.setPfField('endTime', normalized);
+          this.pfEndTimeInput = normalized;
+          this.pfEndTimeError = false;
+        }
+      } else if (!this.pfEndTimeInput.trim()) {
+        this.setPfField('endTime', null);
+        this.pfEndTimeError = false;
+      } else {
+        this.pfEndTimeInput = this.personalFormDraft().endTime ?? '';
+      }
+      this.pfShowEndTimePicker = false;
+    }, 200);
+  }
+
+  pfSelectStartTime(slot: string, e: MouseEvent): void {
+    e.stopPropagation();
+    const currentEnd = this.personalFormDraft().endTime;
+    if (currentEnd && this.pfTimeToMinutes(currentEnd) <= this.pfTimeToMinutes(slot)) {
+      this.setPfField('startTime', slot);
+      this.setPfField('endTime', null);
+      this.pfEndTimeInput = '';
+    } else {
+      this.setPfField('startTime', slot);
+    }
+    this.pfStartTimeInput = slot;
+    this.pfShowStartTimePicker = false;
+    this.pfEndTimeError = false;
+  }
+
+  pfSelectEndTime(slot: string, e: MouseEvent): void {
+    e.stopPropagation();
+    if (!this.pfIsValidEndSlot(slot)) return;
+    this.setPfField('endTime', slot);
+    this.pfEndTimeInput = slot;
+    this.pfEndTimeError = false;
+    this.pfShowEndTimePicker = false;
+  }
+
+  pfFormatTime(t: string): string {
+    if (!t) return '--:--';
+    const [h, m] = t.split(':');
+    return `${h.padStart(2, '0')}:${m}`;
+  }
+
+  pfGetSlotDuration(endSlot: string): string {
+    const start = this.personalFormDraft().startTime;
+    if (!start) return '';
+    const diff = this.pfTimeToMinutes(endSlot) - this.pfTimeToMinutes(start);
+    if (diff <= 0) return '';
+    const h = Math.floor(diff / 60), mins = diff % 60;
+    return mins ? (h ? `${h} giờ ${mins} phút` : `${mins} phút`) : `${h} giờ`;
+  }
+
+  pfIsValidEndSlot(slot: string): boolean {
+    const start = this.personalFormDraft().startTime;
+    if (!start) return true;
+    return this.pfTimeToMinutes(slot) > this.pfTimeToMinutes(start);
+  }
+
+  private pfParseTimeInput(val: string): string | null {
+    const t = val.trim();
+    let m = t.match(/^(\d{1,2}):(\d{2})$/);
+    if (m) {
+      const h = +m[1], mn = +m[2];
+      if (h < 24 && mn < 60) return `${String(h).padStart(2, '0')}:${String(mn).padStart(2, '0')}`;
+    }
+    m = t.match(/^(\d{3,4})$/);
+    if (m) {
+      const s = t.padStart(4, '0');
+      const h = +s.slice(0, 2), mn = +s.slice(2);
+      if (h < 24 && mn < 60) return `${String(h).padStart(2, '0')}:${String(mn).padStart(2, '0')}`;
+    }
+    return null;
+  }
+
+  private pfTimeToMinutes(t: string): number {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  submitPersonalForm(): void {
+    const d = this.personalFormDraft();
+    if (!d.title?.trim()) { this.toast.warning('Vui lòng nhập tiêu đề sự kiện.'); return; }
+    if (!d.eventDate) { this.toast.warning('Vui lòng chọn ngày.'); return; }
+    this.savePersonalEvent({
+      title: d.title.trim(),
+      eventDate: d.eventDate,
+      allDay: d.allDay ?? false,
+      startTime: d.allDay ? null : (d.startTime ?? null),
+      endTime: d.allDay ? null : (d.endTime ?? null),
+      location: d.location ?? null,
+      description: d.description ?? null,
+      color: d.color ?? '#4285f4',
+    });
   }
 }

@@ -83,7 +83,7 @@ export interface ApiListResponse<T> {
 export interface PersonalEvent {
   id: string;
   userId: string;
-  googleEventId: string;
+  googleEventId: string | null;
   title: string;
   eventDate: string;
   startTime?: string;
@@ -95,6 +95,17 @@ export interface PersonalEvent {
   syncedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreatePersonalEventDto {
+  title: string;
+  eventDate: string;
+  allDay: boolean;
+  startTime?: string | null;
+  endTime?: string | null;
+  location?: string | null;
+  description?: string | null;
+  color?: string | null;
 }
 
 export interface PersonalCalendarResponse {

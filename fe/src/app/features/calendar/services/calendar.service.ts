@@ -117,4 +117,16 @@ export class CalendarService {
   deletePersonalEvent(id: string): Observable<void> {
     return this.api.delete<void>(`calendar/personal-events/${id}`);
   }
+
+  createPersonalEvent(dto: import('@models/event.model').CreatePersonalEventDto): Observable<import('@models/event.model').PersonalEvent> {
+    return this.api.post<any>('calendar/personal-events', dto).pipe(
+      map((res: any) => res.data ?? res)
+    );
+  }
+
+  updatePersonalEvent(id: string, dto: Partial<import('@models/event.model').CreatePersonalEventDto>): Observable<import('@models/event.model').PersonalEvent> {
+    return this.api.patch<any>(`calendar/personal-events/${id}`, dto).pipe(
+      map((res: any) => res.data ?? res)
+    );
+  }
 }

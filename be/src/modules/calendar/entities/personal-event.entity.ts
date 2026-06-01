@@ -6,12 +6,10 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  Unique,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('personal_events')
-@Unique(['userId', 'googleEventId'])
 export class PersonalEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -23,8 +21,8 @@ export class PersonalEvent {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column()
-  googleEventId: string;
+  @Column({ nullable: true, unique: false })
+  googleEventId: string | null;
 
   @Column()
   title: string;

@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, ForbiddenException, BadRequestException,
+  Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -27,6 +27,8 @@ const MAX_PER_EVENT = 5;
 
 @Injectable()
 export class AttachmentService {
+  private readonly logger = new Logger(AttachmentService.name);
+
   constructor(
     @InjectRepository(EventAttachment)
     private repo: Repository<EventAttachment>,
@@ -55,16 +57,24 @@ export class AttachmentService {
 
     await this.storageService.upload(objectName, file.buffer, file.mimetype);
 
-    const uploader = await this.usersService.findOne(uploaderId);
-    const attachment = this.repo.create({
-      eventId,
-      filename: objectName,
-      originalName: Buffer.from(file.originalname, 'latin1').toString('utf8'),
-      mimeType: file.mimetype,
-      size: file.size,
-      uploadedByName: uploader.fullName,
-    });
-    return this.repo.save(attachment);
+    try {
+      const uploader = await this.usersService.findOne(uploaderId);
+      const attachment = this.repo.create({
+        eventId,
+        filename: objectName,
+        originalName: Buffer.from(file.originalname, 'latin1').toString('utf8'),
+        mimeType: file.mimetype,
+        size: file.size,
+        uploadedByName: uploader.fullName,
+      });
+      return await this.repo.save(attachment);
+    } catch (err) {
+      // DB lỗi → xóa file đã upload tránh orphan
+      await this.storageService.delete(objectName).catch((e) =>
+        this.logger.error(`Không thể xóa file orphan ${objectName}`, e),
+      );
+      throw err;
+    }
   }
 
   findByEvent(eventId: string): Promise<EventAttachment[]> {
@@ -82,8 +92,11 @@ export class AttachmentService {
     if (!isAdmin && att.event.userId !== requesterId) {
       throw new ForbiddenException('Bạn không có quyền xóa file này');
     }
-    await this.storageService.delete(att.filename);
+    // Xóa DB trước: nếu storage xóa thất bại, DB record đã sạch (không có stale reference)
     await this.repo.delete(attachmentId);
+    await this.storageService.delete(att.filename).catch((err) =>
+      this.logger.error(`Không thể xóa file storage ${att.filename}`, err),
+    );
   }
 
   async getDownloadInfo(filename: string): Promise<{ stream: Readable; originalName: string; mimeType: string }> {

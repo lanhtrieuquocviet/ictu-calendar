@@ -9,7 +9,7 @@ import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CalendarService } from './calendar.service';
 import { AttachmentService } from './attachment.service';
-import { GoogleCalendarService } from './google-calendar.service';
+import { GoogleCalendarService, CreateManualPersonalEventDto, UpdatePersonalEventDto } from './google-calendar.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { ApproveEventDto } from './dto/approve-event.dto';
@@ -155,6 +155,8 @@ export class CalendarController {
   // ── Đính kèm văn bản ─────────────────────────────
 
   @Get('events/:id/attachments')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Lấy danh sách file đính kèm của sự kiện' })
   listAttachments(@Param('id') id: string) {
     return this.attachmentService.findByEvent(id);
@@ -262,6 +264,26 @@ export class CalendarController {
     @Query('to') to?: string,
   ) {
     return this.googleCalendarService.importFromGoogle(req.user.sub, from, to);
+  }
+
+  @Post('personal-events')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tạo sự kiện cá nhân thủ công' })
+  async createPersonalEvent(@Body() dto: CreateManualPersonalEventDto, @Req() req: any) {
+    return this.googleCalendarService.createManualPersonalEvent(req.user.sub, dto);
+  }
+
+  @Patch('personal-events/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật sự kiện cá nhân thủ công' })
+  async updatePersonalEvent(
+    @Param('id') id: string,
+    @Body() dto: UpdatePersonalEventDto,
+    @Req() req: any,
+  ) {
+    return this.googleCalendarService.updateManualPersonalEvent(id, req.user.sub, dto);
   }
 
   @Delete('personal-events/:id')

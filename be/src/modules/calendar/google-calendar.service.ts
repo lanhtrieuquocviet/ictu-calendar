@@ -3,6 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { google } from 'googleapis';
+import {
+  IsString, IsDateString, IsBoolean, IsOptional, MaxLength, Matches,
+} from 'class-validator';
 import { UsersService } from '../users/users.service';
 import { Event, EventStatus } from './entities/event.entity';
 import { PersonalEvent } from './entities/personal-event.entity';
@@ -19,6 +22,83 @@ export interface ImportResult {
   updated: number;
   deleted: number;
   errors: string[];
+}
+
+export class CreateManualPersonalEventDto {
+  @IsString()
+  @MaxLength(255)
+  title: string;
+
+  @IsDateString()
+  eventDate: string;
+
+  @IsBoolean()
+  allDay: boolean;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'startTime phải có dạng HH:MM' })
+  startTime?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'endTime phải có dạng HH:MM' })
+  endTime?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  location?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'color phải là mã hex hợp lệ (#RRGGBB)' })
+  color?: string | null;
+}
+
+export class UpdatePersonalEventDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  title?: string;
+
+  @IsOptional()
+  @IsDateString()
+  eventDate?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  allDay?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'startTime phải có dạng HH:MM' })
+  startTime?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'endTime phải có dạng HH:MM' })
+  endTime?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  location?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'color phải là mã hex hợp lệ (#RRGGBB)' })
+  color?: string | null;
 }
 
 @Injectable()
@@ -172,6 +252,8 @@ export class GoogleCalendarService {
       .getMany();
 
     for (const existing of existingInRange) {
+      // Bỏ qua sự kiện tạo thủ công (googleEventId = null)
+      if (existing.googleEventId === null) continue;
       if (!googleIds.includes(existing.googleEventId)) {
         await this.personalEventRepo.delete(existing.id);
         result.deleted++;
@@ -217,6 +299,22 @@ export class GoogleCalendarService {
 
   async deletePersonalEvent(id: string, userId: string): Promise<void> {
     await this.personalEventRepo.delete({ id, userId });
+  }
+
+  async createManualPersonalEvent(userId: string, dto: CreateManualPersonalEventDto): Promise<PersonalEvent> {
+    const event = this.personalEventRepo.create({
+      ...dto,
+      userId,
+      googleEventId: null,
+    });
+    return this.personalEventRepo.save(event);
+  }
+
+  async updateManualPersonalEvent(id: string, userId: string, dto: UpdatePersonalEventDto): Promise<PersonalEvent> {
+    const event = await this.personalEventRepo.findOne({ where: { id, userId } });
+    if (!event) throw new Error('Không tìm thấy sự kiện');
+    Object.assign(event, dto);
+    return this.personalEventRepo.save(event);
   }
 
   private parseGoogleEvent(gEvent: any): Partial<PersonalEvent> | null {
