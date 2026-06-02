@@ -748,12 +748,10 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       this.personalDetailEvent.set(null);
       return;
     }
-    const el = mouseEvent.currentTarget as HTMLElement;
-    const rect = el.getBoundingClientRect();
     const popupW = 320, popupH = 280;
-    let left = rect.right + 8;
-    let top = rect.top;
-    if (left + popupW > window.innerWidth) left = rect.left - popupW - 8;
+    let left = mouseEvent.clientX + 8;
+    let top = mouseEvent.clientY;
+    if (left + popupW > window.innerWidth) left = mouseEvent.clientX - popupW - 8;
     if (top + popupH > window.innerHeight) top = window.innerHeight - popupH - 16;
     this.personalDetailPos.set({ top, left });
     this.personalDetailEvent.set(event);

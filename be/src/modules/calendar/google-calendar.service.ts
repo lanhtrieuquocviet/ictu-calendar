@@ -236,12 +236,13 @@ export class GoogleCalendarService {
       throw new BadRequestException(`Không thể lấy dữ liệu từ Google Calendar: ${err.message}`);
     }
 
-    // Lọc bỏ sự kiện do hệ thống này sync lên (tránh vòng lặp)
+    // Lọc bỏ sự kiện do hệ thống này sync lên (tránh vòng lặp import)
     const externalEvents = googleEvents.filter(
       (e) => !e.description?.includes('Nguồn: ICTU Calendar'),
     );
 
-    const googleIds = externalEvents.map((e) => e.id as string);
+    // Dùng TẤT CẢ google event IDs (kể cả ICTU-tagged) để kiểm tra xóa
+    const allGoogleIds = googleEvents.map((e) => e.id as string);
 
     // Xóa các personal_events không còn trong Google nữa (trong khoảng ngày đang sync)
     const existingInRange = await this.personalEventRepo
@@ -254,7 +255,7 @@ export class GoogleCalendarService {
     for (const existing of existingInRange) {
       // Bỏ qua sự kiện tạo thủ công (googleEventId = null)
       if (existing.googleEventId === null) continue;
-      if (!googleIds.includes(existing.googleEventId)) {
+      if (!allGoogleIds.includes(existing.googleEventId)) {
         await this.personalEventRepo.delete(existing.id);
         result.deleted++;
       }
