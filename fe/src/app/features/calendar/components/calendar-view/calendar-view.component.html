@@ -147,16 +147,25 @@
   <div class="toolbar">
 
     <div class="toolbar-left">
-      <span class="section-label">LỊCH CÔNG TÁC</span>
-
-      <!-- Nút quay lại khi đang ở view đặc biệt -->
-      @if (viewMode() === 'pending' || viewMode() === 'mine' || viewMode() === 'bookmarks' || viewMode() === 'personal') {
+      @if (viewMode() === 'personal') {
         <button class="btn-back-view" (click)="setView('week')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Quay lại
+          Lịch hệ thống
         </button>
+      } @else {
+        <span class="section-label">LỊCH CÔNG TÁC</span>
+
+        <!-- Nút quay lại khi đang ở view đặc biệt -->
+        @if (viewMode() === 'pending' || viewMode() === 'mine' || viewMode() === 'bookmarks') {
+          <button class="btn-back-view" (click)="setView('week')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Quay lại
+          </button>
+        }
       }
 
       <!-- Tab chính: Tuần / Tháng / Danh sách -->
@@ -366,7 +375,8 @@
           Xuất PDF
         </button>
       }
-      <div class="search-wrap">
+      @if (viewMode() !== 'personal') {
+        <div class="search-wrap">
           <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
@@ -391,13 +401,12 @@
             <span class="badge-num">{{ filteredMyEvents.length }}</span>
           } @else if (viewMode() === 'bookmarks') {
             <span class="badge-num">{{ bookmarkedItems().length }}</span>
-          } @else if (viewMode() === 'personal') {
-            <span class="badge-num">{{ personalGoogleEvents().length + personalOrgEvents().length }}</span>
           } @else {
             <span class="badge-num">{{ totalEvents() }}</span>
           }
           <span class="badge-label">sự kiện</span>
         </div>
+      }
     </div>
 
   </div>
