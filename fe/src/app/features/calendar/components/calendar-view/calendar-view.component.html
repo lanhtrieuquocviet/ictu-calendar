@@ -138,7 +138,10 @@
         </div>
 
       } @else {
-        <a class="btn-auth" href="/auth/login">Đăng nhập</a>
+        <div class="login-hint-wrap">
+          <a class="btn-auth" href="/auth/login">Đăng nhập</a>
+          <span class="login-hint">Đăng nhập để xem lịch cá nhân và tạo sự kiện</span>
+        </div>
       }
     </div>
   </header>
@@ -461,7 +464,7 @@
                   <td class="td-time">
                     <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
                   </td>
-                  <td class="td-title">
+                  <td class="td-title" [title]="event.title">
                     <div class="title-row">
                       @if (isNew(event)) {
                         <span class="badge-new">MỚI</span>
@@ -537,7 +540,7 @@
                     <td class="td-time">
                       <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
                     </td>
-                    <td class="td-title">
+                    <td class="td-title" [title]="event.title">
                       <div class="title-row">
                         @if (isNew(event)) {
                           <span class="badge-new">MỚI</span>
@@ -870,7 +873,7 @@
                     <td class="td-time">
                       <span class="time-pill">{{ formatPersonalTime(event) }}</span>
                     </td>
-                    <td class="td-title">
+                    <td class="td-title" [title]="event.title">
                       <div class="title-row">
                         <span class="evt-dot"></span>
                         <span class="title-text">{{ event.title }}</span>
@@ -915,7 +918,7 @@
                     <td class="td-time">
                       <span class="time-pill">{{ formatEventTime(event) }}</span>
                     </td>
-                    <td class="td-title">
+                    <td class="td-title" [title]="event.title">
                       <div class="title-row">
                         <span class="evt-dot"></span>
                         <span class="title-text">{{ event.title }}</span>
@@ -1006,7 +1009,7 @@
                     <span class="time-pill" [class.time-pill--allday]="event.allDay"
                       [class.time-pill--cancelled]="event.status === 'cancelled'">{{ formatEventTime(event) }}</span>
                   </td>
-                  <td class="td-title">
+                  <td class="td-title" [title]="event.title">
                     <div class="title-row">
                       @if (event.status === 'cancelled') {
                         <span class="badge-cancelled">ĐÃ HỦY</span>
