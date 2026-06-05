@@ -45,6 +45,10 @@ export class UserManagementComponent implements OnInit {
     });
   });
 
+  activeCount  = computed(() => this.users().filter(u => u.isActive).length);
+  inactiveCount = computed(() => this.users().filter(u => !u.isActive).length);
+  adminCount   = computed(() => this.users().filter(u => u.role === 'admin').length);
+
   // Create user modal
   showCreateModal = signal(false);
   createForm = signal<CreateUserPayload>({ fullName: '', email: '', password: '', role: 'user' });

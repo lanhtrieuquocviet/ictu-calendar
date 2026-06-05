@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '@env/environment';
 import { User, UserRole } from '@models/user.model';
 
@@ -46,7 +47,9 @@ export class AdminService {
   importUsers(file: File): Observable<ImportResult> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<ImportResult>(`${this.base}/import`, formData);
+    return this.http.post<{ data: ImportResult }>(`${this.base}/import`, formData).pipe(
+      map(res => res.data),
+    );
   }
 
   downloadTemplate(): Observable<Blob> {
