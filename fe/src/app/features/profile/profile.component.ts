@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -18,7 +18,7 @@ interface ProfileUser extends User {
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   readonly authService = inject(AuthService);
 
@@ -34,14 +34,17 @@ export class ProfileComponent implements OnInit {
   showNext = signal(false);
   showConfirm = signal(false);
 
+  confirmTouched = signal(false);
+  newTouched = signal(false);
+
   syncing = signal(false);
   syncResult = signal<{ synced: number; skipped: number; duplicates: number; errors: string[] } | null>(null);
   syncError = signal('');
 
   readonly roleLabels = ROLE_LABELS;
+  private pwSuccessTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
-    // Hiển thị ngay dữ liệu từ localStorage trong khi chờ API
     const cached = this.authService.getCurrentUserSnapshot();
     if (cached) {
       this.user.set({ ...cached, isActive: true, createdAt: '', updatedAt: '' } as ProfileUser);
@@ -50,9 +53,7 @@ export class ProfileComponent implements OnInit {
 
     this.http.get<{ statusCode: number; data: ProfileUser }>(`${environment.apiUrl}/auth/me`).subscribe({
       next: (res) => {
-        if (res?.data) {
-          this.user.set(res.data);
-        }
+        if (res?.data) this.user.set(res.data);
         this.loading.set(false);
         this.loadError.set(false);
       },
@@ -61,6 +62,10 @@ export class ProfileComponent implements OnInit {
         if (!this.user()) this.loadError.set(true);
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.pwSuccessTimer) clearTimeout(this.pwSuccessTimer);
   }
 
   get initials(): string {
@@ -76,8 +81,38 @@ export class ProfileComponent implements OnInit {
     return role ? (this.roleLabels[role] ?? role) : '';
   }
 
+  /** Độ mạnh mật khẩu mới: weak / medium / strong */
+  get passwordStrength(): 'weak' | 'medium' | 'strong' | null {
+    const pw = this.pwForm().next;
+    if (!pw) return null;
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    if (score <= 1) return 'weak';
+    if (score <= 3) return 'medium';
+    return 'strong';
+  }
+
+  /** Xác nhận mật khẩu không khớp (chỉ hiện sau khi user đã chạm vào trường) */
+  get confirmMismatch(): boolean {
+    if (!this.confirmTouched()) return false;
+    const { next, confirm } = this.pwForm();
+    return !!confirm && confirm !== next;
+  }
+
+  /** Nút submit chỉ bật khi cả 3 trường có giá trị */
+  get isFormFilled(): boolean {
+    const { current, next, confirm } = this.pwForm();
+    return !!(current && next && confirm);
+  }
+
   updatePwForm(field: 'current' | 'next' | 'confirm', value: string): void {
     this.pwForm.update(f => ({ ...f, [field]: value }));
+    if (field === 'confirm') this.confirmTouched.set(true);
+    if (field === 'next') this.newTouched.set(true);
     this.pwError.set('');
     this.pwSuccess.set('');
   }
@@ -102,6 +137,7 @@ export class ProfileComponent implements OnInit {
     const f = this.pwForm();
     if (!f.current) { this.pwError.set('Vui lòng nhập mật khẩu hiện tại'); return; }
     if (f.next.length < 6) { this.pwError.set('Mật khẩu mới phải có ít nhất 6 ký tự'); return; }
+    if (f.next === f.current) { this.pwError.set('Mật khẩu mới không được trùng với mật khẩu hiện tại'); return; }
     if (f.next !== f.confirm) { this.pwError.set('Mật khẩu xác nhận không khớp'); return; }
 
     this.pwSaving.set(true);
@@ -116,6 +152,10 @@ export class ProfileComponent implements OnInit {
         this.pwSaving.set(false);
         this.pwSuccess.set('Đổi mật khẩu thành công!');
         this.pwForm.set({ current: '', next: '', confirm: '' });
+        this.confirmTouched.set(false);
+        this.newTouched.set(false);
+        if (this.pwSuccessTimer) clearTimeout(this.pwSuccessTimer);
+        this.pwSuccessTimer = setTimeout(() => this.pwSuccess.set(''), 3500);
       },
       error: (err) => {
         this.pwSaving.set(false);
