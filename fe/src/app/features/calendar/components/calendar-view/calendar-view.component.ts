@@ -94,6 +94,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   personalDetailPos = signal<{ top: number; left: number } | null>(null);
 
   // Form tạo/sửa lịch cá nhân
+  pfMousedownInModal = false;
   showPersonalForm = signal(false);
   editingPersonalEvent = signal<PersonalEvent | null>(null);
   personalFormDraft = signal<Partial<CreatePersonalEventDto>>({});
@@ -822,7 +823,16 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     });
   }
 
+  onPfBackdropClick(): void {
+    if (this.pfMousedownInModal) {
+      this.pfMousedownInModal = false;
+    } else {
+      this.closePersonalForm();
+    }
+  }
+
   closePersonalForm(): void {
+    this.pfMousedownInModal = false;
     this.showPersonalForm.set(false);
     this.editingPersonalEvent.set(null);
     this.pfShowDatePicker = false;

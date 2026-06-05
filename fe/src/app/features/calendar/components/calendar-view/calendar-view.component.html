@@ -1271,8 +1271,10 @@
 
 <!-- ── Personal Event Create / Edit Form ─────────────────── -->
 @if (showPersonalForm()) {
-  <div class="pe-form-backdrop" (click)="closePersonalForm()">
-    <div class="pe-form-modal" (click)="$event.stopPropagation()">
+  <div class="pe-form-backdrop" (click)="onPfBackdropClick()">
+    <div class="pe-form-modal"
+      (mousedown)="pfMousedownInModal = true"
+      (click)="pfMousedownInModal = false; $event.stopPropagation()">
       <div class="pe-form-header">
         <span>{{ editingPersonalEvent() ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới' }}</span>
         <button class="pe-form-close" (click)="closePersonalForm()">
