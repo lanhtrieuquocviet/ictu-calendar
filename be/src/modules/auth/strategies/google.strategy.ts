@@ -22,11 +22,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
   }
 
-  // Đảm bảo Google luôn trả về refresh_token mỗi lần đăng nhập
   override authorizationParams(): object {
     return {
       access_type: 'offline',
-      prompt: 'consent',
+      prompt: 'select_account',
     };
   }
 
