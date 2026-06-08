@@ -60,7 +60,8 @@ export class LoginComponent {
     this.authService.login(this.form.value as any).subscribe({
       next: () => this.router.navigate(['/calendar']),
       error: (err) => {
-        this.error = err.error?.message || 'Email hoặc mật khẩu không chính xác.';
+        const msg = err.error?.message;
+        this.error = typeof msg === 'string' ? msg : 'Email hoặc mật khẩu không chính xác.';
         this.loading = false;
       },
     });

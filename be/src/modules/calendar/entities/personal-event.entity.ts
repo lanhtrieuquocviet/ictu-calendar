@@ -6,10 +6,12 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('personal_events')
+@Index(['userId', 'googleEventId'], { unique: true })
 export class PersonalEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;

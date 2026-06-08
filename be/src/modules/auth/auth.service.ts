@@ -50,7 +50,7 @@ export class AuthService {
     }
 
     const user = await this.usersService.findByEmail(loginDto.email);
-    if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
+    if (!user || !user.password || !(await bcrypt.compare(loginDto.password, user.password))) {
       const current = this.loginAttempts.get(key) ?? { count: 0, lockedUntil: 0 };
       const count = current.count + 1;
       const lockedUntil = count >= LOGIN_MAX_ATTEMPTS ? Date.now() + LOGIN_LOCKOUT_MS : 0;
@@ -117,11 +117,6 @@ export class AuthService {
 
     if (!user.isActive) {
       throw new UnauthorizedException('Tài khoản của bạn đã bị vô hiệu hóa');
-    }
-
-    // Lưu Google OAuth token để dùng cho Calendar sync
-    if (googleUser.accessToken) {
-      await this.usersService.saveGoogleTokens(user.id, googleUser.accessToken, googleUser.refreshToken);
     }
 
     return this.generateTokenPair(user);
@@ -211,7 +206,7 @@ export class AuthService {
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
-      user: { id: user.id, email: user.email, role: user.role, fullName: user.fullName },
+      user: { id: user.id, email: user.email, role: user.role, fullName: user.fullName, departmentId: user.departmentId ?? null },
     };
   }
 }

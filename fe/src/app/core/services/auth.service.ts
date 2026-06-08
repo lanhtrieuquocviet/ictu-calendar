@@ -6,6 +6,8 @@ import { environment } from '@env/environment';
 import { LoginRequest, AuthResponse } from '@models/auth.model';
 import { User, UserRole } from '@models/user.model';
 
+export interface ApiResponse<T> { data: T }
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -54,12 +56,14 @@ export class AuthService {
   }
 
   checkCalendarStatus(): Observable<{ connected: boolean }> {
-    return this.http.get<{ connected: boolean }>(`${environment.apiUrl}/auth/google/calendar/status`);
+    return this.http.get<any>(`${environment.apiUrl}/auth/google/calendar/status`).pipe(
+      map((res) => res?.data ?? res),
+    );
   }
 
   connectGoogleCalendar(): void {
-    this.http.get<{ url: string }>(`${environment.apiUrl}/auth/google/calendar/init`).subscribe({
-      next: (res) => { window.location.href = res.url; },
+    this.http.get<any>(`${environment.apiUrl}/auth/google/calendar/init`).subscribe({
+      next: (res) => { window.location.href = res?.data?.url ?? res.url; },
     });
   }
 
@@ -70,6 +74,18 @@ export class AuthService {
     return this.http.post<any>(`${environment.apiUrl}/calendar/sync-google`, {}, { params }).pipe(
       map((res: any) => res?.data ?? res),
     );
+  }
+
+  selectDepartment(departmentId: string): Observable<User> {
+    return this.http.patch<ApiResponse<User>>(`${environment.apiUrl}/auth/me/department`, { departmentId }).pipe(
+      map(res => res.data),
+      tap(user => this.updateCurrentUser(user)),
+    );
+  }
+
+  updateCurrentUser(user: User): void {
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    this.currentUser$.next(user);
   }
 
   refreshToken(): Observable<AuthResponse> {

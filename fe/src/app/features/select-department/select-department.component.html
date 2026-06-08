@@ -1,0 +1,177 @@
+<div class="setup-page">
+
+  <!-- ===== BRAND PANEL ===== -->
+  <div class="brand-panel">
+    <div class="brand-bg">
+      <div class="circle circle--1"></div>
+      <div class="circle circle--2"></div>
+      <div class="circle circle--3"></div>
+      <div class="circle circle--4"></div>
+    </div>
+
+    <div class="brand-content">
+      <div class="brand-logo">
+        <div class="logo-box"><span>ICTU</span></div>
+        <div class="logo-name">
+          <div class="uni-abbr">ICTU Calendar</div>
+          <div class="uni-full">ĐH Công nghệ TT &amp; Truyền thông</div>
+        </div>
+      </div>
+
+      <h1 class="brand-headline">Thiết lập<br/>Tài khoản</h1>
+      <p class="brand-tagline">
+        Chỉ còn một bước nữa. Xác nhận phòng ban giúp hệ thống hiển thị lịch công tác phù hợp với bạn.
+      </p>
+
+      <div class="steps">
+        <div class="step step--done">
+          <div class="step-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="step-text">
+            <span class="step-label">Bước 1</span>
+            <span class="step-desc">Đăng nhập</span>
+          </div>
+        </div>
+
+        <div class="step-connector step-connector--done"></div>
+
+        <div class="step step--active">
+          <div class="step-icon step-icon--active">2</div>
+          <div class="step-text">
+            <span class="step-label">Bước 2</span>
+            <span class="step-desc">Chọn phòng ban</span>
+          </div>
+        </div>
+
+        <div class="step-connector"></div>
+
+        <div class="step step--pending">
+          <div class="step-icon step-icon--pending">3</div>
+          <div class="step-text">
+            <span class="step-label">Bước 3</span>
+            <span class="step-desc">Vào hệ thống</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SELECTION PANEL ===== -->
+  <div class="selection-panel">
+    <div class="panel-header">
+      <h2>Bạn thuộc phòng ban nào?</h2>
+      <p>Vui lòng chọn đúng phòng ban bạn đang công tác. Quản trị viên có thể cập nhật sau nếu cần.</p>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Tìm phòng ban theo tên hoặc mã..."
+        [value]="searchQuery()"
+        (input)="onSearch($event)"
+      />
+    </div>
+
+    <!-- Department list -->
+    <div class="dept-scroll">
+
+      @if (loading()) {
+        <div class="state-center">
+          <div class="spinner-ring"></div>
+          <span>Đang tải danh sách phòng ban...</span>
+        </div>
+      } @else if (filteredGroups().length === 0) {
+        <div class="state-center">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span>Không tìm thấy phòng ban phù hợp</span>
+        </div>
+      } @else {
+        @for (group of filteredGroups(); track group.groupType) {
+          <div class="dept-group">
+            <div class="group-header">
+              <span class="group-label">{{ group.label }}</span>
+              <span class="group-count">{{ group.departments.length }} đơn vị</span>
+            </div>
+            <div class="dept-grid">
+              @for (dept of group.departments; track dept.id) {
+                <button
+                  class="dept-card"
+                  [class.dept-card--selected]="selectedId() === dept.id"
+                  (click)="selectDept(dept.id)"
+                  type="button"
+                >
+                  @if (selectedId() === dept.id) {
+                    <div class="card-check">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </div>
+                  }
+                  <div class="card-code">{{ dept.code }}</div>
+                  <div class="card-name">{{ dept.name }}</div>
+                </button>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Footer: error + submit -->
+    <div class="panel-footer">
+      @if (error()) {
+        <div class="error-msg">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          {{ error() }}
+        </div>
+      }
+
+      @if (selectedId()) {
+        <div class="selected-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Đã chọn: <strong>{{ selectedName }}</strong>
+        </div>
+      }
+
+      <button
+        class="btn-submit"
+        [disabled]="!selectedId() || submitting()"
+        (click)="onSubmit()"
+        type="button"
+      >
+        @if (submitting()) {
+          <span class="spinner"></span>Đang lưu...
+        } @else {
+          Xác nhận và vào hệ thống
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        }
+      </button>
+
+      <button class="btn-logout" type="button" (click)="onLogout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Đăng xuất
+      </button>
+    </div>
+  </div>
+
+</div>

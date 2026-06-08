@@ -9,6 +9,7 @@ import {
 import { UsersService } from '../users/users.service';
 import { Event, EventStatus } from './entities/event.entity';
 import { PersonalEvent } from './entities/personal-event.entity';
+import { UserEventSync } from './entities/user-event-sync.entity';
 
 export interface SyncResult {
   synced: number;
@@ -108,66 +109,49 @@ export class GoogleCalendarService {
     private eventRepo: Repository<Event>,
     @InjectRepository(PersonalEvent)
     private personalEventRepo: Repository<PersonalEvent>,
+    @InjectRepository(UserEventSync)
+    private userEventSyncRepo: Repository<UserEventSync>,
     private usersService: UsersService,
     private configService: ConfigService,
   ) {}
 
   async syncEventsToGoogle(userId: string, events: Event[]): Promise<SyncResult> {
-    const tokenRecord = await this.usersService.getGoogleToken(userId);
-    if (!tokenRecord) {
-      throw new BadRequestException('Bạn chưa đăng nhập bằng Google. Vui lòng đăng nhập lại bằng Google để đồng bộ lịch.');
-    }
-
-    const oauth2Client = this.createOAuth2Client();
-    oauth2Client.setCredentials({
-      access_token: tokenRecord.accessToken,
-      refresh_token: tokenRecord.refreshToken,
-    });
-
-    if (tokenRecord.tokenExpiry && new Date() >= tokenRecord.tokenExpiry) {
-      if (!tokenRecord.refreshToken) {
-        throw new BadRequestException(
-          'Phiên đăng nhập Google đã hết hạn. Vui lòng đăng xuất rồi đăng nhập lại bằng Google để đồng bộ lịch.',
-        );
-      }
-      try {
-        const { credentials } = await oauth2Client.refreshAccessToken();
-        await this.usersService.saveGoogleTokens(
-          userId,
-          credentials.access_token!,
-          credentials.refresh_token ?? null,
-        );
-        oauth2Client.setCredentials(credentials);
-      } catch {
-        throw new BadRequestException(
-          'Không thể gia hạn phiên Google. Vui lòng đăng xuất rồi đăng nhập lại bằng Google.',
-        );
-      }
-    }
-
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const calendar = await this.getValidCalendarClient(userId);
     const result: SyncResult = { synced: 0, skipped: 0, duplicates: 0, errors: [] };
 
     const approvedEvents = events.filter(e => e.status === EventStatus.APPROVED);
 
+    const alreadySynced = await this.userEventSyncRepo.find({ where: { userId } });
+    const syncedEventIds = new Set(alreadySynced.map(s => s.eventId));
+
     for (const event of approvedEvents) {
-      // Bỏ qua nếu đã được sync trước đó
-      if (event.googleEventId) {
+      if (syncedEventIds.has(event.id)) {
         result.duplicates++;
         continue;
       }
 
+      let googleEventId: string | null = null;
       try {
         const response = await calendar.events.insert({
           calendarId: 'primary',
           requestBody: this.buildGoogleEvent(event),
         });
+        googleEventId = response.data.id!;
 
-        // Lưu Google event ID vào DB để chống trùng lần sau
-        await this.eventRepo.update(event.id, { googleEventId: response.data.id! });
-        result.synced++;
+        try {
+          await this.userEventSyncRepo.save({ userId, eventId: event.id, googleEventId });
+          result.synced++;
+        } catch {
+          // Unique constraint: concurrent request đã insert trước — xóa event vừa tạo để tránh trùng
+          await calendar.events.delete({ calendarId: 'primary', eventId: googleEventId }).catch(() => {});
+          result.duplicates++;
+        }
       } catch (err: any) {
-        result.errors.push(`${event.title}: ${err.message}`);
+        const msg: string = err.message ?? '';
+        if (msg.includes('insufficient authentication scopes') || msg.includes('insufficientPermissions')) {
+          throw new BadRequestException('Tài khoản chưa cấp quyền Google Calendar. Vui lòng vào Hồ sơ → "Kết nối lại".');
+        }
+        result.errors.push(`${event.title}: ${msg}`);
         result.skipped++;
       }
     }
@@ -179,14 +163,15 @@ export class GoogleCalendarService {
     return new google.auth.OAuth2(
       this.configService.get<string>('GOOGLE_CLIENT_ID'),
       this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
-      this.configService.get<string>('GOOGLE_CALLBACK_URL'),
+      this.configService.get<string>('GOOGLE_CALENDAR_CALLBACK_URL'),
     );
   }
 
-  async importFromGoogle(userId: string, from?: string, to?: string): Promise<ImportResult> {
+  private async getValidCalendarClient(userId: string, errorOnMissing = true): Promise<any | null> {
     const tokenRecord = await this.usersService.getGoogleToken(userId);
     if (!tokenRecord) {
-      throw new BadRequestException('Bạn chưa đăng nhập bằng Google. Vui lòng đăng nhập lại bằng Google để đồng bộ lịch.');
+      if (errorOnMissing) throw new BadRequestException('Bạn chưa kết nối Google Calendar. Vui lòng vào Hồ sơ → "Kết nối Google Calendar".');
+      return null;
     }
 
     const oauth2Client = this.createOAuth2Client();
@@ -197,18 +182,24 @@ export class GoogleCalendarService {
 
     if (tokenRecord.tokenExpiry && new Date() >= tokenRecord.tokenExpiry) {
       if (!tokenRecord.refreshToken) {
-        throw new BadRequestException('Phiên đăng nhập Google đã hết hạn. Vui lòng đăng xuất rồi đăng nhập lại bằng Google.');
+        if (errorOnMissing) throw new BadRequestException('Phiên Google Calendar đã hết hạn. Vui lòng vào Hồ sơ → "Kết nối lại" Google Calendar.');
+        return null;
       }
       try {
         const { credentials } = await oauth2Client.refreshAccessToken();
         await this.usersService.saveGoogleTokens(userId, credentials.access_token!, credentials.refresh_token ?? null);
         oauth2Client.setCredentials(credentials);
       } catch {
-        throw new BadRequestException('Không thể gia hạn phiên Google. Vui lòng đăng xuất rồi đăng nhập lại bằng Google.');
+        if (errorOnMissing) throw new BadRequestException('Không thể gia hạn phiên Google. Vui lòng vào Hồ sơ → "Kết nối lại" Google Calendar.');
+        return null;
       }
     }
 
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    return google.calendar({ version: 'v3', auth: oauth2Client });
+  }
+
+  async importFromGoogle(userId: string, from?: string, to?: string): Promise<ImportResult> {
+    const calendar = await this.getValidCalendarClient(userId);
     const result: ImportResult = { imported: 0, updated: 0, deleted: 0, errors: [] };
 
     // Mặc định tháng hiện tại
@@ -233,7 +224,14 @@ export class GoogleCalendarService {
       });
       googleEvents = response.data.items ?? [];
     } catch (err: any) {
-      throw new BadRequestException(`Không thể lấy dữ liệu từ Google Calendar: ${err.message}`);
+      const msg: string = err.message ?? '';
+      if (msg.includes('insufficient authentication scopes') || msg.includes('insufficientPermissions')) {
+        throw new BadRequestException('Tài khoản chưa cấp quyền truy cập Google Calendar. Vui lòng vào Hồ sơ → "Kết nối lại" Google Calendar để cấp quyền.');
+      }
+      if (msg.includes('invalid_grant') || msg.includes('Token has been expired or revoked')) {
+        throw new BadRequestException('Phiên Google Calendar đã hết hạn. Vui lòng vào Hồ sơ → "Kết nối lại" Google Calendar.');
+      }
+      throw new BadRequestException(`Không thể lấy dữ liệu từ Google Calendar: ${msg}`);
     }
 
     // Lọc bỏ sự kiện do hệ thống này sync lên (tránh vòng lặp import)
@@ -382,23 +380,7 @@ export class GoogleCalendarService {
 
   private async tryGetCalendarClient(userId: string): Promise<any | null> {
     try {
-      const tokenRecord = await this.usersService.getGoogleToken(userId);
-      if (!tokenRecord) return null;
-
-      const oauth2Client = this.createOAuth2Client();
-      oauth2Client.setCredentials({
-        access_token: tokenRecord.accessToken,
-        refresh_token: tokenRecord.refreshToken,
-      });
-
-      if (tokenRecord.tokenExpiry && new Date() >= tokenRecord.tokenExpiry) {
-        if (!tokenRecord.refreshToken) return null;
-        const { credentials } = await oauth2Client.refreshAccessToken();
-        await this.usersService.saveGoogleTokens(userId, credentials.access_token!, credentials.refresh_token ?? null);
-        oauth2Client.setCredentials(credentials);
-      }
-
-      return google.calendar({ version: 'v3', auth: oauth2Client });
+      return await this.getValidCalendarClient(userId, false);
     } catch {
       return null;
     }

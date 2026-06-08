@@ -1424,8 +1424,9 @@
           <button type="button" class="pe-form-btn-cancel" (click)="closePersonalForm()">Hủy</button>
           <button type="button" class="pe-form-btn-save"
             [style.background]="personalFormDraft().color || '#4285f4'"
+            [disabled]="pfSaving()"
             (click)="submitPersonalForm()">
-            {{ editingPersonalEvent() ? 'Lưu thay đổi' : 'Tạo sự kiện' }}
+            {{ pfSaving() ? 'Đang lưu...' : (editingPersonalEvent() ? 'Lưu thay đổi' : 'Tạo sự kiện') }}
           </button>
         </div>
       </div>

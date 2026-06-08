@@ -95,6 +95,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
   // Form tạo/sửa lịch cá nhân
   pfMousedownInModal = false;
+  pfSaving = signal(false);
   showPersonalForm = signal(false);
   editingPersonalEvent = signal<PersonalEvent | null>(null);
   personalFormDraft = signal<Partial<CreatePersonalEventDto>>({});
@@ -806,6 +807,8 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   }
 
   savePersonalEvent(dto: CreatePersonalEventDto): void {
+    if (this.pfSaving()) return;
+    this.pfSaving.set(true);
     const editing = this.editingPersonalEvent();
     const obs$ = editing
       ? this.calendarService.updatePersonalEvent(editing.id, dto)
@@ -813,13 +816,17 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
 
     obs$.subscribe({
       next: () => {
+        this.pfSaving.set(false);
         this.showPersonalForm.set(false);
         this.editingPersonalEvent.set(null);
         this.loadPersonalEvents();
         if (this.viewMode() === 'month') this.loadPersonalEventsForGrid();
         this.toast.success(editing ? 'Đã cập nhật sự kiện cá nhân.' : 'Đã tạo sự kiện cá nhân.');
       },
-      error: () => this.toast.error('Không thể lưu sự kiện. Vui lòng thử lại.'),
+      error: () => {
+        this.pfSaving.set(false);
+        this.toast.error('Không thể lưu sự kiện. Vui lòng thử lại.');
+      },
     });
   }
 

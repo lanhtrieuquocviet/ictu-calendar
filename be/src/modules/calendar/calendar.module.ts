@@ -9,6 +9,7 @@ import { EventAttachment } from './entities/event-attachment.entity';
 import { EventParticipant } from './entities/event-participant.entity';
 import { GoogleToken } from './entities/google-token.entity';
 import { PersonalEvent } from './entities/personal-event.entity';
+import { UserEventSync } from './entities/user-event-sync.entity';
 import { UsersModule } from '../users/users.module';
 import { DepartmentsModule } from '../departments/departments.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -16,7 +17,7 @@ import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Event, EventAttachment, EventParticipant, GoogleToken, PersonalEvent]),
+    TypeOrmModule.forFeature([Event, EventAttachment, EventParticipant, GoogleToken, PersonalEvent, UserEventSync]),
     UsersModule,
     DepartmentsModule,
     NotificationModule,

@@ -45,9 +45,41 @@ export class UserManagementComponent implements OnInit {
     });
   });
 
-  activeCount  = computed(() => this.users().filter(u => u.isActive).length);
+  activeCount   = computed(() => this.users().filter(u => u.isActive).length);
   inactiveCount = computed(() => this.users().filter(u => !u.isActive).length);
-  adminCount   = computed(() => this.users().filter(u => u.role === 'admin').length);
+  adminCount    = computed(() => this.users().filter(u => u.role === 'admin').length);
+
+  // Pagination
+  currentPage = signal(1);
+  pageSize    = signal(20);
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredUsers().length / this.pageSize())));
+
+  paginatedUsers = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return this.filteredUsers().slice(start, start + this.pageSize());
+  });
+
+  pageRangeStart = computed(() =>
+    this.filteredUsers().length === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1
+  );
+  pageRangeEnd = computed(() =>
+    Math.min(this.currentPage() * this.pageSize(), this.filteredUsers().length)
+  );
+
+  pageNumbers = computed<(number | '...')[]>(() => {
+    const total = this.totalPages();
+    const cur   = this.currentPage();
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | '...')[] = [1];
+    if (cur > 3) pages.push('...');
+    const start = Math.max(2, cur - 1);
+    const end   = Math.min(total - 1, cur + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (cur < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
+  });
 
   // Create user modal
   showCreateModal = signal(false);
@@ -385,11 +417,25 @@ export class UserManagementComponent implements OnInit {
     });
   }
 
+  // Filter setters (also reset page)
+  setSearch(v: string): void          { this.search.set(v);       this.currentPage.set(1); }
+  setFilterRole(v: UserRole | ''): void { this.filterRole.set(v); this.currentPage.set(1); }
+  setFilterStatus(v: 'all' | 'active' | 'inactive'): void { this.filterStatus.set(v); this.currentPage.set(1); }
+
   clearFilters(): void {
     this.search.set('');
     this.filterRole.set('');
     this.filterStatus.set('all');
+    this.currentPage.set(1);
   }
+
+  // Pagination navigation
+  goToPage(page: number | '...'): void {
+    if (typeof page === 'number') this.currentPage.set(page);
+  }
+  prevPage(): void { if (this.currentPage() > 1)                  this.currentPage.update(p => p - 1); }
+  nextPage(): void { if (this.currentPage() < this.totalPages())   this.currentPage.update(p => p + 1); }
+  setPageSize(size: number): void { this.pageSize.set(size); this.currentPage.set(1); }
 
   private showToast(msg: string, type: 'success' | 'error'): void {
     this.toast.set({ msg, type });

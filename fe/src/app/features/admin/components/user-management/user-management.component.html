@@ -83,7 +83,7 @@
           <span class="stat-card__label">Tổng tài khoản</span>
         </div>
       </div>
-      <div class="stat-card stat-card--active" (click)="filterStatus.set('active')" [class.is-selected]="filterStatus() === 'active'">
+      <div class="stat-card stat-card--active" (click)="setFilterStatus('active')" [class.is-selected]="filterStatus() === 'active'">
         <div class="stat-card__icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -95,7 +95,7 @@
           <span class="stat-card__label">Đang hoạt động</span>
         </div>
       </div>
-      <div class="stat-card stat-card--inactive" (click)="filterStatus.set('inactive')" [class.is-selected]="filterStatus() === 'inactive'">
+      <div class="stat-card stat-card--inactive" (click)="setFilterStatus('inactive')" [class.is-selected]="filterStatus() === 'inactive'">
         <div class="stat-card__icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="11" width="18" height="11" rx="2"/>
@@ -107,7 +107,7 @@
           <span class="stat-card__label">Đã khóa</span>
         </div>
       </div>
-      <div class="stat-card stat-card--admin" (click)="filterRole.set('admin')" [class.is-selected]="filterRole() === 'admin'">
+      <div class="stat-card stat-card--admin" (click)="setFilterRole('admin')" [class.is-selected]="filterRole() === 'admin'">
         <div class="stat-card__icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -133,9 +133,9 @@
         placeholder="Tìm theo tên hoặc email..."
         autocomplete="off"
         [value]="search()"
-        (input)="search.set($any($event.target).value)" />
+        (input)="setSearch($any($event.target).value)" />
       @if (search()) {
-        <button class="search-clear" (click)="search.set('')">
+        <button class="search-clear" (click)="setSearch('')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -144,14 +144,14 @@
     </div>
 
     <div class="filter-group">
-      <select class="filter-select" [value]="filterRole()" (change)="filterRole.set($any($event.target).value)">
+      <select class="filter-select" [value]="filterRole()" (change)="setFilterRole($any($event.target).value)">
         <option value="">Tất cả quyền</option>
         @for (role of ROLES; track role) {
           <option [value]="role">{{ ROLE_LABELS[role] }}</option>
         }
       </select>
 
-      <select class="filter-select" [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
+      <select class="filter-select" [value]="filterStatus()" (change)="setFilterStatus($any($event.target).value)">
         <option value="all">Tất cả trạng thái</option>
         <option value="active">Hoạt động</option>
         <option value="inactive">Đã khóa</option>
@@ -231,7 +231,8 @@
             </tr>
           </thead>
           <tbody>
-            @for (user of filteredUsers(); track user.id) {
+            @for (user of paginatedUsers(); track user.id) {
+
               <tr [class.inactive]="!user.isActive" [class.saving]="saving() === user.id">
                 <td class="td-name">
                   <div class="avatar" [attr.data-role]="user.role" [class.inactive-avatar]="!user.isActive">
@@ -344,6 +345,49 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination -->
+      @if (totalPages() > 1 || filteredUsers().length > 10) {
+        <div class="pagination-wrap">
+          <div class="pagination-info">
+            @if (filteredUsers().length > 0) {
+              <span class="page-range">{{ pageRangeStart() }}–{{ pageRangeEnd() }} / {{ filteredUsers().length }} người dùng</span>
+            }
+            <select class="page-size-select" [value]="pageSize()" (change)="setPageSize(+$any($event.target).value)">
+              <option value="10">10 / trang</option>
+              <option value="20">20 / trang</option>
+              <option value="50">50 / trang</option>
+            </select>
+          </div>
+
+          <div class="pagination-nav">
+            <button class="page-btn page-btn--nav" [disabled]="currentPage() === 1" (click)="prevPage()" title="Trang trước">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+
+            @for (page of pageNumbers(); track $index) {
+              @if (page === '...') {
+                <span class="page-dots">···</span>
+              } @else {
+                <button
+                  class="page-btn"
+                  [class.page-btn--active]="currentPage() === page"
+                  (click)="goToPage(page)">
+                  {{ page }}
+                </button>
+              }
+            }
+
+            <button class="page-btn page-btn--nav" [disabled]="currentPage() === totalPages()" (click)="nextPage()" title="Trang sau">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      }
     }
 
   </main>

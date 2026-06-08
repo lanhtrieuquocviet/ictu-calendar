@@ -20,7 +20,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       );
     }
 
-    const message = isHttp ? exception.getResponse() : 'Internal server error';
+    const raw = isHttp ? exception.getResponse() : 'Internal server error';
+    const message = typeof raw === 'string' ? raw : ((raw as any)?.message ?? 'An error occurred');
 
     response.status(status).json({
       statusCode: status,

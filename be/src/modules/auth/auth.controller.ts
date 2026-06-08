@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Req, Res, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, HttpCode, HttpStatus, UseGuards, Req, Res, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
@@ -120,6 +120,19 @@ export class AuthController {
     } catch {
       (res as any).redirect(`${frontendUrl}/profile?calendar_error=true`);
     }
+  }
+
+  @Patch('me/department')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Chọn / cập nhật phòng ban cho user hiện tại' })
+  async updateDepartment(@Req() req: any, @Body('departmentId') departmentId: string) {
+    if (!departmentId) throw new BadRequestException('departmentId là bắt buộc');
+    await this.usersService.update(req.user.sub, { departmentId });
+    const user = await this.usersService.findOneWithDepartment(req.user.sub);
+    const { password, ...result } = user as any;
+    return result;
   }
 
   @Post('change-password')

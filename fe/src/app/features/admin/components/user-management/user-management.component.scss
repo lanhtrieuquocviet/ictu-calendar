@@ -771,3 +771,107 @@
 
   tr:last-child td { border-bottom: none; }
 }
+
+// ─── Pagination ─────────────────────────────────────────────────────────────
+.pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 0 0 12px 12px;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  @media (max-width: 640px) { justify-content: center; }
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .page-range {
+    font-size: 13px;
+    color: #64748b;
+    white-space: nowrap;
+  }
+}
+
+.page-size-select {
+  padding: 5px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:focus { outline: none; border-color: #3b82f6; }
+}
+
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+
+  &:hover:not(:disabled):not(.page-btn--active) {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    background: #eff6ff;
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) { transform: none; }
+
+  &--active {
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+    cursor: default;
+  }
+
+  &--nav {
+    color: #64748b;
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.page-dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 34px;
+  font-size: 14px;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  user-select: none;
+}
