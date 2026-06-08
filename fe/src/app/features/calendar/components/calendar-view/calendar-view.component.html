@@ -296,28 +296,40 @@
 
       <!-- Lọc theo đơn vị chủ trì -->
       @if (viewMode() !== 'pending' && viewMode() !== 'mine' && viewMode() !== 'bookmarks' && viewMode() !== 'personal') {
-        <div class="unit-filter-wrap">
-          <svg class="unit-filter-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-          </svg>
-          <select class="unit-filter-select" [class.unit-filter-select--active]="unitFilter()"
-            [value]="unitFilter()"
-            (change)="unitFilter.set($any($event.target).value)">
-            <option value="">Tất cả đơn vị</option>
-            @for (group of unitGroups; track group.label) {
-              <optgroup [label]="group.label">
-                @for (unit of group.units; track unit) {
-                  <option [value]="unit">{{ unit }}</option>
-                }
-              </optgroup>
-            }
-          </select>
+        <div class="unit-filter-wrap" (click)="$event.stopPropagation()">
+          <button class="unit-filter-trigger" [class.unit-filter-trigger--active]="unitFilter()"
+            (click)="unitDropdownOpen.set(!unitDropdownOpen())">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+            <span class="unit-filter-label">{{ unitFilter() || 'Tất cả đơn vị' }}</span>
+            <svg class="unit-filter-chevron" [class.open]="unitDropdownOpen()" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
           @if (unitFilter()) {
-            <button class="unit-filter-clear" (click)="unitFilter.set('')" title="Bỏ lọc">
+            <button class="unit-filter-clear" (click)="unitFilter.set(''); unitDropdownOpen.set(false)" title="Bỏ lọc">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>
+          }
+          @if (unitDropdownOpen()) {
+            <div class="unit-filter-menu">
+              <button class="unit-filter-item" [class.active]="!unitFilter()"
+                (click)="unitFilter.set(''); unitDropdownOpen.set(false)">
+                Tất cả đơn vị
+              </button>
+              @for (group of unitGroups; track group.label) {
+                <div class="unit-filter-group-label">{{ group.label }}</div>
+                @for (unit of group.units; track unit) {
+                  <button class="unit-filter-item unit-filter-item--sub" [class.active]="unitFilter() === unit"
+                    (click)="unitFilter.set(unit); unitDropdownOpen.set(false)">
+                    {{ unit }}
+                  </button>
+                }
+              }
+            </div>
           }
         </div>
       }

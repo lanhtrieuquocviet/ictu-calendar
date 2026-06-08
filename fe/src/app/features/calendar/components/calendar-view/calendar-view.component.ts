@@ -69,6 +69,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   unitFilter = signal<string>('');
   statusDropdownOpen = signal(false);
   myStatusDropdownOpen = signal(false);
+  unitDropdownOpen = signal(false);
   userMenuOpen = signal(false);
   openMenuId = signal<string | null>(null);
   menuPosition = signal<{ top: number; left: number } | null>(null);
@@ -142,6 +143,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   closeDropdowns(): void {
     this.statusDropdownOpen.set(false);
     this.myStatusDropdownOpen.set(false);
+    this.unitDropdownOpen.set(false);
     this.openMenuId.set(null);
     this.menuPosition.set(null);
     this.userMenuOpen.set(false);

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Event } from '../calendar/entities/event.entity';
 import { EventAttachment } from '../calendar/entities/event-attachment.entity';
+import { StorageService } from '../storage/storage.service';
 
 export interface MailRecipient {
   name: string;
@@ -21,7 +22,10 @@ export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
   private transporter: nodemailer.Transporter | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private storageService: StorageService,
+  ) {
     this.initTransporter();
   }
 
@@ -115,8 +119,20 @@ export class NotificationService {
     if (!this.transporter) return;
     const from = `"ICTU Calendar" <${this.configService.get('MAIL_USER')}>`;
 
-    // File lưu trên MinIO, không có local path — chỉ hiển thị tên file trong body email
-    const mailAttachments: nodemailer.Attachment[] = [];
+    type MailAttachment = { filename: string; content: Buffer; contentType: string };
+    const mailAttachments: MailAttachment[] = (
+      await Promise.all(
+        attachments.map(async (a): Promise<MailAttachment | null> => {
+          try {
+            const content = await this.storageService.getBuffer(a.filename);
+            return { filename: a.originalName, content, contentType: a.mimeType };
+          } catch (err) {
+            this.logger.warn(`Không tải được file "${a.originalName}" từ MinIO: ${err instanceof Error ? err.message : err}`);
+            return null;
+          }
+        }),
+      )
+    ).filter((a): a is MailAttachment => a !== null);
 
     const results = await Promise.allSettled(
       recipients.map((r) =>
