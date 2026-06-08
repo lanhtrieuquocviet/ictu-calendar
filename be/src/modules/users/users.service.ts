@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -131,10 +131,15 @@ export class UsersService {
       .where('user.id = :id', { id })
       .getOne();
     if (!user) throw new NotFoundException(`User #${id} not found`);
+    if (!user.password) throw new BadRequestException('Tài khoản đăng nhập bằng Google không sử dụng mật khẩu');
     const match = await bcrypt.compare(currentPassword, user.password);
     if (!match) throw new UnauthorizedException('Mật khẩu hiện tại không chính xác');
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.usersRepository.update(id, { password: hashedPassword });
+  }
+
+  async findDepartment(id: string): Promise<Department | null> {
+    return this.departmentRepository.findOne({ where: { id, isActive: true } });
   }
 
   async remove(id: string): Promise<void> {

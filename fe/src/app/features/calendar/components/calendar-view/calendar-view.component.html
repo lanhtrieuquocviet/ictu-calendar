@@ -442,57 +442,95 @@
           </div>
         </div>
       } @else {
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Ngày</th>
-                <th class="th-time">Giờ</th>
-                <th class="th-title">Nội dung</th>
-                <th>Người tạo</th>
-                <th>Đơn vị chủ trì</th>
-                <th>Địa điểm</th>
-                <th class="th-actions">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (event of filteredPendingEvents; track event.id) {
-                <tr [style]="'--evt-clr:' + (event.color || '#f59e0b')" (click)="openDetail(event)">
-                  <td class="td-day-simple">
-                    {{ formatEventDate(event.eventDate) }}
-                  </td>
-                  <td class="td-time">
-                    <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
-                  </td>
-                  <td class="td-title" [title]="event.title">
-                    <div class="title-row">
-                      @if (isNew(event)) {
-                        <span class="badge-new">MỚI</span>
-                      } @else {
-                        <span class="evt-dot"></span>
-                      }
-                      <span class="title-text" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
-                      @if (event.isHidden && authService.isApprover()) {
-                        <span class="badge-hidden">Đang ẩn</span>
-                      }
-                    </div>
-                  </td>
-                  <td>{{ event.createdByName || '—' }}</td>
-                  <td><span class="cell-truncate">{{ event.organizingUnit || '—' }}</span></td>
-                  <td><span class="cell-truncate">{{ event.location || '—' }}</span></td>
-                  <td class="td-actions" (click)="$event.stopPropagation()">
-                    <button class="btn-approve" (click)="openEdit(event)" title="Phê duyệt">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                      Duyệt
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+        <div class="pending-board">
+
+          <!-- Hướng dẫn thao tác nhanh -->
+          <div class="pending-hint">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Click vào tên sự kiện để xem chi tiết &nbsp;·&nbsp;
+            <span class="hint-green">✓ Duyệt nhanh</span> không cần mở form &nbsp;·&nbsp;
+            <span class="hint-blue">Xem &amp; Duyệt</span> để chỉnh sửa trước khi duyệt &nbsp;·&nbsp;
+            <span class="hint-red">✕ Từ chối</span> để nhập lý do
+          </div>
+
+          <!-- Nhóm theo ngày -->
+          @for (group of pendingByDate; track group.dateKey) {
+            <div class="pending-group" [class.pending-group--today]="group.isToday" [class.pending-group--past]="group.isPast">
+
+              <!-- Date header -->
+              <div class="pending-group-header">
+                <div class="pending-group-date">
+                  @if (group.isPast) {
+                    <svg class="pg-icon pg-icon--warn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  } @else if (group.isToday) {
+                    <svg class="pg-icon pg-icon--today" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  } @else {
+                    <svg class="pg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  }
+                  <span class="pg-date-text">{{ group.dateLabel }}</span>
+                  @if (group.isToday) { <span class="pg-today-chip">Hôm nay</span> }
+                  @if (group.isPast)  { <span class="pg-past-chip">Quá hạn</span> }
+                </div>
+                <span class="pg-count">{{ group.events.length }} sự kiện</span>
+              </div>
+
+              <!-- Events table cho nhóm này -->
+              <table class="pending-table">
+                <thead>
+                  <tr>
+                    <th class="pt-time">Giờ</th>
+                    <th class="pt-title">Nội dung</th>
+                    <th class="pt-creator">Người tạo</th>
+                    <th class="pt-unit">Đơn vị chủ trì</th>
+                    <th class="pt-location">Địa điểm</th>
+                    <th class="pt-actions">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (event of group.events; track event.id) {
+                    <tr class="pt-row" [style]="'--evt-clr:' + (event.color || '#f59e0b')">
+                      <!-- Giờ -->
+                      <td class="pt-td pt-td-time">
+                        <span class="time-pill" [class.time-pill--allday]="event.allDay">{{ formatEventTime(event) }}</span>
+                      </td>
+                      <!-- Nội dung -->
+                      <td class="pt-td pt-td-title" (click)="openDetail(event)" title="{{ event.title }}">
+                        <div class="pt-title-row">
+                          @if (isNew(event)) { <span class="badge-new">MỚI</span> }
+                          <span class="pt-title-text" [class.text-hidden]="event.isHidden">{{ event.title }}</span>
+                          @if (event.isHidden) { <span class="badge-hidden">Đang ẩn</span> }
+                        </div>
+                      </td>
+                      <!-- Người tạo -->
+                      <td class="pt-td pt-td-meta">{{ event.createdByName || '—' }}</td>
+                      <!-- Đơn vị -->
+                      <td class="pt-td pt-td-meta"><span class="cell-truncate">{{ event.organizingUnit || '—' }}</span></td>
+                      <!-- Địa điểm -->
+                      <td class="pt-td pt-td-meta"><span class="cell-truncate">{{ event.location || '—' }}</span></td>
+                      <!-- Thao tác -->
+                      <td class="pt-td pt-td-actions" (click)="$event.stopPropagation()">
+                        <div class="pt-action-group">
+                          <button class="pt-btn pt-btn--approve" (click)="quickApproveEvent(event, $event)" title="Duyệt nhanh">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Duyệt
+                          </button>
+                          <button class="pt-btn pt-btn--view" (click)="openEdit(event)" title="Xem và phê duyệt">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            Xem &amp; Duyệt
+                          </button>
+                          <button class="pt-btn pt-btn--reject" (click)="quickRejectEvent(event, $event)" title="Từ chối">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            Từ chối
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+
+            </div>
+          }
         </div>
       }
 

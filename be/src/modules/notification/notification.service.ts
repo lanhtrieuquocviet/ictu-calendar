@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
-import * as path from 'path';
 import { Event } from '../calendar/entities/event.entity';
 import { EventAttachment } from '../calendar/entities/event-attachment.entity';
 
@@ -116,11 +115,8 @@ export class NotificationService {
     if (!this.transporter) return;
     const from = `"ICTU Calendar" <${this.configService.get('MAIL_USER')}>`;
 
-    const mailAttachments = attachments.map((a) => ({
-      filename: a.originalName,
-      path: path.join(process.cwd(), 'uploads', a.filename),
-      contentType: a.mimeType,
-    }));
+    // File lưu trên MinIO, không có local path — chỉ hiển thị tên file trong body email
+    const mailAttachments: nodemailer.Attachment[] = [];
 
     const results = await Promise.allSettled(
       recipients.map((r) =>
@@ -163,9 +159,10 @@ export class NotificationService {
         weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
       });
 
+    const fmt = (t?: string | null) => t?.slice(0, 5) ?? null;
     const timeStr = event.allDay
       ? 'Cả ngày'
-      : [event.startTime, event.endTime].filter(Boolean).join(' – ');
+      : [fmt(event.startTime), fmt(event.endTime)].filter(Boolean).join(' – ');
 
     const timeValue = `${timeStr ? esc(timeStr) + ' | ' : ''}${formatDate(event.eventDate)}`;
 
@@ -231,7 +228,7 @@ export class NotificationService {
     const attachmentsBlock = attachments.length > 0
       ? `<div style="margin-top:10px;padding:8px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px">
            <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px">
-             &#128206; File đính kèm (${attachments.length}) — đã gửi kèm trong email này
+             &#128206; File đính kèm (${attachments.length}) — xem file trong hệ thống
            </span>
            <div style="margin-top:5px;font-size:12px;color:#64748b;line-height:1.8">
              ${attachments.map(a => `${esc(a.originalName)} <span style="color:#94a3b8">(${formatSize(Number(a.size))})</span>`).join(' &nbsp;·&nbsp; ')}

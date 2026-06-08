@@ -3,7 +3,10 @@ import {
   PrimaryGeneratedColumn,
   Column,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('google_tokens')
 export class GoogleToken {
@@ -12,6 +15,10 @@ export class GoogleToken {
 
   @Column({ unique: true })
   userId: string;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user: User;
 
   @Column({ type: 'text' })
   accessToken: string;

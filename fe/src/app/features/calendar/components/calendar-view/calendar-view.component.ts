@@ -205,11 +205,9 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   }
 
   hasAnyAction(event: CalendarEvent): boolean {
-    if (this.authService.isApprover() && !this.authService.isEditor() && event.status === 'pending') return true;
-    if (this.authService.isEditor() && this.canEditEvent(event)) return true;
-    if (this.authService.isApprover() && event.status === 'approved') return true;
+    if (this.authService.isAdmin()) return true;
     if (this.authService.isApprover() && (event.status === 'approved' || event.status === 'pending')) return true;
-    if (this.authService.isEditor()) return true;
+    if (this.authService.isEditor() && this.canEditEvent(event)) return true;
     return false;
   }
 
@@ -296,6 +294,59 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
     const q = this.searchKeyword().toLowerCase().trim();
     if (!q) return this.pendingEvents();
     return this.pendingEvents().filter(e => this.matchKeyword(e, q));
+  }
+
+  get pendingByDate(): { dateKey: string; dateLabel: string; isToday: boolean; isPast: boolean; events: CalendarEvent[] }[] {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const groups = new Map<string, CalendarEvent[]>();
+    for (const e of this.filteredPendingEvents) {
+      const key = String(e.eventDate).slice(0, 10);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(e);
+    }
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, events]) => {
+        const d = new Date(key + 'T00:00:00');
+        const isToday = d.getTime() === today.getTime();
+        const isPast  = d.getTime() < today.getTime();
+        const dateLabel = d.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        return { dateKey: key, dateLabel, isToday, isPast, events };
+      });
+  }
+
+  async quickApproveEvent(event: CalendarEvent, mouseEvent: MouseEvent): Promise<void> {
+    mouseEvent.stopPropagation();
+    const ok = await this.confirmDialog.confirm({
+      title: 'Phê duyệt sự kiện',
+      message: `Phê duyệt sự kiện "${event.title}"?`,
+      confirmText: 'Phê duyệt',
+      cancelText: 'Hủy',
+      type: 'success',
+    });
+    if (!ok) return;
+    this.calendarService.approveEvent(event.id, { status: 'approved' }).subscribe({
+      next: () => { this.toast.success(`Đã phê duyệt "${event.title}"`); this.loadPendingEvents(); },
+      error: () => this.toast.error('Phê duyệt thất bại'),
+    });
+  }
+
+  async quickRejectEvent(event: CalendarEvent, mouseEvent: MouseEvent): Promise<void> {
+    mouseEvent.stopPropagation();
+    const reason = await this.confirmDialog.confirmWithInput({
+      title: 'Từ chối sự kiện',
+      message: `Từ chối sự kiện "${event.title}"`,
+      confirmText: 'Từ chối',
+      cancelText: 'Hủy',
+      type: 'danger',
+      inputLabel: 'Lý do từ chối',
+      inputPlaceholder: 'Nhập lý do...',
+    });
+    if (reason === null) return;
+    this.calendarService.approveEvent(event.id, { status: 'rejected', rejectionReason: reason }).subscribe({
+      next: () => { this.toast.success(`Đã từ chối "${event.title}"`); this.loadPendingEvents(); },
+      error: () => this.toast.error('Từ chối thất bại'),
+    });
   }
 
   private matchKeyword(e: CalendarEvent, q: string): boolean {
@@ -1359,7 +1410,8 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       return (a.startTime ?? '00:00').localeCompare(b.startTime ?? '00:00');
     });
 
-    const empty = (v?: string | null) => v ? v : '<span class="td-empty">—</span>';
+    const esc = (v?: string | null) => (v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const empty = (v?: string | null) => v ? esc(v) : '<span class="td-empty">—</span>';
 
     // Nhóm theo ngày để dùng rowspan
     const grouped = new Map<string, CalendarEvent[]>();
@@ -1378,7 +1430,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
         return `<tr class="${i === 0 ? 'group-first' : ''}">
           ${dateCell}
           <td class="col-time td-time">${time}</td>
-          <td class="col-title td-title"><strong>${e.title}</strong></td>
+          <td class="col-title td-title"><strong>${esc(e.title)}</strong></td>
           <td class="col-participants">${empty(e.participants)}</td>
           <td class="col-unit">${empty(e.organizingUnit)}</td>
           <td class="col-location">${empty(e.location)}</td>

@@ -129,6 +129,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Chọn / cập nhật phòng ban cho user hiện tại' })
   async updateDepartment(@Req() req: any, @Body('departmentId') departmentId: string) {
     if (!departmentId) throw new BadRequestException('departmentId là bắt buộc');
+    const dept = await this.usersService.findDepartment(departmentId);
+    if (!dept) throw new BadRequestException('Phòng ban không tồn tại');
     await this.usersService.update(req.user.sub, { departmentId });
     const user = await this.usersService.findOneWithDepartment(req.user.sub);
     const { password, ...result } = user as any;
