@@ -28,6 +28,7 @@ export const routes: Routes = [
   },
   {
     path: 'notifications',
+    canActivate: [authGuard],
     loadChildren: () =>
       import('./features/notifications/notifications.routes').then((m) => m.notificationsRoutes),
   },

@@ -156,8 +156,15 @@
                 </div>
                 <div class="field">
                   <label>Truyền thông</label>
-                  <app-autocomplete-input formControlName="mediaUnit" placeholder="Trung tâm TTTS"
-                    [suggestions]="suggestions.mediaUnit"></app-autocomplete-input>
+                  <label class="checkbox-card" [class.is-checked]="form.get('mediaUnit')?.value">
+                    <input type="checkbox" formControlName="mediaUnit" style="display:none" />
+                    <span class="check-box">
+                      <svg viewBox="0 0 12 10" width="12" height="10" fill="none">
+                        <polyline points="1,5 4.5,8.5 11,1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                    <span class="check-label">Có truyền thông</span>
+                  </label>
                 </div>
               </div>
             </div>

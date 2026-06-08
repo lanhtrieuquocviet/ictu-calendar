@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
@@ -10,8 +10,11 @@ export class RegisterDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'password123' })
+  @ApiProperty({ example: 'Password@123' })
   @IsString()
-  @MinLength(6)
+  @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
+  @Matches(/^(?=.*[A-Z])(?=.*\d).+$/, {
+    message: 'Mật khẩu phải có ít nhất 1 chữ hoa và 1 chữ số',
+  })
   password: string;
 }

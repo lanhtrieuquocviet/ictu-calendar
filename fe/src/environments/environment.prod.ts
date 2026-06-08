@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:3000/api/v1', // Đổi thành IP/domain server khi deploy
+  apiUrl: 'https://REPLACE_WITH_SERVER_DOMAIN/api/v1',
 };

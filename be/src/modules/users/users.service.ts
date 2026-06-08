@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as XLSX from 'xlsx';
 import * as ExcelJS from 'exceljs';
+import { ConfigService } from '@nestjs/config';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Department } from '../departments/entities/department.entity';
@@ -25,6 +26,7 @@ export class UsersService {
     private departmentRepository: Repository<Department>,
     @InjectRepository(GoogleToken)
     private googleTokenRepository: Repository<GoogleToken>,
+    private configService: ConfigService,
   ) {}
 
   async create(data: Partial<User>): Promise<User> {
@@ -54,7 +56,7 @@ export class UsersService {
       .orderBy('user.fullName', 'ASC');
 
     if (q?.trim()) {
-      qb.andWhere('user.fullName ILIKE :q', { q: `%${q.trim()}%` });
+      qb.andWhere('user.fullName LIKE :q', { q: `%${q.trim()}%` });
     }
     if (departmentId) {
       qb.andWhere('user.departmentId = :departmentId', { departmentId });
@@ -148,7 +150,7 @@ export class UsersService {
   }
 
   async importFromExcel(buffer: Buffer): Promise<ImportResult> {
-    const DEFAULT_PASSWORD = 'Ictu@2024';
+    const DEFAULT_PASSWORD = this.configService.get<string>('IMPORT_DEFAULT_PASSWORD', 'Ictu@2024');
 
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -179,8 +181,8 @@ export class UsersService {
       const row = rows[i];
       const rowNum = i + 2;
 
-      const fullName = String(row['Họ tên'] ?? '').trim();
-      const email = String(row['Email'] ?? '').trim().toLowerCase();
+      const fullName = String(row['Họ tên (*)'] ?? row['Họ tên'] ?? '').trim();
+      const email = String(row['Email (*)'] ?? row['Email'] ?? '').trim().toLowerCase();
       const deptName = String(row['Phòng ban'] ?? '').trim();
       const roleStr = String(row['Quyền'] ?? '').trim().toLowerCase();
       const passwordRaw = String(row['Mật khẩu'] ?? '').trim();
@@ -239,11 +241,10 @@ export class UsersService {
       { key: 'email',      width: 34 },
       { key: 'department', width: 34 },
       { key: 'role',       width: 24 },
-      { key: 'password',   width: 22 },
     ];
 
     // Header
-    const HEADERS = ['Họ tên (*)', 'Email (*)', 'Phòng ban', 'Quyền', 'Mật khẩu'];
+    const HEADERS = ['Họ tên (*)', 'Email (*)', 'Phòng ban', 'Quyền'];
     const headerRow = ws.addRow(HEADERS);
     headerRow.height = 30;
     headerRow.eachCell((cell, col) => {
@@ -255,7 +256,7 @@ export class UsersService {
     });
 
     // Dòng ví dụ
-    const exampleRow = ws.addRow(['Nguyễn Văn A', 'a@ictu.edu.vn', 'Phòng Đào Tạo', 'Người dùng', '']);
+    const exampleRow = ws.addRow(['Nguyễn Văn A', 'a@ictu.edu.vn', 'Phòng Đào Tạo', 'Người dùng']);
     exampleRow.height = 22;
     exampleRow.eachCell(cell => {
       cell.font = { size: 10.5, italic: true, color: { argb: 'FF64748B' } };

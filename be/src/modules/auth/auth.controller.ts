@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Req, Res, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
@@ -75,13 +75,51 @@ export class AuthController {
   @ApiExcludeEndpoint()
   async googleCallback(@Req() req: any, @Res() res: Response) {
     const tokens = await this.authService.googleLogin(req.user);
+    const code = this.authService.createGoogleLoginCode(tokens);
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:4200');
-    const params = new URLSearchParams({
-      token: tokens.access_token,
-      refresh: tokens.refresh_token,
-      user: JSON.stringify(tokens.user),
-    });
-    res.redirect(`${frontendUrl}/auth/google-callback?${params}`);
+    res.redirect(`${frontendUrl}/auth/google-callback?code=${code}`);
+  }
+
+  @Post('google/exchange')
+  @HttpCode(HttpStatus.OK)
+  @ApiExcludeEndpoint()
+  exchangeGoogleCode(@Body('code') code: string) {
+    if (!code) throw new BadRequestException('Thiếu mã xác thực');
+    return this.authService.exchangeGoogleLoginCode(code);
+  }
+
+  @Get('google/calendar/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Kiểm tra user đã kết nối Google Calendar chưa' })
+  async calendarStatus(@Req() req: any) {
+    const connected = await this.authService.isCalendarConnected(req.user.sub);
+    return { connected };
+  }
+
+  @Get('google/calendar/init')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lấy URL để kết nối Google Calendar' })
+  getCalendarAuthUrl(@Req() req: any) {
+    const url = this.authService.getGoogleCalendarAuthUrl(req.user.sub);
+    return { url };
+  }
+
+  @Get('google/calendar/callback')
+  @ApiExcludeEndpoint()
+  async calendarOAuthCallback(
+    @Query('code') code: string,
+    @Query('state') userId: string,
+    @Res() res: Response,
+  ) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:4200');
+    try {
+      await this.authService.handleCalendarOAuthCallback(code, userId);
+      (res as any).redirect(`${frontendUrl}/profile?calendar_connected=true`);
+    } catch {
+      (res as any).redirect(`${frontendUrl}/profile?calendar_error=true`);
+    }
   }
 
   @Post('change-password')

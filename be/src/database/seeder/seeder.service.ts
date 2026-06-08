@@ -96,8 +96,12 @@ export class SeederService implements OnApplicationBootstrap {
 
   private async seedAdmin(): Promise<void> {
     const email = this.configService.get<string>('ADMIN_EMAIL', 'admin@ictu.edu.vn');
-    const password = this.configService.get<string>('ADMIN_PASSWORD', 'Admin@123');
+    const password = this.configService.get<string>('ADMIN_PASSWORD');
     const fullName = this.configService.get<string>('ADMIN_FULLNAME', 'Administrator');
+    if (!password) {
+      this.logger.error('ADMIN_PASSWORD chưa được cấu hình trong .env — bỏ qua tạo admin mặc định');
+      return;
+    }
 
     const existing = await this.usersService.findByEmail(email);
     if (existing) {

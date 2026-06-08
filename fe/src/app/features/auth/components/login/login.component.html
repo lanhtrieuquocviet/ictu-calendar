@@ -1,98 +1,166 @@
 <div class="login-page">
-  <div class="login-card">
-    <div class="card-header">
-      <div class="logo"><span>ICTU</span></div>
-      <h2>Đăng nhập</h2>
-      <p class="sub">Quản lý lịch công tác tuần</p>
+
+  <!-- ===== BRAND PANEL ===== -->
+  <div class="brand-panel">
+    <div class="brand-bg">
+      <div class="circle circle--1"></div>
+      <div class="circle circle--2"></div>
+      <div class="circle circle--3"></div>
+      <div class="circle circle--4"></div>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="onSubmit()">
-
-      <!-- Email -->
-      <div class="form-field" [class.has-error]="emailError">
-        <label for="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          formControlName="email"
-          placeholder="admin@ictu.edu.vn"
-          autocomplete="email"
-        />
-        @if (emailError) {
-          <span class="field-error">{{ emailError }}</span>
-        }
+    <div class="brand-content">
+      <div class="brand-logo">
+        <div class="logo-box"><span>ICTU</span></div>
+        <div class="logo-name">
+          <div class="uni-abbr">ICTU Calendar</div>
+          <div class="uni-full">ĐH Công nghệ TT &amp; Truyền thông</div>
+        </div>
       </div>
 
-      <!-- Mật khẩu -->
-      <div class="form-field" [class.has-error]="passwordError">
-        <label for="password">Mật khẩu</label>
-        <div class="input-wrap">
-          <input
-            id="password"
-            [type]="showPassword() ? 'text' : 'password'"
-            formControlName="password"
-            placeholder="Tối thiểu 6 ký tự"
-            autocomplete="current-password"
-          />
-          <button type="button" class="btn-eye" (click)="togglePassword()" tabindex="-1">
-            @if (showPassword()) {
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
-              </svg>
-            } @else {
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            }
-          </button>
+      <h1 class="brand-headline">Quản lý Lịch<br/>Công tác Tuần</h1>
+      <p class="brand-tagline">
+        Nền tảng quản lý, theo dõi và chia sẻ lịch công tác dành cho cán bộ và giảng viên.
+      </p>
+
+      <div class="brand-features">
+        <div class="feature-item">
+          <div class="feature-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div class="feature-text">
+            <span class="feature-label">Lịch tuần / tháng</span>
+            <span class="feature-desc">Xem và quản lý lịch công tác</span>
+          </div>
         </div>
-        @if (passwordError) {
-          <span class="field-error">{{ passwordError }}</span>
-        }
+
+        <div class="feature-item">
+          <div class="feature-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div class="feature-text">
+            <span class="feature-label">Đa vai trò</span>
+            <span class="feature-desc">Admin, biên tập, phê duyệt</span>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+            </svg>
+          </div>
+          <div class="feature-text">
+            <span class="feature-label">Đồng bộ Google</span>
+            <span class="feature-desc">Tích hợp Google Calendar</span>
+          </div>
+        </div>
       </div>
-
-      <!-- Lỗi từ server -->
-      @if (error) {
-        <div class="error-msg">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          {{ error }}
-        </div>
-      }
-
-      <button class="btn-submit" type="submit" [disabled]="loading">
-        @if (loading) {
-          <span class="spinner"></span> Đang đăng nhập...
-        } @else {
-          Đăng nhập
-        }
-      </button>
-
-    </form>
-
-    <div class="divider"><span>hoặc</span></div>
-
-    <button class="btn-google" type="button" (click)="loginWithGoogle()">
-      <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-      </svg>
-      Đăng nhập bằng Google
-    </button>
-
-    <div class="card-back">
-      <a routerLink="/calendar" class="back-link">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-        Quay lại trang lịch
-      </a>
     </div>
   </div>
+
+  <!-- ===== FORM PANEL ===== -->
+  <div class="form-panel">
+    <div class="form-inner">
+
+      <div class="form-header">
+        <h2>Đăng nhập</h2>
+        <p>Chào mừng trở lại! Vui lòng nhập thông tin của bạn.</p>
+      </div>
+
+      <!-- Google — primary action -->
+      <button class="btn-google" type="button" (click)="loginWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Tiếp tục với Google
+      </button>
+
+      <div class="divider"><span>hoặc đăng nhập bằng email</span></div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+        <div class="form-field" [class.has-error]="emailError">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="admin@ictu.edu.vn"
+            autocomplete="email"
+          />
+          @if (emailError) {
+            <span class="field-error">{{ emailError }}</span>
+          }
+        </div>
+
+        <div class="form-field" [class.has-error]="passwordError">
+          <label for="password">Mật khẩu</label>
+          <div class="input-wrap">
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="Nhập mật khẩu"
+              autocomplete="current-password"
+            />
+            <button type="button" class="btn-eye" (click)="togglePassword()" tabindex="-1">
+              @if (showPassword()) {
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (passwordError) {
+            <span class="field-error">{{ passwordError }}</span>
+          }
+        </div>
+
+        @if (error) {
+          <div class="error-msg">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {{ error }}
+          </div>
+        }
+
+        <button class="btn-submit" type="submit" [disabled]="loading">
+          @if (loading) {
+            <span class="spinner"></span>Đang đăng nhập...
+          } @else {
+            Đăng nhập
+          }
+        </button>
+
+      </form>
+
+      <div class="form-footer">
+        <a routerLink="/calendar" class="back-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Quay lại trang lịch
+        </a>
+      </div>
+
+    </div>
+  </div>
+
 </div>

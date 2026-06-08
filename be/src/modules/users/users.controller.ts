@@ -59,7 +59,7 @@ export class UsersController {
   @Post('import')
   @ApiOperation({ summary: 'Import users từ file Excel (admin)' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
   async importUsers(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('Vui lòng chọn file');
     const ext = file.originalname.split('.').pop()?.toLowerCase();

@@ -16,6 +16,19 @@ export class AuthService {
 
   private currentUser$ = new BehaviorSubject<User | null>(this.loadUserFromStorage());
 
+  constructor() {
+    // Đồng bộ trạng thái đăng nhập khi tab khác thay đổi localStorage
+    window.addEventListener('storage', (event) => {
+      if (event.key === this.TOKEN_KEY || event.key === this.USER_KEY) {
+        const user = this.loadUserFromStorage();
+        this.currentUser$.next(user);
+        if (!user) {
+          this.router.navigate(['/calendar']);
+        }
+      }
+    });
+  }
+
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(
       tap((res) => this.storeSession(res)),
@@ -31,6 +44,23 @@ export class AuthService {
       data: { access_token: accessToken, refresh_token: refreshToken, user },
     } as any;
     this.storeSession(fakeResponse);
+  }
+
+  exchangeGoogleCode(code: string): Observable<void> {
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/google/exchange`, { code }).pipe(
+      tap((res) => this.storeSession(res)),
+      map(() => void 0),
+    );
+  }
+
+  checkCalendarStatus(): Observable<{ connected: boolean }> {
+    return this.http.get<{ connected: boolean }>(`${environment.apiUrl}/auth/google/calendar/status`);
+  }
+
+  connectGoogleCalendar(): void {
+    this.http.get<{ url: string }>(`${environment.apiUrl}/auth/google/calendar/init`).subscribe({
+      next: (res) => { window.location.href = res.url; },
+    });
   }
 
   syncGoogleCalendar(from?: string, to?: string): Observable<{ synced: number; skipped: number; duplicates: number; errors: string[] }> {

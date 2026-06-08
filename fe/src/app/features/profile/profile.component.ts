@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '@core/services/auth.service';
 import { environment } from '@env/environment';
@@ -20,6 +20,7 @@ interface ProfileUser extends User {
 })
 export class ProfileComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
+  private readonly route = inject(ActivatedRoute);
   readonly authService = inject(AuthService);
 
   user = signal<ProfileUser | null>(null);
@@ -40,6 +41,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
   syncing = signal(false);
   syncResult = signal<{ synced: number; skipped: number; duplicates: number; errors: string[] } | null>(null);
   syncError = signal('');
+
+  calendarConnected = signal<boolean | null>(null);
+  connecting = signal(false);
+  calendarConnectSuccess = signal(false);
+  calendarConnectError = signal(false);
 
   readonly roleLabels = ROLE_LABELS;
   private pwSuccessTimer: ReturnType<typeof setTimeout> | null = null;
@@ -62,6 +68,22 @@ export class ProfileComponent implements OnInit, OnDestroy {
         if (!this.user()) this.loadError.set(true);
       },
     });
+
+    this.authService.checkCalendarStatus().subscribe({
+      next: (res) => this.calendarConnected.set(res.connected),
+      error: () => this.calendarConnected.set(false),
+    });
+
+    const qp = this.route.snapshot.queryParamMap;
+    if (qp.get('calendar_connected') === 'true') {
+      this.calendarConnected.set(true);
+      this.calendarConnectSuccess.set(true);
+      setTimeout(() => this.calendarConnectSuccess.set(false), 4000);
+    }
+    if (qp.get('calendar_error') === 'true') {
+      this.calendarConnectError.set(true);
+      setTimeout(() => this.calendarConnectError.set(false), 4000);
+    }
   }
 
   ngOnDestroy(): void {
@@ -117,6 +139,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.pwSuccess.set('');
   }
 
+  connectGoogleCalendar(): void {
+    this.connecting.set(true);
+    this.authService.connectGoogleCalendar();
+  }
+
   syncGoogleCalendar(): void {
     this.syncing.set(true);
     this.syncResult.set(null);
@@ -128,7 +155,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.syncing.set(false);
-        this.syncError.set(err?.error?.message ?? 'Đồng bộ thất bại. Vui lòng đăng nhập lại bằng Google.');
+        this.syncError.set(err?.error?.message ?? 'Đồng bộ thất bại. Vui lòng thử lại.');
       },
     });
   }

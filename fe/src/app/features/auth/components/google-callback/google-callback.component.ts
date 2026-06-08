@@ -28,22 +28,15 @@ export class GoogleCallbackComponent implements OnInit {
   error = '';
 
   ngOnInit(): void {
-    const params = this.route.snapshot.queryParams;
-    const token = params['token'];
-    const refresh = params['refresh'];
-    const userRaw = params['user'];
-
-    if (!token || !refresh || !userRaw) {
+    const code = this.route.snapshot.queryParams['code'];
+    if (!code) {
       this.error = 'Đăng nhập Google thất bại. Vui lòng thử lại.';
       return;
     }
 
-    try {
-      const user = JSON.parse(userRaw);
-      this.authService.handleGoogleCallback(token, refresh, user);
-      this.router.navigate(['/calendar']);
-    } catch {
-      this.error = 'Dữ liệu đăng nhập không hợp lệ.';
-    }
+    this.authService.exchangeGoogleCode(code).subscribe({
+      next: () => this.router.navigate(['/calendar']),
+      error: () => { this.error = 'Đăng nhập Google thất bại. Vui lòng thử lại.'; },
+    });
   }
 }

@@ -344,7 +344,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
     organizingUnit: [''],
     location: [''],
     vehicleArrangement: [''],
-    mediaUnit: [''],
+    mediaUnit: [false],
     supervisor: [''],
     approvedBy: [''],
     meetingCode: [''],
@@ -380,7 +380,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
       this.form.patchValue({
         ...this.event,
         eventDate: this.event.eventDate?.slice(0, 10) ?? '',
-        mediaUnit: this.event.mediaUnit || '',
+        mediaUnit: !!this.event.mediaUnit,
       });
       // Khôi phục structuredParticipants khi edit
       if ((this.event as any).eventParticipants?.length) {
@@ -401,7 +401,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
         organizingUnit: this.duplicateFrom.organizingUnit || '',
         location: this.duplicateFrom.location || '',
         vehicleArrangement: this.duplicateFrom.vehicleArrangement || '',
-        mediaUnit: this.duplicateFrom.mediaUnit || '',
+        mediaUnit: !!this.duplicateFrom.mediaUnit,
         supervisor: this.duplicateFrom.supervisor || '',
         approvedBy: this.duplicateFrom.approvedBy || '',
         meetingCode: this.duplicateFrom.meetingCode || '',
@@ -615,7 +615,7 @@ export class EventFormComponent implements OnInit, OnDestroy {
     const { status: _status, ...rest } = raw as any;
     const data: CreateEventRequest = {
       ...rest,
-      mediaUnit: raw.mediaUnit || '',
+      mediaUnit: raw.mediaUnit ? 'Có truyền thông' : '',
       startTime: raw.startTime || null,
       endTime:   raw.endTime   || null,
       structuredParticipants: this.structuredParticipants.length
