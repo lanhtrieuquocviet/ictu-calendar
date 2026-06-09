@@ -1,4 +1,5 @@
 import { IsEnum, IsString, IsOptional, IsNumber, Min, MaxLength, IsNotEmpty } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { DepartmentGroup } from '../entities/department.entity';
 
@@ -12,6 +13,7 @@ export class CreateDepartmentDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
+  @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase().trim() : value))
   code: string;
 
   @ApiProperty({ enum: DepartmentGroup })

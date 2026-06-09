@@ -1,8 +1,8 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { google } from 'googleapis';
@@ -16,10 +16,13 @@ import { GoogleUser } from './strategies/google.strategy';
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_LOCKOUT_MS = 15 * 60_000;
 
+const CLEANUP_INTERVAL_MS = 60 * 60_000; // dọn expired tokens mỗi 1 giờ
+
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit, OnModuleDestroy {
   private readonly googleLoginCodes = new Map<string, { tokens: any; expiresAt: number }>();
   private readonly loginAttempts = new Map<string, { count: number; lockedUntil: number }>();
+  private cleanupTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     private usersService: UsersService,
@@ -28,6 +31,29 @@ export class AuthService {
     @InjectRepository(RefreshToken)
     private refreshTokenRepo: Repository<RefreshToken>,
   ) {}
+
+  onModuleInit() {
+    this.cleanupTimer = setInterval(() => {
+      void this.cleanupExpiredTokens();
+      this.purgeExpiredLoginCodes();
+    }, CLEANUP_INTERVAL_MS).unref();
+  }
+
+  onModuleDestroy() {
+    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
+  }
+
+  private purgeExpiredLoginCodes(): void {
+    const now = Date.now();
+    for (const [k, v] of this.googleLoginCodes) {
+      if (v.expiresAt < now) this.googleLoginCodes.delete(k);
+    }
+  }
+
+  async cleanupExpiredTokens(): Promise<number> {
+    const result = await this.refreshTokenRepo.delete({ expiresAt: LessThan(new Date()) });
+    return result.affected ?? 0;
+  }
 
   async register(registerDto: RegisterDto) {
     const existing = await this.usersService.findByEmail(registerDto.email);
@@ -151,9 +177,6 @@ export class AuthService {
   }
 
   createGoogleLoginCode(tokens: any): string {
-    for (const [k, v] of this.googleLoginCodes) {
-      if (v.expiresAt < Date.now()) this.googleLoginCodes.delete(k);
-    }
     const code = randomUUID();
     this.googleLoginCodes.set(code, { tokens, expiresAt: Date.now() + 30_000 });
     return code;
@@ -171,7 +194,11 @@ export class AuthService {
 
   async isCalendarConnected(userId: string): Promise<boolean> {
     const token = await this.usersService.getGoogleToken(userId);
-    return !!token;
+    if (!token) return false;
+    // Còn refresh token → luôn có thể gia hạn
+    if (token.refreshToken) return true;
+    // Không có refresh token → chỉ còn dùng được nếu access token chưa hết hạn
+    return !!token.tokenExpiry && token.tokenExpiry > new Date();
   }
 
   private parseExpiresIn(value: string): number {

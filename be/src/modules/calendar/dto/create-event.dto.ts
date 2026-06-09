@@ -1,5 +1,16 @@
-import { IsString, IsDateString, IsBoolean, IsOptional, IsNotEmpty, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsDateString,
+  IsBoolean,
+  IsOptional,
+  IsNotEmpty,
+  IsArray,
+  Matches,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { EventParticipantDto } from './event-participant.dto';
 
 export class CreateEventDto {
   @ApiProperty({ example: 'Hội nghị Ban chấp hành Đảng bộ ĐHTN' })
@@ -14,11 +25,13 @@ export class CreateEventDto {
   @ApiProperty({ example: '08:00', required: false })
   @IsString()
   @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'Giờ bắt đầu phải có định dạng HH:mm (vd: 08:00)' })
   startTime?: string;
 
   @ApiProperty({ example: '10:00', required: false })
   @IsString()
   @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'Giờ kết thúc phải có định dạng HH:mm (vd: 10:00)' })
   endTime?: string;
 
   @ApiProperty({ required: false, default: false })
@@ -69,6 +82,7 @@ export class CreateEventDto {
   @ApiProperty({ example: '#4f46e5', required: false })
   @IsString()
   @IsOptional()
+  @Matches(/^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$/, { message: 'Màu sắc phải đúng định dạng hex (vd: #4f46e5)' })
   color?: string;
 
   @ApiProperty({ required: false })
@@ -76,8 +90,10 @@ export class CreateEventDto {
   @IsOptional()
   notes?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, type: [EventParticipantDto] })
   @IsArray()
   @IsOptional()
-  structuredParticipants?: any[];
+  @ValidateNested({ each: true })
+  @Type(() => EventParticipantDto)
+  structuredParticipants?: EventParticipantDto[];
 }

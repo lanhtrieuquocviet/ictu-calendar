@@ -1,10 +1,11 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'Nguyễn Văn A' })
   @IsString()
+  @IsNotEmpty({ message: 'Họ tên không được để trống' })
   fullName: string;
 
   @ApiProperty({ example: 'user@ictu.edu.vn' })
