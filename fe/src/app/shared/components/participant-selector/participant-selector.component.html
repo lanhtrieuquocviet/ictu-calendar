@@ -109,7 +109,7 @@
                   </div>
 
                   <!-- Individual members -->
-                  @if (expandedDepts.has(dept.id) && (dept.members?.length ?? 0) > 0) {
+                  @if ((expandedDepts.has(dept.id) || searchQuery.trim()) && (dept.members?.length ?? 0) > 0) {
                     <div class="ps-members">
                       @for (member of dept.members!; track member.id) {
                         <div class="ps-member-row" [class.selected]="isMemberSelected(member.id)"
