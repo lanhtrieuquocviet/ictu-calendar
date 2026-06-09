@@ -324,7 +324,7 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
       message: `Phê duyệt sự kiện "${event.title}"?`,
       confirmText: 'Phê duyệt',
       cancelText: 'Hủy',
-      type: 'success',
+      type: 'info',
     });
     if (!ok) return;
     this.calendarService.approveEvent(event.id, { status: 'approved' }).subscribe({

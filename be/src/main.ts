@@ -14,7 +14,10 @@ async function bootstrap() {
 
   app.use(helmet());
 
-  app.setGlobalPrefix(configService.get('API_PREFIX', 'api/v1'));
+  const apiPrefix = configService.get('API_PREFIX', 'api/v1');
+  app.getHttpAdapter().get(`/${apiPrefix}/health`, (_req: any, res: any) => res.json({ status: 'ok' }));
+
+  app.setGlobalPrefix(apiPrefix);
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());

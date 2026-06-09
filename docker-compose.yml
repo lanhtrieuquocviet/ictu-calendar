@@ -4,13 +4,14 @@ services:
   mysql:
     image: mysql:8.0
     container_name: ictu_calendar_db
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
-    ports:
-      - '3306:3306'
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - app_net
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
       interval: 10s
@@ -20,17 +21,19 @@ services:
   minio:
     image: minio/minio:latest
     container_name: ictu_calendar_minio
+    restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     command: server /data --console-address ":9001"
     ports:
-      - '9000:9000'
       - '9001:9001'
     volumes:
       - minio_data:/data
+    networks:
+      - app_net
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -40,26 +43,43 @@ services:
       context: ./be
       dockerfile: Dockerfile
     container_name: ictu_calendar_be
+    restart: unless-stopped
     env_file:
       - ./be/.env
     ports:
       - '3000:3000'
+    networks:
+      - app_net
     depends_on:
       mysql:
         condition: service_healthy
       minio:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   frontend:
     build:
       context: ./fe
       dockerfile: Dockerfile
     container_name: ictu_calendar_fe
+    restart: unless-stopped
     ports:
       - '4200:80'
+    networks:
+      - app_net
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   mysql_data:
   minio_data:
+
+networks:
+  app_net:
+    driver: bridge
