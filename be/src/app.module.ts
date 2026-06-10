@@ -39,6 +39,7 @@ import { SeederModule } from './database/seeder/seeder.module';
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
           synchronize: isDev,
+          migrationsRun: !isDev,
           logging: isDev,
           charset: 'utf8mb4',
         };
