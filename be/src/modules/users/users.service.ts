@@ -9,6 +9,7 @@ import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Department } from '../departments/entities/department.entity';
 import { GoogleToken } from '../calendar/entities/google-token.entity';
+import { NotificationService } from '../notification/notification.service';
 
 export interface ImportResult {
   total: number;
@@ -27,6 +28,7 @@ export class UsersService {
     @InjectRepository(GoogleToken)
     private googleTokenRepository: Repository<GoogleToken>,
     private configService: ConfigService,
+    private notificationService: NotificationService,
   ) {}
 
   async create(data: Partial<User>): Promise<User> {
@@ -38,7 +40,11 @@ export class UsersService {
     const existing = await this.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email đã tồn tại');
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    return this.create({ ...dto, password: hashedPassword });
+    const user = await this.create({ ...dto, password: hashedPassword });
+    void this.notificationService
+      .sendWelcomeEmail({ name: user.fullName, email: user.email }, dto.password)
+      .catch(() => {});
+    return user;
   }
 
   async findAll(): Promise<User[]> {
@@ -222,7 +228,10 @@ export class UsersService {
       const hashedPassword = await bcrypt.hash(password, 10);
       const departmentId = deptName ? (deptMap.get(deptName.toLowerCase()) ?? null) : null;
 
-      await this.create({ fullName, email, password: hashedPassword, role, departmentId, isActive: true });
+      const created = await this.create({ fullName, email, password: hashedPassword, role, departmentId, isActive: true });
+      void this.notificationService
+        .sendWelcomeEmail({ name: created.fullName, email: created.email }, password)
+        .catch(() => {});
       success++;
     }
 

@@ -847,17 +847,25 @@
   &[data-status="rejected"] { background: #fee2e2; color: #991b1b; }
 }
 
-// ── Footer ────────────────────────────────────────────────────────
+// ── Error strip (outside scroll area, always visible) ─────────────
 
-.error-msg {
+.error-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
   background: #fef2f2;
-  border: 1px solid #fecaca;
+  border-top: 1px solid #fecaca;
+  border-bottom: 1px solid #fecaca;
   color: #dc2626;
   font-size: 13px;
-  border-radius: 7px;
-  padding: 10px 14px;
-  margin-top: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+
+  svg { flex-shrink: 0; }
 }
+
+// ── Footer ────────────────────────────────────────────────────────
 
 .modal-footer {
   display: flex;

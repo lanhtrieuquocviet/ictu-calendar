@@ -471,7 +471,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            Mật khẩu mặc định cho tất cả tài khoản được import:&nbsp;<strong>Ictu&#64;2024</strong>
+            Các tài khoản được import đã nhận thông tin đăng nhập qua email. Yêu cầu người dùng đổi mật khẩu sau lần đăng nhập đầu tiên.
           </div>
         }
 
@@ -563,7 +563,7 @@
             <label>Mật khẩu <span class="required">*</span></label>
             <input
               type="password"
-              placeholder="Tối thiểu 6 ký tự"
+              placeholder="Tối thiểu 8 ký tự, 1 chữ hoa, 1 số"
               autocomplete="new-password"
               [value]="createForm().password"
               (input)="updateCreateForm('password', $any($event.target).value)" />
@@ -635,7 +635,7 @@
           <label>Mật khẩu mới <span class="required">*</span></label>
           <input
             type="password"
-            placeholder="Tối thiểu 6 ký tự"
+            placeholder="Tối thiểu 8 ký tự, 1 chữ hoa, 1 số"
             [value]="newPassword()"
             (input)="newPassword.set($any($event.target).value); resetError.set('')" />
         </div>

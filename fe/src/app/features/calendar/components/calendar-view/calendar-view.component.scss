@@ -1170,25 +1170,44 @@ table {
   box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.06);
 }
 
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
 thead tr {
   background: linear-gradient(90deg, #004e8a 0%, #006cb5 55%, #0078d0 100%);
   box-shadow: 0 3px 8px rgba(0,50,130,0.2);
 
   th {
-    padding: 13px 14px;
-    text-align: left;
-    font-weight: 700; font-size: 12px;
+    padding: 10px 10px;
+    text-align: center;
+    font-weight: 700; font-size: 11.5px;
     color: #fff;
-    letter-spacing: 0.7px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
     border-right: 1px solid rgba(255,255,255,0.22);
-    white-space: nowrap;
+    white-space: normal;
+    word-break: keep-all;
+    line-height: 1.35;
+    vertical-align: middle;
     text-shadow: 0 1px 2px rgba(0,0,0,0.18);
     &:first-child { border-radius: 12px 0 0 0; }
     &:last-child  { border-right: none; border-radius: 0 12px 0 0; }
-    &.th-day { text-align: center; }
-    &.th-time { text-align: center; }
-    &.th-actions { text-align: center; }
+    &.th-title    { text-align: left; }
+
+    &.th-day          { width: 80px; }
+    &.th-time         { width: 96px; }
+    &.th-title        { min-width: 180px; }
+    &.th-participants { width: 145px; }
+    &.th-unit         { width: 110px; }
+    &.th-location     { width: 110px; }
+    &.th-transport    { width: 100px; }
+    &.th-supervisor   { width: 100px; }
+    &.th-approved-col { width: 130px; }
+    &.th-code         { width: 65px; }
+    &.th-actions      { width: 48px; }
   }
 }
 
@@ -1329,7 +1348,7 @@ tbody {
 
   .cell-truncate {
     display: block;
-    max-width: 130px;
+    max-width: 100px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1344,7 +1363,7 @@ tbody {
   }
 
   .td-participants {
-    min-width: 160px; max-width: 240px;
+    min-width: 130px; max-width: 200px;
     color: #475569; font-size: 12.5px;
 
     .clamp-text {

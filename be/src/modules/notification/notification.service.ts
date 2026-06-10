@@ -110,6 +110,16 @@ export class NotificationService {
     );
   }
 
+  async sendWelcomeEmail(recipient: MailRecipient, plainPassword: string): Promise<void> {
+    if (!this.isEnabled()) return;
+    const appUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:4200');
+    await this.sendBulk(
+      [recipient],
+      '[ICTU Calendar] Tài khoản của bạn đã được tạo',
+      (r) => this.buildWelcomeHtml(r, plainPassword, appUrl),
+    );
+  }
+
   async sendNewParticipantsAdded(event: Event, recipients: MailRecipient[], attachments: EventAttachment[] = []): Promise<void> {
     if (!this.isEnabled() || recipients.length === 0) return;
     await this.sendBulk(
@@ -171,6 +181,85 @@ export class NotificationService {
     } else {
       this.logger.log(`Đã gửi mail thông báo tới ${recipients.length} người`);
     }
+  }
+
+  private buildWelcomeHtml(recipient: MailRecipient, plainPassword: string, appUrl: string): string {
+    const esc = (s: string) => s
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f4f8;padding:20px 12px">
+  <tr><td align="center">
+    <table cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:580px">
+
+      <tr>
+        <td style="background:#0f2d5e;border-radius:10px 10px 0 0;padding:16px 22px">
+          <p style="margin:0 0 6px;font-size:10px;font-weight:700;color:#7dd3fc;letter-spacing:2px;text-transform:uppercase">ICTU CALENDAR</p>
+          <h1 style="margin:0;font-size:18px;font-weight:700;color:#ffffff;line-height:1.3">Chào mừng bạn đến với ICTU Calendar</h1>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="background:#ffffff;padding:18px 22px 12px">
+          <p style="margin:0;font-size:14px;color:#1e293b;line-height:1.6">Kính gửi <strong>${esc(recipient.name)}</strong>,</p>
+          <p style="margin:8px 0 0;font-size:13px;color:#475569;line-height:1.6">
+            Tài khoản của bạn trên hệ thống <strong>ICTU Calendar</strong> đã được tạo thành công. Dưới đây là thông tin đăng nhập của bạn:
+          </p>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="background:#ffffff;padding:0 22px 18px">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1.5px solid #bfdbfe;border-radius:8px;overflow:hidden">
+            <tr>
+              <td style="background:#eff6ff;padding:12px 16px;border-bottom:1px solid #bfdbfe">
+                <div style="font-size:10px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px">Email đăng nhập</div>
+                <div style="font-size:14px;color:#1e293b;font-weight:600;font-family:monospace">${esc(recipient.email)}</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#f0fdf4;padding:12px 16px">
+                <div style="font-size:10px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px">Mật khẩu ban đầu</div>
+                <div style="font-size:14px;color:#1e293b;font-weight:600;font-family:monospace">${esc(plainPassword)}</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="background:#ffffff;padding:0 22px 18px">
+          <div style="padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px">
+            <div style="font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">&#9888; Lưu ý bảo mật</div>
+            <div style="font-size:13px;color:#713f12;line-height:1.5">Vui lòng đổi mật khẩu ngay sau khi đăng nhập lần đầu để bảo vệ tài khoản của bạn.</div>
+          </div>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="background:#ffffff;padding:0 22px 20px;text-align:center">
+          <a href="${appUrl}" style="display:inline-block;padding:10px 28px;background:#1d4ed8;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;border-radius:6px;letter-spacing:0.3px">Đăng nhập ngay</a>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 10px 10px;padding:10px 22px">
+          <p style="margin:0 0 1px;font-size:11px;font-weight:600;color:#0f2d5e">Trường Đại học Công nghệ Thông tin và Truyền thông</p>
+          <p style="margin:0;font-size:10px;color:#94a3b8">Đây là email tự động từ hệ thống ICTU Calendar. Vui lòng không trả lời email này.</p>
+        </td>
+      </tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
   }
 
   private buildEventHtml(

@@ -305,7 +305,8 @@ export class UserManagementComponent implements OnInit {
     if (!form.email.trim()) errors.email = 'Vui lòng nhập email';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = 'Email không hợp lệ';
     if (!form.password) errors.password = 'Vui lòng nhập mật khẩu';
-    else if (form.password.length < 6) errors.password = 'Mật khẩu tối thiểu 6 ký tự';
+    else if (form.password.length < 8) errors.password = 'Mật khẩu tối thiểu 8 ký tự';
+    else if (!/^(?=.*[A-Z])(?=.*\d).+$/.test(form.password)) errors.password = 'Mật khẩu cần ít nhất 1 chữ hoa và 1 số';
 
     if (Object.keys(errors).length > 0) {
       this.createErrors.set(errors);
@@ -377,7 +378,8 @@ export class UserManagementComponent implements OnInit {
     const userId = this.resetUserId();
     if (!userId) return;
 
-    if (pwd.length < 6) { this.resetError.set('Mật khẩu tối thiểu 6 ký tự'); return; }
+    if (pwd.length < 8) { this.resetError.set('Mật khẩu tối thiểu 8 ký tự'); return; }
+    if (!/^(?=.*[A-Z])(?=.*\d).+$/.test(pwd)) { this.resetError.set('Mật khẩu cần ít nhất 1 chữ hoa và 1 số'); return; }
     if (pwd !== confirm) { this.resetError.set('Mật khẩu xác nhận không khớp'); return; }
 
     this.resetting.set(true);

@@ -35,7 +35,7 @@ export class CalendarController {
   @ApiQuery({ name: 'to', required: false, example: '2026-05-31' })
   @ApiQuery({ name: 'q', required: false, description: 'Từ khóa tìm kiếm' })
   findAll(@Query('from') from?: string, @Query('to') to?: string, @Query('q') q?: string) {
-    return this.calendarService.findAll(from, to, undefined, q, true);
+    return this.calendarService.findAll(from, to, undefined, q?.slice(0, 100), true);
   }
 
   // ── Quản lý: editor / approver / admin thấy tất cả ─
@@ -50,7 +50,7 @@ export class CalendarController {
   @ApiQuery({ name: 'status', required: false, enum: EventStatus })
   @ApiQuery({ name: 'q', required: false, description: 'Từ khóa tìm kiếm' })
   findManaged(@Query('from') from?: string, @Query('to') to?: string, @Query('status') status?: EventStatus, @Query('q') q?: string) {
-    return this.calendarService.findAll(from, to, status, q);
+    return this.calendarService.findAll(from, to, status, q?.slice(0, 100));
   }
 
   // ── Lịch của tôi: editor xem sự kiện do mình tạo ──

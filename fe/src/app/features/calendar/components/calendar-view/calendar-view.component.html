@@ -1023,15 +1023,15 @@
               <th class="th-day">Thứ</th>
               <th class="th-time">Giờ</th>
               <th class="th-title">Nội dung</th>
-              <th>Thành phần tham dự</th>
-              <th>Đơn vị chủ trì</th>
-              <th>Địa điểm</th>
-              <th>Điều xe / Truyền thông</th>
-              <th>ĐU/BGH Chỉ đạo</th>
+              <th class="th-participants">Thành phần tham dự</th>
+              <th class="th-unit">Đơn vị chủ trì</th>
+              <th class="th-location">Địa điểm</th>
+              <th class="th-transport">Điều xe / Truyền thông</th>
+              <th class="th-supervisor">ĐU/BGH Chỉ đạo</th>
               @if (authService.isApprover() || authService.isAdmin()) {
-                <th>ĐU/BGH Phê duyệt</th>
+                <th class="th-approved-col">ĐU/BGH Phê duyệt</th>
               }
-              <th>Mã CH</th>
+              <th class="th-code">Mã CH</th>
               @if (authService.isEditor() || authService.isApprover()) {
                 <th class="th-actions">Thao tác</th>
               }
