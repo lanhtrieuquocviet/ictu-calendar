@@ -531,6 +531,25 @@
       </div>
 
       <div class="modal-body">
+
+        <!-- Hướng dẫn -->
+        <div class="create-guide">
+          <div class="create-guide__icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div class="create-guide__body">
+            <p class="create-guide__title">Hướng dẫn tạo tài khoản</p>
+            <ul class="create-guide__list">
+              <li>Điền đúng <strong>email thực</strong> của người dùng — hệ thống sẽ gửi thông tin đăng nhập đến địa chỉ này.</li>
+              <li><strong>Mật khẩu được tạo ngẫu nhiên</strong> bởi hệ thống, đảm bảo đủ độ phức tạp.</li>
+              <li>Người dùng nên <strong>đổi mật khẩu ngay</strong> sau khi đăng nhập lần đầu tại mục Hồ sơ.</li>
+              <li>Phân quyền phù hợp với vai trò: <em>Người tạo lịch</em> có thể tạo sự kiện; <em>Người phê duyệt</em> có thể duyệt sự kiện.</li>
+            </ul>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-group" [class.has-error]="createErrors().fullName">
             <label>Họ tên <span class="required">*</span></label>
@@ -558,30 +577,25 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group" [class.has-error]="createErrors().password">
-            <label>Mật khẩu <span class="required">*</span></label>
-            <input
-              type="password"
-              placeholder="Tối thiểu 8 ký tự, 1 chữ hoa, 1 số"
-              autocomplete="new-password"
-              [value]="createForm().password"
-              (input)="updateCreateForm('password', $any($event.target).value)" />
-            @if (createErrors().password) {
-              <span class="error-msg">{{ createErrors().password }}</span>
+        <div class="form-group">
+          <label>Quyền hạn</label>
+          <select
+            [value]="createForm().role"
+            (change)="updateCreateForm('role', $any($event.target).value)">
+            @for (role of ROLES; track role) {
+              <option [value]="role" [selected]="createForm().role === role">{{ ROLE_LABELS[role] }}</option>
             }
-          </div>
-          <div class="form-group">
-            <label>Quyền hạn</label>
-            <select
-              [value]="createForm().role"
-              (change)="updateCreateForm('role', $any($event.target).value)">
-              @for (role of ROLES; track role) {
-                <option [value]="role" [selected]="createForm().role === role">{{ ROLE_LABELS[role] }}</option>
-              }
-            </select>
-          </div>
+          </select>
         </div>
+
+        <div class="pwd-auto-notice">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Mật khẩu ngẫu nhiên sẽ được tạo tự động và gửi kèm email thông báo đến người dùng.
+        </div>
+
       </div>
 
       <div class="modal-footer">

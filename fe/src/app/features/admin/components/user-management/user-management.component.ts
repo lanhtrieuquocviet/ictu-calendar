@@ -83,7 +83,7 @@ export class UserManagementComponent implements OnInit {
 
   // Create user modal
   showCreateModal = signal(false);
-  createForm = signal<CreateUserPayload>({ fullName: '', email: '', password: '', role: 'user' });
+  createForm = signal<CreateUserPayload>({ fullName: '', email: '', role: 'user' });
   createErrors = signal<Partial<Record<keyof CreateUserPayload, string>>>({});
   creating = signal(false);
 
@@ -283,7 +283,7 @@ export class UserManagementComponent implements OnInit {
 
   // --- Create user ---
   openCreateModal(): void {
-    this.createForm.set({ fullName: '', email: '', password: '', role: 'user' });
+    this.createForm.set({ fullName: '', email: '', role: 'user' });
     this.createErrors.set({});
     this.showCreateModal.set(true);
   }
@@ -304,9 +304,6 @@ export class UserManagementComponent implements OnInit {
     if (!form.fullName.trim()) errors.fullName = 'Vui lòng nhập họ tên';
     if (!form.email.trim()) errors.email = 'Vui lòng nhập email';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = 'Email không hợp lệ';
-    if (!form.password) errors.password = 'Vui lòng nhập mật khẩu';
-    else if (form.password.length < 8) errors.password = 'Mật khẩu tối thiểu 8 ký tự';
-    else if (!/^(?=.*[A-Z])(?=.*\d).+$/.test(form.password)) errors.password = 'Mật khẩu cần ít nhất 1 chữ hoa và 1 số';
 
     if (Object.keys(errors).length > 0) {
       this.createErrors.set(errors);

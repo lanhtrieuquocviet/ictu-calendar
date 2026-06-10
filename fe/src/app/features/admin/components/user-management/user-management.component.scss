@@ -735,6 +735,63 @@
   svg { flex-shrink: 0; color: #f59e0b; }
 }
 
+.create-guide {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  margin-bottom: 16px;
+
+  &__icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: #2563eb;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1d4ed8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  &__list {
+    margin: 4px 0 0;
+    padding-left: 16px;
+    font-size: 12.5px;
+    color: #1e40af;
+    line-height: 1.7;
+
+    li + li { margin-top: 1px; }
+    strong { color: #1e3a8a; }
+    em { font-style: normal; color: #1d4ed8; font-weight: 500; }
+  }
+}
+
+.pwd-auto-notice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 9px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: #166534;
+  svg { flex-shrink: 0; color: #16a34a; }
+}
+
 .import-failed-section {
   display: flex; flex-direction: column; gap: 8px;
 }

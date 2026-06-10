@@ -673,6 +673,13 @@
     <!-- ── MONTH VIEW ─────────────────────────────── -->
     } @else if (viewMode() === 'month') {
 
+      <div class="calendar-hint">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Nhấn vào sự kiện để xem chi tiết &nbsp;·&nbsp; Nhấn <strong>+N thêm</strong> để xem tất cả sự kiện trong ngày
+      </div>
+
       <div class="month-view">
         <div class="month-day-headers">
           @for (d of monthDayLabels; track d) {
@@ -829,6 +836,14 @@
       </div>
 
       @if (personalViewSubMode() === 'month') {
+
+        <!-- hint bar -->
+        <div class="personal-hint">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Nhấn vào một ngày trên lịch để tạo sự kiện cá nhân cho ngày đó
+        </div>
 
         <!-- ── PERSONAL MONTH GRID ─────────────────── -->
         <div class="month-view personal-month-view">
@@ -1016,6 +1031,13 @@
     } @else {
 
       <!-- ── WEEK / LIST TABLE VIEW ─────────────────── -->
+      <div class="calendar-hint">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Nhấn vào sự kiện để xem chi tiết
+      </div>
+
       <div class="table-wrapper">
         <table>
           <thead>

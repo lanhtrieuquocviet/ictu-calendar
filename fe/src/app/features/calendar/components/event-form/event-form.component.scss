@@ -35,8 +35,20 @@
     font-size: 17px;
     font-weight: 700;
     color: #006cb5;
-    padding-bottom: 12px;
+    padding-bottom: 8px;
   }
+}
+
+.modal-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0 10px;
+  font-size: 12px;
+  color: #64748b;
+
+  svg { flex-shrink: 0; color: #f59e0b; }
+  strong { color: #d97706; font-weight: 600; }
 }
 
 .modal-body {

@@ -12,11 +12,12 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'Password123', minLength: 8, description: 'Ít nhất 8 ký tự, 1 chữ hoa, 1 số' })
+  @ApiProperty({ example: 'Password123', minLength: 8, description: 'Ít nhất 8 ký tự, 1 chữ hoa, 1 số. Bỏ trống để hệ thống tự tạo.', required: false })
+  @IsOptional()
   @IsString()
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   @Matches(/^(?=.*[A-Z])(?=.*\d).+$/, { message: 'Mật khẩu phải có ít nhất 1 chữ hoa và 1 chữ số' })
-  password: string;
+  password?: string;
 
   @ApiProperty({ enum: UserRole, required: false, default: UserRole.USER })
   @IsEnum(UserRole)

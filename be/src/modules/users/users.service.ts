@@ -36,13 +36,33 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
+  private generatePassword(): string {
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const digits = '23456789';
+    const lower = 'abcdefghjkmnpqrstuvwxyz';
+    const all = upper + digits + lower;
+    const arr: string[] = [
+      upper[Math.floor(Math.random() * upper.length)],
+      upper[Math.floor(Math.random() * upper.length)],
+      digits[Math.floor(Math.random() * digits.length)],
+      digits[Math.floor(Math.random() * digits.length)],
+      ...Array.from({ length: 4 }, () => all[Math.floor(Math.random() * all.length)]),
+    ];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr.join('');
+  }
+
   async createByAdmin(dto: CreateUserDto): Promise<User> {
     const existing = await this.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email đã tồn tại');
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const plainPassword = dto.password ?? this.generatePassword();
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
     const user = await this.create({ ...dto, password: hashedPassword });
     void this.notificationService
-      .sendWelcomeEmail({ name: user.fullName, email: user.email }, dto.password)
+      .sendWelcomeEmail({ name: user.fullName, email: user.email }, plainPassword)
       .catch(() => {});
     return user;
   }

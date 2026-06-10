@@ -3,6 +3,14 @@
 
     <div class="modal-header">
       <h2>{{ modalTitle }}</h2>
+      @if (!isEdit) {
+        <p class="modal-subtitle">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Sau khi thêm mới, sự kiện sẽ <strong>chờ phê duyệt</strong> trước khi hiển thị trên lịch công tác
+        </p>
+      }
     </div>
 
     @if (error || approveError) {
@@ -448,7 +456,8 @@
         }
       }
       @if (canEditContent && !isEdit) {
-        <button type="button" class="btn-draft" [disabled]="loading" (click)="saveAsDraft()">
+        <button type="button" class="btn-draft" [disabled]="loading" (click)="saveAsDraft()"
+          title="Lưu tạm vào thiết bị, chưa gửi đi — có thể tiếp tục chỉnh sửa sau">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
           </svg>
