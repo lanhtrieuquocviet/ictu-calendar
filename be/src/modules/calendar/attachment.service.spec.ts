@@ -58,7 +58,7 @@ describe('AttachmentService', () => {
   // ─── upload ───────────────────────────────────────────────────────────────
 
   describe('upload', () => {
-    it('upload file hợp lệ lên MinIO và lưu metadata vào DB', async () => {
+    it('upload file hợp lệ lên storage và lưu metadata vào DB', async () => {
       mockRepo.count.mockResolvedValue(2);
       mockUsersService.findOne.mockResolvedValue({ fullName: 'Nguyen Van A' });
       mockStorageService.upload.mockResolvedValue(undefined);
@@ -151,7 +151,7 @@ describe('AttachmentService', () => {
   // ─── delete ───────────────────────────────────────────────────────────────
 
   describe('delete', () => {
-    it('xóa file khỏi MinIO và DB khi người tạo tự xóa', async () => {
+    it('xóa file khỏi storage và DB khi người tạo tự xóa', async () => {
       mockRepo.findOne.mockResolvedValue({
         id: 'att-1',
         filename: 'file.pdf',

@@ -4,6 +4,12 @@ export class AddRefreshTokenFk1749520000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Xóa các token mồ côi (userId không tồn tại trong bảng users)
     // trước khi thêm FK constraint, tránh lỗi "Cannot add or update a child row"
+    const [tableExists] = await queryRunner.query(`
+      SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'refresh_tokens'
+    `);
+    if (!tableExists) return;
+
     await queryRunner.query(`
       DELETE FROM refresh_tokens
       WHERE userId NOT IN (SELECT id FROM users)

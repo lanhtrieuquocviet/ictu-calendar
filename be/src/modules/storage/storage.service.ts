@@ -1,62 +1,58 @@
 import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as Minio from 'minio';
+import * as fs from 'fs/promises';
+import { createReadStream } from 'fs';
+import * as path from 'path';
 import { Readable } from 'stream';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
-  private client: Minio.Client;
-  private bucket: string;
+  private readonly uploadDir: string;
 
   constructor(private config: ConfigService) {
-    this.client = new Minio.Client({
-      endPoint: config.get<string>('MINIO_ENDPOINT', 'localhost'),
-      port: parseInt(config.get<string>('MINIO_PORT', '9000')),
-      useSSL: config.get<string>('MINIO_USE_SSL') === 'true',
-      accessKey: config.get<string>('MINIO_ACCESS_KEY', 'minioadmin'),
-      secretKey: config.get<string>('MINIO_SECRET_KEY', 'minioadmin'),
-    });
-    this.bucket = config.get<string>('MINIO_BUCKET', 'ictu-calendar');
+    this.uploadDir = config.get<string>('UPLOAD_DIR', './uploads');
   }
 
   async onModuleInit() {
     try {
-      const exists = await this.client.bucketExists(this.bucket);
-      if (!exists) {
-        await this.client.makeBucket(this.bucket);
-        this.logger.log(`Bucket "${this.bucket}" đã được tạo`);
-      }
+      await fs.mkdir(this.uploadDir, { recursive: true });
+      this.logger.log(`Upload directory: ${path.resolve(this.uploadDir)}`);
     } catch (err) {
-      this.logger.error('Không thể kết nối MinIO:', err.message);
+      this.logger.error(`Cannot create upload directory "${this.uploadDir}": ${(err as Error)?.message}`);
     }
   }
 
-  async upload(objectName: string, buffer: Buffer, mimeType: string): Promise<void> {
-    await this.client.putObject(this.bucket, objectName, buffer, buffer.length, {
-      'Content-Type': mimeType,
-    });
+  async upload(objectName: string, buffer: Buffer, _mimeType: string): Promise<void> {
+    const filePath = path.join(this.uploadDir, path.basename(objectName));
+    await fs.writeFile(filePath, buffer);
   }
 
   async delete(objectName: string): Promise<void> {
-    await this.client.removeObject(this.bucket, objectName);
+    const filePath = path.join(this.uploadDir, path.basename(objectName));
+    await fs.unlink(filePath).catch((err) => {
+      if (err?.code !== 'ENOENT') {
+        this.logger.warn(`Cannot delete file "${objectName}": ${err.message}`);
+      }
+    });
   }
 
   async getStream(objectName: string): Promise<Readable> {
+    const filePath = path.join(this.uploadDir, path.basename(objectName));
     try {
-      return await this.client.getObject(this.bucket, objectName);
+      await fs.access(filePath);
     } catch {
       throw new NotFoundException('File không tìm thấy');
     }
+    return createReadStream(filePath);
   }
 
   async getBuffer(objectName: string): Promise<Buffer> {
-    const stream = await this.getStream(objectName);
-    return new Promise((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      stream.on('data', (chunk: Buffer) => chunks.push(chunk));
-      stream.on('end', () => resolve(Buffer.concat(chunks)));
-      stream.on('error', reject);
-    });
+    const filePath = path.join(this.uploadDir, path.basename(objectName));
+    try {
+      return await fs.readFile(filePath);
+    } catch {
+      throw new NotFoundException('File không tìm thấy');
+    }
   }
 }

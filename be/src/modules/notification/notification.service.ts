@@ -110,6 +110,21 @@ export class NotificationService {
     );
   }
 
+  async sendNewParticipantsAdded(event: Event, recipients: MailRecipient[], attachments: EventAttachment[] = []): Promise<void> {
+    if (!this.isEnabled() || recipients.length === 0) return;
+    await this.sendBulk(
+      recipients,
+      `[ICTU Calendar] Bạn được thêm vào sự kiện: ${event.title}`,
+      (r) => this.buildEventHtml(event, {
+        recipient: r,
+        attachments,
+        badge: { text: 'Đã phê duyệt', bg: '#dcfce7', color: '#15803d', borderColor: '#bbf7d0' },
+        intro: 'Bạn vừa được thêm vào sự kiện đã được phê duyệt dưới đây. Vui lòng cập nhật lịch làm việc của bạn.',
+      }),
+      attachments,
+    );
+  }
+
   private async sendBulk(
     recipients: MailRecipient[],
     subject: string,
@@ -127,7 +142,7 @@ export class NotificationService {
             const content = await this.storageService.getBuffer(a.filename);
             return { filename: a.originalName, content, contentType: a.mimeType };
           } catch (err) {
-            this.logger.warn(`Không tải được file "${a.originalName}" từ MinIO: ${err instanceof Error ? err.message : err}`);
+            this.logger.warn(`Không tải được file "${a.originalName}" từ storage: ${err instanceof Error ? err.message : err}`);
             return null;
           }
         }),

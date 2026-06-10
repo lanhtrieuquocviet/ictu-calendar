@@ -2,7 +2,7 @@
 
 Hệ thống quản lý lịch công tác nội bộ — Trường Đại học Công nghệ Thông tin và Truyền thông (ICTU).
 
-**Công nghệ:** Angular 17 · NestJS · MySQL 8 · MinIO
+**Công nghệ:** Angular 17 · NestJS · MySQL 8
 
 ---
 
@@ -11,31 +11,23 @@ Hệ thống quản lý lịch công tác nội bộ — Trường Đại học 
 | Công cụ | Ghi chú |
 |---|---|
 | Node.js >= 20 | Backend + Frontend |
-| Docker Desktop | Chạy MySQL và MinIO |
+| Docker Desktop | Chạy MySQL |
 
 ---
 
 ## Cài đặt và chạy (môi trường phát triển)
 
-### Bước 1 — Khởi động MySQL và MinIO bằng Docker
+### Bước 1 — Khởi động MySQL bằng Docker
 
 ```bash
-# MySQL
 docker run -d --name ictu_calendar_db \
   -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD=your_db_password \
   -e MYSQL_DATABASE=ictu_calendar \
   mysql:8.0
-
-# MinIO (lưu file đính kèm)
-docker run -d --name ictu_calendar_minio \
-  -p 9000:9000 -p 9001:9001 \
-  -e MINIO_ROOT_USER=minioadmin \
-  -e MINIO_ROOT_PASSWORD=your_minio_secret \
-  minio/minio server /data --console-address ":9001"
 ```
 
-> Hai lệnh này chỉ cần chạy **một lần**. Những lần sau Docker Desktop tự khởi động lại cùng máy.
+> Lệnh này chỉ cần chạy **một lần**. Những lần sau Docker Desktop tự khởi động lại cùng máy.
 
 ### Bước 2 — Cấu hình backend
 
@@ -50,15 +42,12 @@ Mở `be/.env` và điền các giá trị bắt buộc:
 DB_PASSWORD=your_db_password          # giống MYSQL_ROOT_PASSWORD ở bước 1
 JWT_SECRET=<chuỗi ngẫu nhiên 64 byte>
 JWT_REFRESH_SECRET=<chuỗi ngẫu nhiên 64 byte khác>
-MINIO_SECRET_KEY=your_minio_secret    # giống MINIO_ROOT_PASSWORD ở bước 1
 ```
 
 Sinh JWT secret:
 ```bash
 node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
 ```
-
-> `MINIO_ENDPOINT=localhost` — đã được đặt sẵn đúng cho môi trường dev.
 
 ### Bước 3 — Chạy backend
 
@@ -91,7 +80,6 @@ npm start
 | Ứng dụng | http://localhost:4200 |
 | API | http://localhost:3000/api/v1 |
 | Swagger Docs | http://localhost:3000/api/docs |
-| MinIO Console | http://localhost:9001 |
 
 ---
 
@@ -113,15 +101,15 @@ Hệ thống tự tạo tài khoản admin từ `be/.env` khi backend khởi đ�
 Dùng Docker Compose để chạy toàn bộ stack trên server:
 
 ```bash
-cp .env.example .env          # điền DB_PASSWORD, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
-cp be/.env.example be/.env    # điền JWT_SECRET, MINIO_SECRET_KEY và các biến còn lại
+cp .env.example .env          # điền DB_PASSWORD
+cp be/.env.example be/.env    # điền JWT_SECRET và các biến còn lại
 ```
 
 Sửa `be/.env` cho production:
 ```env
 NODE_ENV=production
 DB_HOST=mysql                 # tên service trong docker-compose, không phải localhost
-MINIO_ENDPOINT=minio          # tên service trong docker-compose, không phải localhost
+UPLOAD_DIR=/app/uploads       # đã được đặt sẵn đúng
 FRONTEND_URL=http://<IP_SERVER>:4200
 ```
 
@@ -134,6 +122,8 @@ Sau đó chạy:
 ```bash
 docker-compose up --build -d
 ```
+
+File đính kèm được lưu trong Docker volume `uploads_data`, persist qua restart.
 
 ---
 
@@ -157,7 +147,7 @@ ictu-calendar/
 │   │   ├── auth/        # Đăng nhập, JWT refresh token
 │   │   ├── calendar/    # Sự kiện, file đính kèm
 │   │   ├── users/       # Quản lý người dùng
-│   │   ├── storage/     # Kết nối MinIO
+│   │   ├── storage/     # Local filesystem storage
 │   │   └── notification/# Gửi email thông báo
 │   └── .env.example
 ├── fe/                  # Angular 17 — giao diện người dùng
@@ -176,9 +166,9 @@ docker logs -f ictu_calendar_be
 # Chạy test
 cd be && npm test
 
-# Dừng MySQL / MinIO khi không dùng
-docker stop ictu_calendar_db ictu_calendar_minio
+# Dừng MySQL khi không dùng
+docker stop ictu_calendar_db
 
-# Khởi lại MySQL / MinIO
-docker start ictu_calendar_db ictu_calendar_minio
+# Khởi lại MySQL
+docker start ictu_calendar_db
 ```

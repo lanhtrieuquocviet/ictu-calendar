@@ -2,23 +2,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { StorageService } from './storage.service';
 import { ConfigService } from '@nestjs/config';
 import { NotFoundException } from '@nestjs/common';
-import * as Minio from 'minio';
 import { Readable } from 'stream';
+import * as fs from 'fs/promises';
+import { createReadStream } from 'fs';
 
-jest.mock('minio');
+jest.mock('fs/promises');
+jest.mock('fs', () => ({
+  createReadStream: jest.fn(),
+}));
 
-const mockMinioClient = {
-  bucketExists: jest.fn(),
-  makeBucket: jest.fn(),
-  putObject: jest.fn(),
-  removeObject: jest.fn(),
-  getObject: jest.fn(),
-};
-
-(Minio.Client as jest.Mock).mockImplementation(() => mockMinioClient);
+const mockFs = fs as jest.Mocked<typeof fs>;
+const mockCreateReadStream = createReadStream as jest.Mock;
 
 describe('StorageService', () => {
   let service: StorageService;
+  const UPLOAD_DIR = '/tmp/test-uploads';
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -29,14 +27,9 @@ describe('StorageService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn((key: string, def?: string) => ({
-              MINIO_ENDPOINT: 'localhost',
-              MINIO_PORT: '9000',
-              MINIO_USE_SSL: 'false',
-              MINIO_ACCESS_KEY: 'minioadmin',
-              MINIO_SECRET_KEY: 'minioadmin',
-              MINIO_BUCKET: 'ictu-calendar',
-            }[key] ?? def)),
+            get: jest.fn((key: string, def?: string) =>
+              key === 'UPLOAD_DIR' ? UPLOAD_DIR : def,
+            ),
           },
         },
       ],
@@ -48,57 +41,27 @@ describe('StorageService', () => {
   // ─── onModuleInit ─────────────────────────────────────────────────────────
 
   describe('onModuleInit', () => {
-    it('tạo bucket nếu chưa tồn tại', async () => {
-      mockMinioClient.bucketExists.mockResolvedValue(false);
-      mockMinioClient.makeBucket.mockResolvedValue(undefined);
+    it('tạo thư mục upload nếu chưa tồn tại', async () => {
+      mockFs.mkdir.mockResolvedValue(undefined);
 
       await service.onModuleInit();
 
-      expect(mockMinioClient.makeBucket).toHaveBeenCalledWith('ictu-calendar');
-    });
-
-    it('không tạo bucket nếu đã tồn tại', async () => {
-      mockMinioClient.bucketExists.mockResolvedValue(true);
-
-      await service.onModuleInit();
-
-      expect(mockMinioClient.makeBucket).not.toHaveBeenCalled();
-    });
-
-    it('không throw khi MinIO không kết nối được', async () => {
-      mockMinioClient.bucketExists.mockRejectedValue(new Error('Connection refused'));
-
-      await expect(service.onModuleInit()).resolves.not.toThrow();
+      expect(mockFs.mkdir).toHaveBeenCalledWith(UPLOAD_DIR, { recursive: true });
     });
   });
 
   // ─── upload ───────────────────────────────────────────────────────────────
 
   describe('upload', () => {
-    it('gọi putObject với đúng tham số', async () => {
-      mockMinioClient.putObject.mockResolvedValue({ etag: 'abc', versionId: null });
+    it('ghi file vào đúng đường dẫn', async () => {
+      mockFs.writeFile.mockResolvedValue(undefined);
       const buffer = Buffer.from('noi dung file');
 
       await service.upload('report.pdf', buffer, 'application/pdf');
 
-      expect(mockMinioClient.putObject).toHaveBeenCalledWith(
-        'ictu-calendar',
-        'report.pdf',
+      expect(mockFs.writeFile).toHaveBeenCalledWith(
+        `${UPLOAD_DIR}/report.pdf`,
         buffer,
-        buffer.length,
-        { 'Content-Type': 'application/pdf' },
-      );
-    });
-
-    it('truyền Content-Type đúng cho ảnh PNG', async () => {
-      mockMinioClient.putObject.mockResolvedValue({});
-      const buffer = Buffer.from('png-data');
-
-      await service.upload('photo.png', buffer, 'image/png');
-
-      expect(mockMinioClient.putObject).toHaveBeenCalledWith(
-        'ictu-calendar', 'photo.png', buffer, buffer.length,
-        { 'Content-Type': 'image/png' },
       );
     });
   });
@@ -106,32 +69,59 @@ describe('StorageService', () => {
   // ─── delete ───────────────────────────────────────────────────────────────
 
   describe('delete', () => {
-    it('gọi removeObject đúng bucket và objectName', async () => {
-      mockMinioClient.removeObject.mockResolvedValue(undefined);
+    it('xóa file đúng đường dẫn', async () => {
+      mockFs.unlink.mockResolvedValue(undefined);
 
       await service.delete('report.pdf');
 
-      expect(mockMinioClient.removeObject).toHaveBeenCalledWith('ictu-calendar', 'report.pdf');
+      expect(mockFs.unlink).toHaveBeenCalledWith(`${UPLOAD_DIR}/report.pdf`);
+    });
+
+    it('không throw khi file không tồn tại', async () => {
+      mockFs.unlink.mockRejectedValue(new Error('ENOENT'));
+
+      await expect(service.delete('missing.pdf')).resolves.not.toThrow();
     });
   });
 
   // ─── getStream ────────────────────────────────────────────────────────────
 
   describe('getStream', () => {
-    it('trả về stream khi object tồn tại', async () => {
+    it('trả về stream khi file tồn tại', async () => {
       const mockStream = new Readable({ read() {} });
-      mockMinioClient.getObject.mockResolvedValue(mockStream);
+      mockFs.access.mockResolvedValue(undefined);
+      mockCreateReadStream.mockReturnValue(mockStream);
 
       const result = await service.getStream('report.pdf');
 
       expect(result).toBe(mockStream);
-      expect(mockMinioClient.getObject).toHaveBeenCalledWith('ictu-calendar', 'report.pdf');
+      expect(mockCreateReadStream).toHaveBeenCalledWith(`${UPLOAD_DIR}/report.pdf`);
     });
 
-    it('throw NotFoundException khi object không tồn tại', async () => {
-      mockMinioClient.getObject.mockRejectedValue(new Error('NoSuchKey'));
+    it('throw NotFoundException khi file không tồn tại', async () => {
+      mockFs.access.mockRejectedValue(new Error('ENOENT'));
 
       await expect(service.getStream('missing.pdf')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ─── getBuffer ────────────────────────────────────────────────────────────
+
+  describe('getBuffer', () => {
+    it('trả về buffer khi file tồn tại', async () => {
+      const buf = Buffer.from('hello');
+      mockFs.readFile.mockResolvedValue(buf as any);
+
+      const result = await service.getBuffer('report.pdf');
+
+      expect(result).toBe(buf);
+      expect(mockFs.readFile).toHaveBeenCalledWith(`${UPLOAD_DIR}/report.pdf`);
+    });
+
+    it('throw NotFoundException khi file không tồn tại', async () => {
+      mockFs.readFile.mockRejectedValue(new Error('ENOENT'));
+
+      await expect(service.getBuffer('missing.pdf')).rejects.toThrow(NotFoundException);
     });
   });
 });

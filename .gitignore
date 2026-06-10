@@ -27,6 +27,7 @@ Thumbs.db
 
 # NestJS
 /be/coverage/
+/be/uploads/
 
 # Database dumps / SQL sessions
 *.sql

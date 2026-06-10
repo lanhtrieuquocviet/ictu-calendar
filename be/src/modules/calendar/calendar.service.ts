@@ -140,9 +140,29 @@ export class CalendarService {
     await this.eventRepository.update(id, updateData);
 
     if (structuredParticipants !== undefined) {
-      await this.participantRepository.delete({ eventId: id });
-      if (structuredParticipants.length > 0) {
-        await this.saveParticipants(id, structuredParticipants);
+      const oldParticipants = [...(event.eventParticipants ?? [])] as EventParticipant[];
+      await this.participantRepository.manager.transaction(async (em) => {
+        await em.delete(EventParticipant, { eventId: id });
+        if (structuredParticipants.length > 0) {
+          const entities = structuredParticipants.map((dto: EventParticipantDto) =>
+            em.create(EventParticipant, { ...dto, eventId: id }),
+          );
+          await em.save(EventParticipant, entities);
+        }
+      });
+
+      // Gửi mail cho người mới được thêm vào sự kiện đã duyệt
+      if (!wasRejected && event.status === EventStatus.APPROVED && structuredParticipants.length > 0) {
+        const newlyAdded = this.findNewParticipants(oldParticipants, structuredParticipants);
+        if (newlyAdded.length > 0) {
+          const updated = await this.findOne(id);
+          const attachments = await this.attachmentRepository.find({ where: { eventId: id } });
+          const recipients = await this.resolveRecipients(newlyAdded);
+          if (recipients.length > 0) {
+            this.notificationService.sendNewParticipantsAdded(updated, recipients, attachments)
+              .catch((err) => this.logger.error('sendNewParticipantsAdded failed', err?.message));
+          }
+        }
       }
     }
 
@@ -323,6 +343,24 @@ export class CalendarService {
       this.participantRepository.create({ ...dto, eventId }),
     );
     await this.participantRepository.save(entities);
+  }
+
+  private findNewParticipants(
+    oldParticipants: EventParticipant[],
+    newDtos: EventParticipantDto[],
+  ): EventParticipantDto[] {
+    return newDtos.filter((n) => {
+      if (n.type === ParticipantType.USER && n.userId) {
+        return !oldParticipants.some((o) => o.type === ParticipantType.USER && o.userId === n.userId);
+      }
+      if (n.type === ParticipantType.DEPARTMENT && n.departmentId) {
+        return !oldParticipants.some((o) => o.type === ParticipantType.DEPARTMENT && o.departmentId === n.departmentId);
+      }
+      if (n.type === ParticipantType.EXTERNAL && n.email) {
+        return !oldParticipants.some((o) => o.type === ParticipantType.EXTERNAL && o.email === n.email);
+      }
+      return false;
+    });
   }
 
   private async resolveRecipients(

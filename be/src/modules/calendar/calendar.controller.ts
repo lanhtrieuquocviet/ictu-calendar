@@ -197,6 +197,10 @@ export class CalendarController {
     const { stream, originalName, mimeType } = await this.attachmentService.getDownloadInfo(filename);
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(originalName)}`);
+    stream.on('error', () => {
+      if (!res.headersSent) res.status(500).end();
+      else res.destroy();
+    });
     stream.pipe(res);
   }
 
