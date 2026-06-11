@@ -20,11 +20,40 @@ export class CreatePersonalEvents1749522000000 implements MigrationInterface {
         \`updatedAt\`     datetime(6)   NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
                                                  ON UPDATE CURRENT_TIMESTAMP(6),
         PRIMARY KEY (\`id\`),
-        UNIQUE KEY \`IDX_personal_events_userId_googleEventId\` (\`userId\`, \`googleEventId\`),
-        CONSTRAINT \`FK_personal_events_userId\`
-          FOREIGN KEY (\`userId\`) REFERENCES \`users\`(\`id\`) ON DELETE CASCADE
+        UNIQUE KEY \`IDX_personal_events_userId_googleEventId\` (\`userId\`, \`googleEventId\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Đọc charset/collation thực tế của users.id để đảm bảo FK tương thích
+    const [colInfo] = await queryRunner.query(`
+      SELECT CHARACTER_SET_NAME, COLLATION_NAME
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'users'
+        AND COLUMN_NAME = 'id'
+    `);
+    if (colInfo) {
+      await queryRunner.query(
+        `ALTER TABLE \`personal_events\`
+          MODIFY COLUMN \`userId\` varchar(36)
+            CHARACTER SET ${colInfo.CHARACTER_SET_NAME}
+            COLLATE ${colInfo.COLLATION_NAME} NOT NULL`,
+      );
+    }
+
+    const [fkExists] = await queryRunner.query(`
+      SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'personal_events'
+        AND CONSTRAINT_NAME = 'FK_personal_events_userId'
+    `);
+    if (!fkExists) {
+      await queryRunner.query(`
+        ALTER TABLE \`personal_events\`
+          ADD CONSTRAINT \`FK_personal_events_userId\`
+            FOREIGN KEY (\`userId\`) REFERENCES \`users\`(\`id\`) ON DELETE CASCADE
+      `);
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

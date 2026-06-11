@@ -190,13 +190,13 @@ export class CalendarController {
   }
 
   @Get('attachments/:filename')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Tải xuống file đính kèm' })
+  @ApiOperation({ summary: 'Tải xuống / xem file đính kèm (public — filename là UUID)' })
   async downloadAttachment(@Param('filename') filename: string, @Res() res: Response) {
     const { stream, originalName, mimeType } = await this.attachmentService.getDownloadInfo(filename);
+    const inlineTypes = ['application/pdf', 'image/'];
+    const disposition = inlineTypes.some(t => mimeType.startsWith(t)) ? 'inline' : 'attachment';
     res.setHeader('Content-Type', mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(originalName)}`);
+    res.setHeader('Content-Disposition', `${disposition}; filename*=UTF-8''${encodeURIComponent(originalName)}`);
     stream.on('error', () => {
       if (!res.headersSent) res.status(500).end();
       else res.destroy();

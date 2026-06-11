@@ -790,13 +790,21 @@
 
       <!-- Header: nút đồng bộ + kết quả -->
       <div class="personal-header">
-        <button class="btn-sync-google" [disabled]="personalSyncing()" (click)="syncFromGoogle()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/>
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
-          </svg>
-          @if (personalSyncing()) { Đang đồng bộ... } @else { Đồng bộ từ Google }
-        </button>
+        <div class="sync-google-wrapper">
+          <button class="btn-sync-google" [disabled]="personalSyncing()" (click)="syncFromGoogle()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>
+            @if (personalSyncing()) { Đang đồng bộ... } @else { Đồng bộ từ Google }
+          </button>
+          <div class="sync-tooltip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>Nhập sự kiện từ Google Calendar của bạn về lịch cá nhân. Nếu chưa kết nối Google, hệ thống sẽ yêu cầu xác thực.</span>
+          </div>
+        </div>
 
         <button class="btn-personal-add" (click)="openPersonalCreateForm()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">

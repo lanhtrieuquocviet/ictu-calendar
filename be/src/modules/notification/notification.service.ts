@@ -251,7 +251,8 @@ export class NotificationService {
       <tr>
         <td style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 10px 10px;padding:10px 22px">
           <p style="margin:0 0 1px;font-size:11px;font-weight:600;color:#0f2d5e">Trường Đại học Công nghệ Thông tin và Truyền thông</p>
-          <p style="margin:0;font-size:10px;color:#94a3b8">Đây là email tự động từ hệ thống ICTU Calendar. Vui lòng không trả lời email này.</p>
+          <p style="margin:0 0 4px;font-size:10px;color:#94a3b8">Đây là email tự động từ hệ thống ICTU Calendar. Vui lòng không trả lời email này.</p>
+          <p style="margin:0;font-size:10px;color:#94a3b8"><a href="https://calendar.ictu.vn/calendar" style="color:#1d4ed8;text-decoration:underline">truy cập ictu calendar cho tôi</a></p>
         </td>
       </tr>
 
@@ -413,7 +414,8 @@ export class NotificationService {
       <tr>
         <td style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 10px 10px;padding:10px 22px">
           <p style="margin:0 0 1px;font-size:11px;font-weight:600;color:#0f2d5e">Trường Đại học Công nghệ Thông tin và Truyền thông</p>
-          <p style="margin:0;font-size:10px;color:#94a3b8">Đây là email tự động từ hệ thống ICTU Calendar. Vui lòng không trả lời email này.</p>
+          <p style="margin:0 0 4px;font-size:10px;color:#94a3b8">Đây là email tự động từ hệ thống ICTU Calendar. Vui lòng không trả lời email này.</p>
+          <p style="margin:0;font-size:10px;color:#94a3b8"><a href="https://calendar.ictu.vn/calendar" style="color:#1d4ed8;text-decoration:underline">truy cập ictu calendar cho tôi</a></p>
         </td>
       </tr>
 
