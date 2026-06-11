@@ -39,3 +39,6 @@ Thumbs.db
 # Server logs
 be_server.log
 *.log
+
+# Build artifacts / zip files (may contain secrets)
+*.zip
