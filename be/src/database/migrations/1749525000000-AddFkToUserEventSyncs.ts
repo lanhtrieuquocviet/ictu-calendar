@@ -2,6 +2,40 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddFkToUserEventSyncs1749525000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Điều chỉnh collation của userId để khớp với users.id
+    const [userColInfo] = await queryRunner.query(`
+      SELECT CHARACTER_SET_NAME, COLLATION_NAME
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'users'
+        AND COLUMN_NAME = 'id'
+    `);
+    if (userColInfo) {
+      await queryRunner.query(
+        `ALTER TABLE \`user_event_syncs\`
+          MODIFY COLUMN \`userId\` varchar(36)
+            CHARACTER SET ${userColInfo.CHARACTER_SET_NAME}
+            COLLATE ${userColInfo.COLLATION_NAME} NOT NULL`,
+      );
+    }
+
+    // Điều chỉnh collation của eventId để khớp với events.id
+    const [eventColInfo] = await queryRunner.query(`
+      SELECT CHARACTER_SET_NAME, COLLATION_NAME
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'events'
+        AND COLUMN_NAME = 'id'
+    `);
+    if (eventColInfo) {
+      await queryRunner.query(
+        `ALTER TABLE \`user_event_syncs\`
+          MODIFY COLUMN \`eventId\` varchar(36)
+            CHARACTER SET ${eventColInfo.CHARACTER_SET_NAME}
+            COLLATE ${eventColInfo.COLLATION_NAME} NOT NULL`,
+      );
+    }
+
     // Xóa dữ liệu rác trước khi thêm FK
     await queryRunner.query(`
       DELETE FROM \`user_event_syncs\`

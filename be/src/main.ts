@@ -30,7 +30,7 @@ async function bootstrap() {
     }),
   );
 
-  const isDev = configService.get('NODE_ENV') !== 'production';
+  const isDev = configService.get('NODE_ENV') === 'development';
 
   const frontendUrl = configService.get('FRONTEND_URL', 'http://localhost:4200');
   const allowedOrigins = isDev
