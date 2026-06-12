@@ -2,6 +2,13 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddFkToUserEventSyncs1749525000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Xóa dữ liệu rác trước khi thêm FK
+    await queryRunner.query(`
+      DELETE FROM \`user_event_syncs\`
+      WHERE \`userId\` NOT IN (SELECT \`id\` FROM \`users\`)
+         OR \`eventId\` NOT IN (SELECT \`id\` FROM \`events\`)
+    `);
+
     // FK đến users
     const [fkUser] = await queryRunner.query(`
       SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
