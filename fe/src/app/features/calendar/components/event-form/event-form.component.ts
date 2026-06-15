@@ -380,6 +380,8 @@ export class EventFormComponent implements OnInit, OnDestroy {
       this.form.patchValue({
         ...this.event,
         eventDate: this.event.eventDate?.slice(0, 10) ?? '',
+        startTime: this.event.startTime?.slice(0, 5) ?? '',
+        endTime: this.event.endTime?.slice(0, 5) ?? '',
         mediaUnit: !!this.event.mediaUnit,
       });
       // Khôi phục structuredParticipants khi edit

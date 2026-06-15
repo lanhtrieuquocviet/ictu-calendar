@@ -1211,10 +1211,12 @@ export class CalendarViewComponent implements OnInit, OnDestroy {
   openDetail(event: CalendarEvent): void {
     this.detailEvent.set(event);
     this.detailAttachments.set([]);
-    this.calendarService.getAttachments(event.id).subscribe({
-      next: list => this.detailAttachments.set(list),
-      error: () => {},
-    });
+    if (this.authService.isLoggedIn()) {
+      this.calendarService.getAttachments(event.id).subscribe({
+        next: list => this.detailAttachments.set(list),
+        error: () => {},
+      });
+    }
   }
   openDetailById(eventId: string): void {
     if (eventId === '__pending_tab__') {

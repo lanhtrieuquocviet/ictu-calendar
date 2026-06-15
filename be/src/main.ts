@@ -38,8 +38,8 @@ async function bootstrap() {
     : [frontendUrl];
   app.enableCors({
     origin: (origin, callback) => {
-      // Cho phép null origin (Postman, curl) chỉ trong dev
-      if ((isDev && !origin) || allowedOrigins.includes(origin)) {
+      // Cho phép null origin (same-origin request qua nginx proxy, Postman, curl)
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`CORS blocked: ${origin}`));
